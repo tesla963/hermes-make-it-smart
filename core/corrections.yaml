@@ -338,3 +338,26 @@
   examples:
     - { nnn: 872, subject: "Hack History", tag1: "Hermes Agent", tag2: "Data Security" }
   note: Concepts live in a growing glossary the prompt carries.
+
+- id: subject-is-a-point-not-a-sentence
+  taught: 2026-11-09
+  rule: >
+    The subject is a POINT, not a sentence. It must not compete with the
+    description. Four mechanical checks, run on every subject before it is
+    written:
+    (S1) no verb — "Comparación con Ollama", "Aprender a programar",
+    "Buscar virus": the action belongs in the verb field;
+    (S2) no linking preposition that turns the noun into a clause:
+    " con ", " para ", " que ", " sobre ", " entre ", " desde ", " hasta ",
+    " a ", " vs ", " versus ". ("Cierre de sesión" is fine: "de" names a thing.)
+    (S3) length: median is 17 characters; past 26 is suspect, past 30 is a
+    sentence in disguise;
+    (S4) it never repeats Tag1 unless the difference is a version.
+  examples:
+    - { nnn: 98, wrong: "Serie samurái ciego", right: "Samurái Ciego", tag1: "Película", tag2: "Serie", country: "Japón" }
+    - { nnn: 97, wrong: "Buscador open source", right: "Buscador OS" }
+    - { nnn: 96, wrong: "Recordatorio demo", right: "Tarea Cron" }
+    - { nnn: 95, wrong: "Aprender a programar", right: "Programming Language" }
+    - { nnn: 93, wrong: "Comparación con Ollama", right: "Ollama" }
+  control_question: "Could this be a filter chip someone clicks, or is it a heading?"
+  audit: tools/audit_subjects.py
