@@ -94,7 +94,15 @@ def fit_description(text: str, budget: int) -> str:
     return cut if _is_usable(cut) else ""
 
 
+# A comparison is short by nature ("Gemma vs Qwen", 13 chars) but carries real
+# information, so it is exempt from the minimum length. Without this, every
+# "A vs B" description was silently dropped and the title ended in a bare tag.
+_COMPARATOR = re.compile(r"\s(vs\.?|versus|frente a)\s", re.I)
+
+
 def _is_usable(text: str) -> bool:
+    if _COMPARATOR.search(text):
+        return len(text.split()) >= 2
     return len(text) >= MIN_DESCRIPTION_CHARS and len(text.split()) >= MIN_DESCRIPTION_WORDS
 
 

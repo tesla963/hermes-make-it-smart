@@ -234,6 +234,27 @@ conceptos:
     que_es: "El gateway roto: se nombra el punto de falla, no el componente."
     tag2: Troubleshooting
     ejemplos: [20, 81]
+  flight_paths:
+    nombre: Flight Paths
+    que_es: >
+      Trayectorias de vuelo programables que el dron ejecuta solo: waypoints con
+      coordenadas, altura, velocidad, orientación de cámara y acciones.
+      DJI las llama Waypoints y las habilitó en el Avata 360; Antigravity A1 las
+      llama Flight Paths. En este catálogo el sujeto es siempre "Flight Paths"
+      — "Waypoints", "paths programables" y "rutas" son la misma cosa y no
+      dividen el filtro.
+    tag1: [DJI, Antigravity A1]
+    tag2: [Multimedia, Automation]
+    ejemplos: [157, 430, 585, 730, 773, 844]
+    sinonimos: [waypoints, path programable, rutas de vuelo, flight path]
+  descuentos_jubilados:
+    nombre: Descuentos a Jubilados
+    que_es: >
+      Beneficio comercial y legal que rebaja el precio a personas jubiladas.
+      La preposición "a" forma parte del nombre del concepto: no es una oración
+      y no viola la regla de sujeto puntual.
+    tag1: Hermes Agent
+    ejemplos: [267]
   harness_agent:
     nombre: Harness Agent
     que_es: >

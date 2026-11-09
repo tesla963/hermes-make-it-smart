@@ -51,6 +51,12 @@ VERB_START = re.compile(
 
 LINKING = re.compile(r"\s(con|para|que|sobre|entre|desde|hasta|a|vs\.?|versus)\s", re.I)
 
+# A preposition that belongs to the concept's own name is legal:
+# "Descuentos a Jubilados" is a benefit, not a sentence.
+NAMED_CONCEPTS = ("descuentos a jubilados", "beneficios a jubilados")
+
+COMPARISON = re.compile(r"\s(vs\.?|versus|frente a)\s", re.I)
+
 MAX_OK = 26
 SENTENCE_OK = 30
 
@@ -73,8 +79,11 @@ def flags(subject: str, tag1: str) -> list[str]:
         out.append("S1 verbo")
     elif re.search(r"\b(comparar|comparaci[oó]n|instalar|verificar|analizar|organizar|buscar)\b", s, re.I):
         out.append("S1 verbo")
-    if LINKING.search(s):
+    if LINKING.search(s) and s.lower() not in NAMED_CONCEPTS:
         out.append("S2 preposición")
+    if COMPARISON.search(s):
+        # The comparison belongs in the description; Tag2 becomes "Comparación".
+        out.append("S5 comparación")
     if len(s) > SENTENCE_OK:
         out.append("S3 oración")
     elif len(s) > MAX_OK:

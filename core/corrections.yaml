@@ -372,3 +372,63 @@
     - { nnn: 93, wrong: "Comparación con Ollama", right: "Ollama" }
   control_question: "Could this be a filter chip someone clicks, or is it a heading?"
   audit: tools/audit_subjects.py
+
+- id: subject-preposition-exception
+  taught: 2026-11-09
+  rule: >
+    The "no linking preposition" rule has an exception: when the preposition is
+    part of the CONCEPT'S OWN NAME. "Descuentos a Jubilados" is a benefit, a
+    named thing — "a Jubilados" is its beneficiary, not a clause linking two
+    objects. Contrast with "Comparación con Ollama", where "con" joins an action
+    to its object: that one is a sentence in disguise.
+  examples:
+    - { nnn: 267, right: "Descuentos a Jubilados", wrong: "Descuentos jubilados hispanos" }
+    - { allow: ["Descuentos a Jubilados", "Beneficios a Jubilados"] }
+    - { forbid: ["Comparación con Ollama", "Reunión con alcaldes"] }
+  control_question: "Is the phrase after the preposition the thing's own name, or a second object?"
+
+- id: hermes-agent-is-not-the-default
+  taught: 2026-11-09
+  rule: >
+    Do not assign "Hermes Agent" as Tag1 just because the agent ran the session.
+    The subject is the PATIENT — the thing with the problem — and the agent is
+    the tool. If the session is about another product's memory, state or health,
+    that product is Tag1. "Memoria Persistente" belongs to HermesOffice, not to
+    Hermes Agent. When in doubt, ask who is sick, not who is holding the chart.
+  examples:
+    - { nnn: 443, subject: "Memoria Persistente", tag1: "HermesOffice" }
+  control_question: "Whose problem is this — mine, or someone else's?"
+
+- id: vs-means-comparison
+  taught: 2026-11-09
+  rule: >
+    Every time the owner asks to compare two things, or the requirement contains
+    " vs ", "versus" or "frente a": Tag2 is "Comparación", the subject is the
+    first thing compared, and the DESCRIPTION carries the full "A vs B". The
+    comparison itself is never the subject.
+  examples:
+    - { nnn: 826, subject: "Mac Studio Ultra", tag1: "Apple", tag2: "Comparación", description: "Mac Studio Ultra vs RTX 5090" }
+    - { nnn: 93, subject: "Ollama", tag2: "Comparación" }
+  audit: scan every session for " vs ", "versus", "frente a", "comparar"
+
+- id: lisa-is-the-subject
+  taught: 2026-11-09
+  rule: >
+    When the session exercises the assistant itself — presenting it, testing
+    whether it answers, checking its behaviour — the subject is the assistant's
+    NAME ("Lisa"), and Tag2 is "Testing". Not "Presentación del agente", not
+    "Identidad y modelo".
+  examples:
+    - { nnn: 143, subject: "Lisa", tag1: "Hermes Desktop", tag2: "Testing" }
+    - { nnn: 144, subject: "Lisa", tag1: "Hermes Desktop", tag2: "Testing" }
+
+- id: tag2-follows-the-context
+  taught: 2026-11-09
+  rule: >
+    Tag2 is not inherited from the platform or the pillar: it is read from what
+    the session actually does. A session about controlling CyberPanel over SSH
+    and the safe ways to do it is "Data Security", not "VPS". When two families
+    fit, choose the one that describes the WORK, not the place.
+  examples:
+    - { nnn: 336, subject: "SSH", tag1: "CyberPanel", tag2: "Data Security" }
+  control_question: "What did we do — audit, install, compare, secure, migrate?"
