@@ -125,7 +125,9 @@ def _iso_date(value: Any) -> str:
         return ""
     if isinstance(value, (int, float)):
         try:
-            return datetime.fromtimestamp(float(value), tz=timezone.utc).strftime("%Y-%m-%d")
+            # Local time, not UTC: a session started at 23:20 in Panama is still
+            # that day, not the next one. Using UTC shifted every evening session.
+            return datetime.fromtimestamp(float(value)).strftime("%Y-%m-%d")
         except (OverflowError, OSError, ValueError):
             return ""
     text = str(value)

@@ -5,4 +5,12 @@ __pycache__/
 .DS_Store
 *.db
 *.db.gz
-bodega.db
+
+# Evaluation labels contain a person's session ids and hand-approved labels.
+# The text itself is read from the local databases at run time, never stored here.
+tests/eval/labels.json
+tests/eval/*.local.json
+baseline.json
+
+# Local review exports
+tools/*.local.html

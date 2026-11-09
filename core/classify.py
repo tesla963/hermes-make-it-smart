@@ -47,7 +47,7 @@ class ClassifyConfig:
     api_key: str
     endpoint: str = DEFAULT_ENDPOINT
     model: str = DEFAULT_MODEL
-    temperature: float = 0.2
+    temperature: float = 0.0   # reproducible: the eval set must not move between runs
     max_tokens: int = 1200   # the model spends part of this reasoning; below ~1000 the answer comes back empty
     timeout: int = 60
     retries: int = 1

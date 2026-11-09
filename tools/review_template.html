@@ -1,0 +1,199 @@
+<!DOCTYPE html><html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Set de evaluación — Hermes, Make My Work Smart</title>
+<style>
+:root{--bg:#0d0b10;--bg2:#141119;--bg3:#1b1722;--line:#2a2433;--tx:#e8e4ef;--dim:#9a90a8;
+--acc:#e05a8a;--ok:#3ecf8e;--warn:#e0a93f;--bad:#e05a5a;--mono:ui-monospace,SFMono-Regular,Menlo,monospace}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+header{padding:18px 22px 14px;border-bottom:1px solid var(--line);background:var(--bg2);position:sticky;top:0;z-index:10}
+h1{margin:0 0 4px;font-size:17px;font-weight:650;letter-spacing:-.01em}
+.sub{color:var(--dim);font-size:12.5px}
+.bar{margin-top:12px;height:6px;background:var(--bg3);border-radius:3px;overflow:hidden}
+.bar>i{display:block;height:100%;background:var(--acc);width:0;transition:width .2s}
+.stats{display:flex;gap:18px;margin-top:10px;font-size:12.5px;color:var(--dim);flex-wrap:wrap}
+.stats b{color:var(--tx);font-variant-numeric:tabular-nums}
+main{padding:16px 22px 120px;max-width:1180px;margin:0 auto}
+.card{background:var(--bg2);border:1px solid var(--line);border-radius:10px;margin-bottom:12px;overflow:hidden}
+.card.done{border-color:#2c4a3c}
+.card.rev{border-color:#4a3c2c}
+.hd{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line);background:var(--bg3)}
+.n{font-family:var(--mono);font-size:12px;color:var(--dim);min-width:30px}
+.date{font-family:var(--mono);font-size:12px;color:var(--dim)}
+.tag{font-size:10.5px;padding:1px 6px;border-radius:4px;background:#241d2e;color:var(--dim);text-transform:uppercase;letter-spacing:.04em}
+.tag.hid{background:#3a2020;color:#e08a8a}
+.body{padding:12px 14px}
+.msgs{font-family:var(--mono);font-size:12px;color:#c9c2d6;background:#100d14;border:1px solid var(--line);
+border-radius:6px;padding:9px 11px;margin-bottom:11px;white-space:pre-wrap;max-height:160px;overflow:auto;line-height:1.45}
+.msgs .k{color:var(--dim)}
+.old{font-family:var(--mono);font-size:11.5px;color:#8f86a0;background:#120f17;border:1px dashed var(--line);
+border-radius:5px;padding:6px 9px;margin-bottom:10px;word-break:break-word}
+.old b{color:var(--dim);font-weight:500;font-family:inherit}
+.prop{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.fld{background:#0f0c13;border:1px solid var(--line);border-radius:6px;padding:6px 8px}
+.fld .l{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--dim);margin-bottom:2px}
+.fld .v{font-size:12.5px;word-break:break-word}
+.fld .v.empty{color:#5c5468;font-style:italic}
+input.f{width:100%;background:#0b0910;border:1px solid var(--line);color:var(--tx);border-radius:4px;
+padding:3px 5px;font:inherit;font-size:12.5px}
+input.f:focus{outline:none;border-color:var(--acc)}
+.title{margin-top:10px;font-family:var(--mono);font-size:12px;color:#a8e0c0;background:#0c1512;
+border-left:2px solid var(--ok);padding:7px 10px;border-radius:0 5px 5px 0;word-break:break-word}
+.acts{display:flex;gap:7px;padding:10px 14px;border-top:1px solid var(--line);background:#100d14}
+button{font:inherit;font-size:12px;padding:5px 12px;border-radius:6px;border:1px solid var(--line);
+background:var(--bg3);color:var(--tx);cursor:pointer}
+button:hover{border-color:#3d3550}
+button.ok.on{background:#153a2a;border-color:var(--ok);color:var(--ok)}
+button.rev.on{background:#3a3015;border-color:var(--warn);color:var(--warn)}
+button.sm{padding:3px 8px;font-size:11px}
+footer{position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid var(--line);
+padding:11px 22px;display:flex;align-items:center;gap:16px;z-index:20}
+footer .g{color:var(--dim);font-size:12.5px}
+footer .sp{margin-left:auto}
+button.pri{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:600}
+.legend{font-size:11.5px;color:var(--dim);margin:0 0 14px;line-height:1.7}
+kbd{font-family:var(--mono);font-size:11px;background:var(--bg3);border:1px solid var(--line);
+border-radius:3px;padding:1px 4px}
+.warnbox{border-left:2px solid var(--warn);background:#1a1508;padding:8px 12px;border-radius:0 5px 5px 0;
+font-size:12px;color:#d8c8a0;margin:0 0 14px}
+</style></head><body>
+<header>
+  <h1>Set de evaluación — __N__ sesiones</h1>
+  <div class="sub">Hermes, Make My Work Smart · prompt <b>__FP__</b></div>
+  <div class="bar"><i id="pb"></i></div>
+  <div class="stats">
+    <span>Aprobadas <b id="s-ok">0</b></span>
+    <span>Corregidas <b id="s-rev">0</b></span>
+    <span>Pendientes <b id="s-pend">__N__</b></span>
+    <span>Acierto <b id="s-acc">—</b></span>
+  </div>
+</header>
+<main>
+  <p class="legend">
+    Marca <b>Correcto</b> si la propuesta te sirve, o <b>Corregir</b> y edita los campos.
+    <kbd>C</kbd> correcto · <kbd>E</kbd> editar · <kbd>↑↓</kbd> navegar.
+  </p>
+  <div class="warnbox">
+    <b>El título actual es referencia, no verdad.</b> Lee primero los mensajes: el clasificador
+    ve hasta cinco turnos, y a veces encuentra un tema que el título viejo ignoraba. Si la
+    propuesta es mejor que el título actual, márcala correcta.
+  </div>
+  <div id="list"></div>
+</main>
+<footer>
+  <span class="g" id="fmsg">Sin revisar</span>
+  <span class="sp"></span>
+  <button id="exp" class="pri">Exportar etiquetas</button>
+  <button id="rst" class="sm">Reiniciar</button>
+</footer>
+<script>
+const DATA = __DATA__;
+const F = ['subject','tag1','tag2','pillar','description','verb'];
+const LB = {subject:'Sujeto',tag1:'Tag 1 · Plataforma',tag2:'Tag 2 · Familia',pillar:'Pilar',description:'Descripción',verb:'Verbo'};
+let state = {}; let cur = 0;
+const KEY='mmws-eval-v1';
+function load(){ try{ state=JSON.parse(localStorage.getItem(KEY)||'{}'); }catch(e){ state={}; } }
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){} }
+function status(i){ return state[i]?.status || ''; }
+function val(i,f){ return state[i]?.vals?.[f] ?? DATA[i].propuesta[f]; }
+function esc(s){ return (s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+function render(){
+  const L=document.getElementById('list'); L.innerHTML='';
+  DATA.forEach((d,i)=>{
+    const st=status(i);
+    const el=document.createElement('div');
+    el.className='card'+(st==='ok'?' done':st==='rev'?' rev':'');
+    el.id='c'+i;
+    const msgs = d.msgs.length
+      ? d.msgs.map((m,k)=>`<span class="k">${k+1}.</span> ${esc(m)}`).join('\n')
+      : '<span class="k">(sin mensajes de usuario utilizables)</span>';
+    el.innerHTML = `
+      <div class="hd">
+        <span class="n">${String(i+1).padStart(2,'0')}</span>
+        <span class="date">${d.fecha}</span>
+        ${d.hidden?'<span class="tag hid">oculta</span>':''}
+        ${d.source?`<span class="tag">${esc(d.source)}</span>`:''}
+        ${d.fallback?'<span class="tag" style="background:#3a2020;color:#e08a8a">fallback</span>':''}
+      </div>
+      <div class="body">
+        <div class="msgs">${msgs}</div>
+        <div class="old"><b>título actual:</b> ${esc(d.titulo_viejo)||'—'}</div>
+        <div class="prop">
+          ${F.map(f=>`<div class="fld"><div class="l">${LB[f]}</div><div class="v${val(i,f)?'':' empty'}" id="v-${i}-${f}">${val(i,f)?esc(val(i,f)):'—'}</div>
+            <input class="f" style="display:none" id="i-${i}-${f}" value="${esc(val(i,f))}"></div>`).join('')}
+        </div>
+        <div class="title" id="t-${i}">${esc(d.titulo)}</div>
+      </div>
+      <div class="acts">
+        <button class="ok sm ${st==='ok'?'on':''}" data-a="ok" data-i="${i}">✓ Correcto</button>
+        <button class="rev sm ${st==='rev'?'on':''}" data-a="rev" data-i="${i}">✎ Corregir</button>
+        <button class="sm" data-a="reset" data-i="${i}">Deshacer</button>
+      </div>`;
+    L.appendChild(el);
+  });
+  document.querySelectorAll('button[data-a]').forEach(b=>{ b.onclick=()=>act(b.dataset.a, +b.dataset.i); });
+  update();
+}
+function act(a,i){
+  if(a==='ok'){ state[i]=state[i]||{}; state[i].status='ok'; state[i].vals=null; }
+  else if(a==='rev'){
+    state[i]=state[i]||{}; state[i].status='rev';
+    state[i].vals = state[i].vals || Object.fromEntries(F.map(f=>[f,DATA[i].propuesta[f]]));
+    showEdit(i,true);
+  }
+  else { delete state[i]; showEdit(i,false); }
+  save(); refreshCard(i); update();
+}
+function showEdit(i,on){
+  F.forEach(f=>{
+    const v=document.getElementById('v-'+i+'-'+f), inp=document.getElementById('i-'+i+'-'+f);
+    if(!v||!inp)return;
+    v.style.display = on?'none':'';
+    inp.style.display = on?'':'none';
+    if(on){ inp.value = val(i,f); inp.oninput = ()=>{ state[i]=state[i]||{status:'rev',vals:{}}; state[i].status='rev';
+      state[i].vals=state[i].vals||{}; state[i].vals[f]=inp.value; save(); }; }
+  });
+}
+function refreshCard(i){
+  const st=status(i);
+  const el=document.getElementById('c'+i); if(!el)return;
+  el.className='card'+(st==='ok'?' done':st==='rev'?' rev':'');
+  el.querySelectorAll('.acts button').forEach(b=>{
+    if(b.dataset.a==='ok') b.classList.toggle('on', st==='ok');
+    if(b.dataset.a==='rev') b.classList.toggle('on', st==='rev');
+  });
+  F.forEach(f=>{ const v=document.getElementById('v-'+i+'-'+f); if(v){ const t=val(i,f); v.textContent=t||'—'; v.className='v'+(t?'':' empty'); } });
+}
+function update(){
+  const ok=Object.values(state).filter(s=>s.status==='ok').length;
+  const rev=Object.values(state).filter(s=>s.status==='rev').length;
+  const pend=DATA.length-ok-rev;
+  document.getElementById('s-ok').textContent=ok;
+  document.getElementById('s-rev').textContent=rev;
+  document.getElementById('s-pend').textContent=pend;
+  document.getElementById('s-acc').textContent=(ok+rev)>0?Math.round(ok/(ok+rev)*100)+'%':'—';
+  document.getElementById('pb').style.width=((ok+rev)/DATA.length*100)+'%';
+  document.getElementById('fmsg').textContent = pend===0 ? 'Revisión completa' : `Faltan ${pend} por revisar`;
+}
+document.getElementById('exp').onclick=()=>{
+  const out=DATA.map((d,i)=>({
+    n:i+1, id:d.id, fecha:d.fecha,
+    status: status(i)||'pending',
+    model: d.propuesta,
+    label: (state[i]?.status==='rev') ? state[i].vals : (state[i]?.status==='ok' ? d.propuesta : null)
+  }));
+  const blob=new Blob([JSON.stringify(out,null,1)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='labels.json'; a.click();
+};
+document.getElementById('rst').onclick=()=>{ if(confirm('¿Borrar las marcas?')){ state={}; save(); render(); } };
+document.addEventListener('keydown',e=>{
+  const tag=(e.target.tagName||'').toLowerCase();
+  if(tag==='input'||tag==='textarea')return;
+  if(e.key==='c'||e.key==='C'){ act('ok',cur); }
+  else if(e.key==='e'||e.key==='E'){ act('rev',cur); }
+  else if(e.key==='ArrowDown'){ cur=Math.min(DATA.length-1,cur+1); document.getElementById('c'+cur).scrollIntoView({block:'center'}); e.preventDefault(); }
+  else if(e.key==='ArrowUp'){ cur=Math.max(0,cur-1); document.getElementById('c'+cur).scrollIntoView({block:'center'}); e.preventDefault(); }
+});
+load(); render();
+</script></body></html>
