@@ -252,7 +252,7 @@ const fmtT=n=>n>=1e9?(n/1e9).toFixed(1)+'B':n>=1e8?Math.round(n/1e6)+'M':n>=1e6?
 const fmtP=n=>n>=1000?(n/1000).toFixed(1)+'k':String(n);
 const fmtH=m=>m<60?m+'m':(m%60<5?Math.floor(m/60)+'h':Math.floor(m/60)+'h'+String(m%60).padStart(2,'0')+'m');
 const norm=s=>(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
-const S={qs:'',tag3:null,cat1:null,cat2:null,cat3:null,tag1:null,tag2:null,tag4:null,tag5:null,tag6:null,autor:null,mes:null,sem:null,q:'',dia:'',d1:'',d2:''};
+const S={numSel:null,qs:'',tag3:null,cat1:null,cat2:null,cat3:null,tag1:null,tag2:null,tag4:null,tag5:null,tag6:null,autor:null,mes:null,sem:null,q:'',dia:'',d1:'',d2:''};
 const OPN=new Set(['c1:Software']);
 let orden={k:'fecha',asc:false},current=null,verElim=false;
 
@@ -327,6 +327,19 @@ function sin(t){
     return SINW[k]?'~'+SINW[k]+'~':w;
   }).filter(Boolean).join(' ');
 }
+// "126,305,651" or "50-75" selects sessions by number. Anything else is text.
+function numSel(t){
+  const s=String(t||'').replace(/\s+/g,'');
+  if(!s||!/^\d+(-\d+)?(,\d+(-\d+)?)*$/.test(s)) return null;
+  const out=new Set();
+  for(const part of s.split(',')){
+    const m=part.match(/^(\d+)-(\d+)$/);
+    if(m){ let a=+m[1],b=+m[2]; if(a>b)[a,b]=[b,a];
+      for(let i=a;i<=b&&out.size<20000;i++) out.add(i); }
+    else out.add(+part);
+  }
+  return out.size?out:null;
+}
 function pass(d,...skips){
   if(!verElim && !skips.includes('elim') && /borrad/i.test(d.sujeto||'')) return false;
   if(!skips.includes('cat')&&S.cat1&&(d.dom||'Varios')!==S.cat1)return false;
@@ -344,7 +357,9 @@ function pass(d,...skips){
   if(!skips.includes('autor')&&S.autor&&d.autor!==S.autor)return false;
   if(!skips.includes('mes')&&S.mes&&d.mes!==S.mes)return false;
   if(!skips.includes('sem')&&S.sem&&d.mes+'|'+d.semana!==S.sem)return false;
-  if(S.qs&&!(d._s||(d._s=sin(d.desc+' '+d.tema+' '+d.sujeto+' '+d.tag1+' '+d.tag2+' '+d.cat3+' '+d.n))).includes(S.qs))return false;
+  // A bare list of numbers is a selector, not a search: "126,305" or "50-75".
+  if(S.numSel){ if(!S.numSel.has(+d.n)) return false; }
+  else if(S.qs&&!(d._s||(d._s=sin(d.desc+' '+d.tema+' '+d.sujeto+' '+d.tag1+' '+d.tag2+' '+d.cat3+' '+d.n))).includes(S.qs))return false;
   if(S.dia&&d.fecha!==S.dia)return false;
   if(S.d1&&d.fecha<S.d1)return false;
   if(S.d2&&d.fecha>S.d2)return false;
@@ -564,7 +579,9 @@ function chips(){
   if(S.d1||S.d2)out.push(['rango',(S.d1||'…')+' → '+(S.d2||'…')]);
   const host=document.getElementById('chips');
   const hay=out.length>0;
+  const nVis=DATA.filter(d=>pass(d)).length;
   host.innerHTML=`<button class="primary${hay?'':' ghost'}" id="clr"${hay?'':' disabled'}>Limpiar filtros</button>`+
+    `<button class="ghost" id="expc" title="Descarga las ${nVis} sesiones visibles en CSV, con una columna para corregir sujeto, tags, descripción y otra para tus observaciones">Exportar correcciones · ${nVis}</button>`+
     `<span class="chipwrap">`+out.map(([k,v])=>`<span class="chip">${v} <b data-k="${k}">✕</b></span>`).join('')+`</span>`;
   host.querySelectorAll('b').forEach(b=>b.onclick=()=>{
     const k=b.dataset.k;
@@ -577,7 +594,7 @@ function chips(){
     full();});
   const c=document.getElementById('clr'); if(c) c.onclick=limpiar;
 }
-function limpiar(){S.cat1=S.cat2=S.cat3=S.tag1=S.tag2=S.tag3=S.tag4=S.tag5=S.tag6=S.autor=S.motor=S.mes=S.sem=null;S.q=S.qs=S.dia=S.d1=S.d2='';
+function limpiar(){S.cat1=S.cat2=S.cat3=S.tag1=S.tag2=S.tag3=S.tag4=S.tag5=S.tag6=S.autor=S.motor=S.mes=S.sem=null;S.q=S.qs=S.dia=S.d1=S.d2='';S.numSel=null;
   ['q','dia','d1','d2'].forEach(i=>document.getElementById(i).value='');
   orden={k:'fecha',asc:false};document.querySelectorAll('[data-s]').forEach(b=>b.classList.toggle('on',b.dataset.s==='fecha'));full();}
 function fitCheck(){
@@ -644,7 +661,28 @@ document.getElementById('pedit').onclick=()=>{if(!current)return;document.getEle
 document.getElementById('mcancel').onclick=()=>document.getElementById('modal').classList.remove('on');
 document.getElementById('msave').onclick=()=>{const v=document.getElementById('medit').value.trim();
   if(v&&current){current.raw=v;document.getElementById('pname').textContent=v;}document.getElementById('modal').classList.remove('on');};
-document.getElementById('q').addEventListener('input',e=>{S.q=norm(e.target.value);S.qs=sin(e.target.value);full();});
+// Hands the owner a spreadsheet of exactly what he is looking at, ready to
+// be annotated: one column per facet to correct, one for free observations.
+// The file that comes back feeds the correction rules.
+function exportarCorrecciones(){
+  const vis=DATA.filter(d=>pass(d)).sort((a,b)=>a.n-b.n);
+  const esc=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
+  const head=['n','id','fecha','titulo_actual','sujeto','tag1','tag2','descripcion','verbo',
+    'sujeto_nuevo','tag1_nuevo','tag2_nuevo','descripcion_nueva','verbo_nuevo','observaciones'];
+  const rows=vis.map(d=>[d.n,d.id,d.fecha,d.raw,d.sujeto,d.tag1,d.tag2,d.desc,d.verb,
+    '','','','','',''].map(esc).join(','));
+  const csv='\ufeff'+head.join(',')+'\n'+rows.join('\n')+'\n';
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  const t=new Date(), z=x=>String(x).padStart(2,'0');
+  a.download=`correcciones_${t.getFullYear()}${z(t.getMonth()+1)}${z(t.getDate())}_${z(t.getHours())}${z(t.getMinutes())}_${vis.length}sesiones.csv`;
+  a.click(); URL.revokeObjectURL(a.href);
+  setTimeout(()=>{const b=document.getElementById('expc'); if(b){b.textContent='✔ Descargado · '+vis.length;}},60);
+}
+document.getElementById('chips').addEventListener('click',e=>{
+  if(e.target.closest('#expc')) exportarCorrecciones();
+});
+document.getElementById('q').addEventListener('input',e=>{S.q=norm(e.target.value);S.numSel=numSel(e.target.value);S.qs=S.numSel?'':sin(e.target.value);full();});
 ['dia','d1','d2'].forEach(id=>document.getElementById(id).addEventListener('change',e=>{
   if(id==='dia')S.dia=e.target.value;if(id==='d1')S.d1=e.target.value;if(id==='d2')S.d2=e.target.value;full();}));
 document.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{const k=b.dataset.s;orden=(orden.k===k)?{k,asc:!orden.asc}:{k,asc:true};

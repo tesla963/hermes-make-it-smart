@@ -432,3 +432,19 @@
   examples:
     - { nnn: 336, subject: "SSH", tag1: "CyberPanel", tag2: "Data Security" }
   control_question: "What did we do — audit, install, compare, secure, migrate?"
+
+- id: flight-path-vs-avata-360
+  taught: 2026-11-09
+  rule: >
+    "Flight Path" (singular) is the trajectories; "Avata 360" is the drone.
+    A session about programmable waypoints, their monitoring or their firmware
+    is Flight Path. A session about the aircraft itself — its specs, its
+    registration, its goggles, its purchase — is Avata 360. "Flight Paths",
+    "Waypoints" and "paths programables" are the same subject and must not
+    split the filter.
+  examples:
+    - { nnn: 157, subject: "Flight Path", tag1: "DJI", tag2: "Automation" }
+    - { nnn: 773, subject: "Flight Path", tag1: "Antigravity A1" }
+    - { nnn: 654, subject: "Avata 360", tag1: "DJI" }
+    - { nnn: 802, subject: "Avata 360", tag1: "DJI" }
+  control_question: "Is this about the aircraft, or about where it flies itself?"

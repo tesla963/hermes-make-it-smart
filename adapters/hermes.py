@@ -236,30 +236,52 @@ class HermesTitleWriter:
                     "SessionDB is not importable. This adapter must run inside the "
                     "Hermes runtime (same interpreter/env as the gateway)."
                 ) from exc
-        self._db = SessionDB()
+        self._SessionDB = SessionDB
+        self._dbs: dict[str, Any] = {}
         self.max_title = max_title
+
+    def _db_for(self, db_path: Any = None):
+        """One SessionDB per database file, cached.
+
+        A single default SessionDB is not enough: sessions live in the default
+        database AND in ``~/.hermes/profiles/<name>/state.db``. Pointing every
+        write at the default one made ``set_session_title`` return False for
+        every session kept in another profile — silently, because a missing id
+        is not an error.
+        """
+        key = str(db_path) if db_path else "__default__"
+        db = self._dbs.get(key)
+        if db is None:
+            db = self._SessionDB(db_path) if db_path else self._SessionDB()
+            self._dbs[key] = db
+        return db
+
+    @property
+    def _db(self):
+        """The default database, kept for callers that still read through it."""
+        return self._db_for(None)
 
     # -- reads ----------------------------------------------------------- #
 
-    def current_title(self, session_id: str) -> str | None:
-        return self._db.get_session_title(session_id)
+    def current_title(self, session_id: str, db_path: Any = None) -> str | None:
+        return self._db_for(db_path).get_session_title(session_id)
 
-    def current_source(self, session_id: str) -> str | None:
-        return self._db.get_session_title_source(session_id)
+    def current_source(self, session_id: str, db_path: Any = None) -> str | None:
+        return self._db_for(db_path).get_session_title_source(session_id)
 
     # -- writes ---------------------------------------------------------- #
 
-    def rename(self, session_id: str, title: str) -> bool:
-        """Rename on the user's behalf. Returns True if the row changed."""
+    def rename(self, session_id: str, title: str, db_path: Any = None) -> bool:
+        """Rename on the user's behalf. Returns True if the row changed ."""
         title = (title or "").strip()
         if len(title) > self.max_title:
             raise TitleWriteError(
                 f"title is {len(title)} chars, over the {self.max_title} limit — "
                 "cut it before calling, do not let the host raise"
             )
-        return bool(self._db.set_session_title(session_id, title))
+        return bool(self._db_for(db_path).set_session_title(session_id, title))
 
-    def rename_batch(self, pairs: Iterable[tuple[str, str]]) -> dict[str, Any]:
+    def rename_batch(self, pairs: Iterable[tuple[str, str]], db_path: Any = None) -> dict[str, Any]:
         """Rename many. One conflict never costs the batch.
 
         Returns an honest receipt: attempted / written / conflicts, with the
@@ -270,8 +292,12 @@ class HermesTitleWriter:
         for session_id, title in pairs:
             attempted += 1
             try:
-                if self.rename(session_id, title):
+                if self.rename(session_id, title, db_path):
                     written += 1
+                else:
+                    # False means the id is not in this database — a silent miss
+                    # otherwise, and the batch still reports success.
+                    conflicts.append({"id": session_id, "reason": "no such session in this database"})
             except ValueError as exc:  # genuine duplicate, not our bug
                 conflicts.append({"id": session_id, "reason": str(exc)})
             except Exception as exc:  # noqa: BLE001 - never abort the batch

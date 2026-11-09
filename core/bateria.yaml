@@ -240,13 +240,18 @@ conceptos:
       Trayectorias de vuelo programables que el dron ejecuta solo: waypoints con
       coordenadas, altura, velocidad, orientación de cámara y acciones.
       DJI las llama Waypoints y las habilitó en el Avata 360; Antigravity A1 las
-      llama Flight Paths. En este catálogo el sujeto es siempre "Flight Paths"
-      — "Waypoints", "paths programables" y "rutas" son la misma cosa y no
-      dividen el filtro.
+      llama Flight Paths. En este catálogo el sujeto es siempre "Flight Path",
+      en singular — "Flight Paths", "Waypoints", "paths programables" y "rutas"
+      son la misma cosa y no dividen el filtro.
     tag1: [DJI, Antigravity A1]
     tag2: [Multimedia, Automation]
     ejemplos: [157, 430, 585, 730, 773, 844]
-    sinonimos: [waypoints, path programable, rutas de vuelo, flight path]
+    sinonimos: [waypoints, path programable, flight paths, rutas de vuelo]
+    no_confundir: >
+      "Avata 360" es el DRON y es otro sujeto. Una sesión sobre el dron —sus
+      especificaciones, su registro, sus goggles— lleva sujeto "Avata 360";
+      una sesión sobre trayectorias programables lleva sujeto "Flight Path".
+      Ejemplos: 654 y 802 son Avata 360; 157, 430, 585, 730, 844 son Flight Path.
   descuentos_jubilados:
     nombre: Descuentos a Jubilados
     que_es: >
