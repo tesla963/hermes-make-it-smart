@@ -234,6 +234,16 @@ conceptos:
     que_es: "El gateway roto: se nombra el punto de falla, no el componente."
     tag2: Troubleshooting
     ejemplos: [20, 81]
+  harness_agent:
+    nombre: Harness Agent
+    que_es: >
+      El andamiaje que ejecuta al agente: el bucle, las herramientas, los
+      permisos, el runtime. Cuando se comparan lenguajes o plataformas por su
+      capacidad de correr agentes (Python frente a OpenClaw), el sujeto es
+      "Harness Agent" — no "Motor", no "Lenguaje".
+    tag1: Hermes Agent
+    tag2: Programming
+    ejemplos: [14]
   spotlight:
     nombre: Spotlight
     que_es: "El indexador de macOS. La acción de indexar va al verbo, no al sujeto."

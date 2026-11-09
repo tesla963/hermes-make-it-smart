@@ -339,6 +339,17 @@
     - { nnn: 872, subject: "Hack History", tag1: "Hermes Agent", tag2: "Data Security" }
   note: Concepts live in a growing glossary the prompt carries.
 
+- id: harness-agent
+  taught: 2026-11-09
+  rule: >
+    "Harness Agent" is the subject when the session is about the scaffolding a
+    model runs inside — the loop, the tools, the permissions, the runtime — or
+    when languages and platforms are compared by their ability to run agents.
+    Never "Motor", never "Lenguaje".
+  examples:
+    - { nnn: 14, wrong: "Motor", right: "Harness Agent", tag1: "Hermes Agent", tag2: "Programming" }
+  control_question: "Are we talking about the model, or about the machinery around it?"
+
 - id: subject-is-a-point-not-a-sentence
   taught: 2026-11-09
   rule: >
