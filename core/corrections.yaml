@@ -263,3 +263,64 @@
   examples:
     - { mixed: "Lisa revisa el backup del VPS y dime el cost", language: "es" }
   control_question: "What did they mean, regardless of the language they said it in?"
+
+# --------------------------------------------------------------------------- #
+# SUBJECT AS A FILTER  (the algorithm evolved: the subject is now specific)
+# --------------------------------------------------------------------------- #
+
+- id: one-subject-only
+  taught: 2026-11-09
+  rule: >
+    ONE subject per session. If several things are compared or mentioned, the
+    subject is the main one and the rest go to the description. The subject is
+    a FILTER now, so it must be short and repeatable — "Herdr + Ovis vs Multica"
+    is not a filter, "Herdr" is.
+  examples:
+    - { nnn: 863, wrong_subject: "Herdr + Ovis vs Multica", right_subject: "Herdr", description: "comparar Herdr más Ovis contra Multica" }
+  control_question: "Would I ever want to filter by this exact string again?"
+
+- id: spec-goes-to-description
+  taught: 2026-11-09
+  rule: >
+    An extra specification of the subject belongs in the description, not in
+    the subject. "Gorgon Halo 192GB" should be "Gorgon Halo". EXCEPTION: when
+    the specification IS the subject of the session ("16 GB Ram"), then it stays
+    and Tag6 names the machine it belongs to.
+  examples:
+    - { nnn: 881, wrong_subject: "Gorgon Halo 192GB", right_subject: "Gorgon Halo", description: "servidor de 192GB, tarea cron de monitoreo" }
+    - { nnn: 5, keep_subject: "16 GB Ram", tag6: "Mac mini M4" }
+  control_question: "Is the session ABOUT the number, or about the thing that has the number?"
+
+- id: brand-never-in-subject
+  taught: 2026-11-09
+  rule: >
+    The brand goes in Tag1, never in the subject. "Dell Precision 7760" splits
+    into Tag1 "Dell" and subject "Precision 7760". When Tag2 is "Review", the
+    work is the agent evaluating something — that is what Tag2 says, not the
+    subject.
+  examples:
+    - { nnn: 870, wrong_subject: "Dell Precision 7760", right_subject: "Precision 7760", tag1: "Dell", tag2: "Review" }
+
+- id: third-party-program-is-tag1-not-subject
+  taught: 2026-11-09
+  rule: >
+    A third-party program or skill is never the tag1 of a Hermes session, and
+    not the subject either when the work is about evaluating it. The program
+    goes in the description, the maker in Tag1 when it is known, and the subject
+    is the thing being assessed. Never assign "Hermes Agent" to a session whose
+    protagonist is someone else's software.
+  examples:
+    - { nnn: 871, program: "SkillSpector (Nvidia)", tag1: "Nvidia", subject: "Skill", description: "evaluar SkillSpector" }
+    - { nnn: 872, wrong_subject: "Amenazas de Hermes", right_subject: "Hack History", note: "Hermes in the subject is redundant with tag1" }
+  control_question: "Who is doing the work — my agent, or another company's software?"
+
+- id: concept-vocabulary
+  taught: 2026-11-09
+  rule: >
+    Some subjects are CONCEPTS the owner cares about across sessions, and the
+    classifier must recognize them by name: "Hack History" (security history and
+    threat archives, mostly from the OpenClaude world), "Ventana Permisos",
+    "Protocolo". A concept is a permanent filter, not a description.
+  examples:
+    - { nnn: 872, subject: "Hack History", tag1: "Hermes Agent", tag2: "Data Security" }
+  note: Concepts live in a growing glossary the prompt carries.
