@@ -169,6 +169,7 @@ def main() -> int:
                             "want": want.get(f),
                             "got": got[f],
                             "msgs": (rec.messages[0][:90] if rec.messages else ""),
+                            "notes": case.get("notes"),
                         }
                     )
         if case_ok:
@@ -178,7 +179,9 @@ def main() -> int:
     print("=" * 66)
     print(f"prompt fingerprint : {prompt_fingerprint()}")
     print(f"model              : {args.model}")
+    noted = sum(1 for c in labels if (c.get("notes") or "").strip())
     print(f"cases evaluated    : {considered}")
+    print(f"reviewer notes     : {noted}")
     print(f"exact matches      : {exact}/{considered}  "
           f"({exact / considered * 100:.1f}%)" if considered else "no cases")
     print("-" * 66)
@@ -194,6 +197,8 @@ def main() -> int:
             print(f"  #{m['n']:>2} {m['field']:<8} want={m['want']!r} got={m['got']!r}")
             if m["msgs"]:
                 print(f"        msgs: {m['msgs']}")
+            if m.get("notes"):
+                print(f"        NOTE: {m['notes']}")
 
     regressions: list[dict] = []
     if args.baseline and Path(args.baseline).exists():

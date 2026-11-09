@@ -39,6 +39,11 @@ padding:3px 5px;font:inherit;font-size:12.5px}
 input.f:focus{outline:none;border-color:var(--acc)}
 .title{margin-top:10px;font-family:var(--mono);font-size:12px;color:#a8e0c0;background:#0c1512;
 border-left:2px solid var(--ok);padding:7px 10px;border-radius:0 5px 5px 0;word-break:break-word}
+.notes{width:100%;margin-top:9px;background:#0b0910;border:1px solid var(--line);color:var(--tx);
+border-radius:6px;padding:7px 9px;font:inherit;font-size:12.5px;resize:vertical;min-height:34px;line-height:1.45}
+.notes:focus{outline:none;border-color:var(--acc)}
+.notes::placeholder{color:#5c5468}
+.notes.has{background:#141018;border-color:#3d3550}
 .acts{display:flex;gap:7px;padding:10px 14px;border-top:1px solid var(--line);background:#100d14}
 button{font:inherit;font-size:12px;padding:5px 12px;border-radius:6px;border:1px solid var(--line);
 background:var(--bg3);color:var(--tx);cursor:pointer}
@@ -66,11 +71,13 @@ font-size:12px;color:#d8c8a0;margin:0 0 14px}
     <span>Corregidas <b id="s-rev">0</b></span>
     <span>Pendientes <b id="s-pend">__N__</b></span>
     <span>Acierto <b id="s-acc">—</b></span>
+    <span>Con nota <b id="s-notes">0</b></span>
   </div>
 </header>
 <main>
   <p class="legend">
     Marca <b>Correcto</b> si la propuesta te sirve, o <b>Corregir</b> y edita los campos.
+    En <b>Observaciones</b> escribe lo que quieras: por qué está mal, qué falta, qué regla debería aplicar.
     <kbd>C</kbd> correcto · <kbd>E</kbd> editar · <kbd>↑↓</kbd> navegar.
   </p>
   <div class="warnbox">
@@ -123,6 +130,8 @@ function render(){
             <input class="f" style="display:none" id="i-${i}-${f}" value="${esc(val(i,f))}"></div>`).join('')}
         </div>
         <div class="title" id="t-${i}">${esc(d.titulo)}</div>
+        <textarea class="notes" id="n-${i}" rows="2"
+          placeholder="Observaciones para Lisa: por qué está mal, qué falta, qué regla aplicar…">${esc(state[i]?.notes || '')}</textarea>
       </div>
       <div class="acts">
         <button class="ok sm ${st==='ok'?'on':''}" data-a="ok" data-i="${i}">✓ Correcto</button>
@@ -132,6 +141,12 @@ function render(){
     L.appendChild(el);
   });
   document.querySelectorAll('button[data-a]').forEach(b=>{ b.onclick=()=>act(b.dataset.a, +b.dataset.i); });
+  document.querySelectorAll('textarea.notes').forEach(t=>{
+    const i=+t.id.slice(2);
+    const paint=()=>t.classList.toggle('has', !!t.value.trim());
+    paint();
+    t.oninput=()=>{ state[i]=state[i]||{}; state[i].notes=t.value; save(); paint(); update(); };
+  });
   update();
 }
 function act(a,i){
@@ -172,6 +187,7 @@ function update(){
   document.getElementById('s-rev').textContent=rev;
   document.getElementById('s-pend').textContent=pend;
   document.getElementById('s-acc').textContent=(ok+rev)>0?Math.round(ok/(ok+rev)*100)+'%':'—';
+  document.getElementById('s-notes').textContent=Object.values(state).filter(s=>s.notes && s.notes.trim()).length;
   document.getElementById('pb').style.width=((ok+rev)/DATA.length*100)+'%';
   document.getElementById('fmsg').textContent = pend===0 ? 'Revisión completa' : `Faltan ${pend} por revisar`;
 }
@@ -179,6 +195,7 @@ document.getElementById('exp').onclick=()=>{
   const out=DATA.map((d,i)=>({
     n:i+1, id:d.id, fecha:d.fecha,
     status: status(i)||'pending',
+    notes: (state[i]?.notes || '').trim() || null,
     model: d.propuesta,
     label: (state[i]?.status==='rev') ? state[i].vals : (state[i]?.status==='ok' ? d.propuesta : null)
   }));
@@ -186,7 +203,7 @@ document.getElementById('exp').onclick=()=>{
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
   a.download='labels.json'; a.click();
 };
-document.getElementById('rst').onclick=()=>{ if(confirm('¿Borrar las marcas?')){ state={}; save(); render(); } };
+document.getElementById('rst').onclick=()=>{ if(confirm('¿Borrar las marcas y las notas?')){ state={}; save(); render(); } };
 document.addEventListener('keydown',e=>{
   const tag=(e.target.tagName||'').toLowerCase();
   if(tag==='input'||tag==='textarea')return;

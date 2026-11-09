@@ -9,8 +9,11 @@ measurable event.
    usable user messages (the hard cases: cron jobs, empty sessions) and a few
    hidden ones. Seeded random, so the sample is reproducible.
 2. **Classify them** with the current prompt.
-3. **A human reviews each one** in `tools/review.html` — approve, or correct
-   any of the six fields. That review is the ground truth.
+3. **A human reviews each one** in the review sheet (`tools/make_review.py`) —
+   approve, or correct any of the six fields. Every card also has an
+   **Observaciones** box: a free-text note that travels with the label. Notes are
+   the most valuable part of a review, because they say *why*, and a reason can
+   become a rule while a correction alone cannot. That review is the ground truth.
 4. **Export `labels.json`** from the review tool.
 5. **Run the harness.** It re-classifies from scratch and compares.
 
