@@ -223,11 +223,19 @@ class HermesTitleWriter:
     def __init__(self, max_title: int = 100) -> None:
         try:
             from hermes_state import SessionDB  # local import: keeps core/ pure
-        except Exception as exc:  # pragma: no cover
-            raise TitleWriteError(
-                "SessionDB is not importable. This adapter must run inside the "
-                "Hermes runtime (same interpreter/env as the gateway)."
-            ) from exc
+        except Exception:  # not on sys.path yet: try the Hermes install
+            import sys
+            home = os.environ.get("HERMES_HOME", str(Path.home() / ".hermes"))
+            for candidate in (Path(home) / "hermes-agent", Path.cwd()):
+                if (Path(candidate) / "hermes_state.py").exists() and str(candidate) not in sys.path:
+                    sys.path.insert(0, str(candidate))
+            try:
+                from hermes_state import SessionDB  # noqa: PLC0415
+            except Exception as exc:  # pragma: no cover
+                raise TitleWriteError(
+                    "SessionDB is not importable. This adapter must run inside the "
+                    "Hermes runtime (same interpreter/env as the gateway)."
+                ) from exc
         self._db = SessionDB()
         self.max_title = max_title
 
