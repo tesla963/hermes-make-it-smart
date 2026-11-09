@@ -448,3 +448,28 @@
     - { nnn: 654, subject: "Avata 360", tag1: "DJI" }
     - { nnn: 802, subject: "Avata 360", tag1: "DJI" }
   control_question: "Is this about the aircraft, or about where it flies itself?"
+
+- id: productos-vs-compras
+  taught: 2026-11-09
+  rule: >
+    "Compras" is the LOGISTICS of buying: shipping, courier, customs, payment,
+    supplier, tracking. "Productos" is the THING being priced: specs, speed,
+    compatibility, comparisons, price watching, availability. A cron that
+    watches a price is Productos, not Compras. Regulation about a product (an
+    FAA ban, a licence) is neither: it belongs to the pillar of the domain.
+  examples:
+    - { nnn: 254, right: "Productos", why: "comparar RTX por memoria y ancho de banda" }
+    - { nnn: 150, right: "Productos", why: "tarea que vigila el precio de un producto" }
+    - { nnn: 366, right: "Temas Varios", why: "prohibición de la FAA: regulación, no compra" }
+  control_question: "Am I moving the box, or judging what is inside it?"
+
+- id: one-series-one-pillar
+  taught: 2026-11-09
+  rule: >
+    A series that shares a subject shares its facets. The 43 Gorgon Halo
+    sessions had three pillars (VPS, Compras, Asistente IA) and two families
+    (VPS, Automation) for the same recurring task. When a subject already has
+    a hundred siblings, the odd one out is wrong, not exceptional.
+  examples:
+    - { subject: "Gorgon Halo", nnn: 881, tag2: "Automation", pillar: "VPS" }
+  control_question: "Does this look like its 42 siblings?"
