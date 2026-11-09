@@ -121,10 +121,12 @@ padding:2px 10px 4px;border-right:1px solid #1d1726;background:none;border-radiu
 .kbar .kpi:last-child{border-right:none}
 /* Number sits to the left of its label and rests on the label's last baseline,
    so it reads as one line instead of a stacked block. */
-.kbar .kpi b{display:block;font-size:12px;line-height:1.0;font-variant-numeric:tabular-nums;
-letter-spacing:-.01em;font-weight:650;margin:0 0 -1px 0}
-.kbar .kpi .lb{display:flex;flex-direction:column;line-height:1.05}
-.kbar .kpi .lb i{font-style:normal;font-size:7.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--tx3)}
+.kbar .kpi b{display:block;font-size:17px;line-height:1.0;font-variant-numeric:tabular-nums;
+letter-spacing:-.02em;font-weight:650;margin:0 0 -1px 0}
+/* Two-line label at 8 px ≈ the cap height of the 17 px number: they read as one
+   block instead of a big digit next to small print. */
+.kbar .kpi .lb{display:flex;flex-direction:column;line-height:1.06}
+.kbar .kpi .lb i{font-style:normal;font-size:8px;text-transform:uppercase;letter-spacing:.05em;color:var(--tx3)}
 body{padding-bottom:30px}
 .kbar .kpi.accent b{color:var(--wine2)} .kbar .kpi.good b{color:var(--ok)}
 .kbar .kpi.gold b{color:var(--gold)} .kbar .kpi.tok b{color:#4bb8d8} .kbar .kpi.pst b{color:#c9c2d6}
