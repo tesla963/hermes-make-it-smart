@@ -116,9 +116,12 @@ th.tags,td.tags{width:186px;min-width:186px;max-width:186px}
 /* ---- barra inferior fija (KPIs) ---- */
 .kbar{position:fixed;left:var(--aside-w,264px);right:0;bottom:0;z-index:60;display:flex;align-items:stretch;gap:0;
 background:#0f0c13d9;backdrop-filter:blur(8px);border-top:1px solid var(--line2);padding:0 4px}
-.kbar .kpi{flex:1 1 0;display:flex;flex-direction:row;align-items:flex-end;justify-content:flex-start;gap:6px;
-padding:7px 10px 8px;border-right:1px solid #1d1726;background:none;border-radius:0}
-.kbar .kpi:last-child{border-right:none}
+.kbar .kpi{flex:1 1 0;position:relative;display:flex;flex-direction:row;align-items:flex-end;justify-content:flex-start;gap:6px;
+padding:7px 10px 8px;background:none;border-radius:0}
+/* Separators as short rules between modules, not full-height hairlines: easier
+   to see, and they read as dividers instead of table borders. */
+.kbar .kpi+.kpi::before{content:"";position:absolute;left:0;top:6px;bottom:6px;width:1px;
+background:linear-gradient(180deg,transparent,#4a3d5e 22%,#4a3d5e 78%,transparent)}
 /* Number sits to the left of its label and rests on the label's last baseline,
    so it reads as one line instead of a stacked block. */
 .kbar .kpi b{display:block;font-size:17px;line-height:1.0;font-variant-numeric:tabular-nums;
