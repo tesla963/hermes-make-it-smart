@@ -21,8 +21,9 @@ import urllib.request
 from dataclasses import dataclass, field
 from typing import Any, Callable, Iterable, Sequence
 
-from .normalize import Facets, core_subject
+from .normalize import Facets, core_subject, strip_spec
 from .prompt import build_messages
+from .bateria import strip_brand
 from .taxonomy import (
     DEFAULT_PLATFORM,
     apply_abbreviation,
@@ -137,12 +138,15 @@ def to_facets(obj: dict[str, Any], ordinal: int = 1) -> Facets:
     """Fold the model's answer onto the closed vocabularies and the invariants."""
     subject = core_subject(str(obj.get("subject") or "").strip())
     subject = apply_abbreviation(subject)
+    subject, spec = strip_spec(subject)
     raw_tag1 = str(obj.get("tag1") or "").strip()
     tag1 = apply_abbreviation(normalize_platform(raw_tag1))
     tag2 = normalize_family(str(obj.get("tag2") or "").strip())
     pillar = normalize_pillar(str(obj.get("pillar") or "").strip())
     verb = normalize_verb(str(obj.get("verb") or "").strip())
     desc = re.sub(r"\s+", " ", str(obj.get("description") or "")).strip()
+    if spec and not desc:
+        desc = spec
     country = str(obj.get("country") or "").strip()
     year = str(obj.get("year") or "").strip()
     machine = str(obj.get("machine") or "").strip()
@@ -155,6 +159,15 @@ def to_facets(obj: dict[str, Any], ordinal: int = 1) -> Facets:
 
     if subject and tag1 and subject.strip().lower() == tag1.strip().lower():
         subject = ""
+
+    # The cheatsheet knows who makes what: it can move a brand into Tag1 and
+    # take it out of the subject in one step.
+    if subject:
+        stripped, brand_tag = strip_brand(subject)
+        if brand_tag:
+            subject = stripped
+            if brand_tag.lower() != "hermes agent":
+                tag1 = brand_tag
 
     # A tag that only repeats the subject or Tag1 is noise in the filter list.
     if is_redundant_tag(subject, tag2):

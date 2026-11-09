@@ -12,6 +12,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from .bateria import for_prompt as bateria_for_prompt
 from .taxonomy import (
     COUNTRIES,
     IT_FAMILIES,
@@ -195,6 +196,10 @@ Marketplace (used with a brand in tag1): {", ".join(MARKET_FAMILIES)}
 
 ## Reference machines
 {", ".join(MACHINES)}
+
+## The owner's cheatsheet (la batería)
+
+{_bateria if (_bateria := bateria_for_prompt()) else "(empty)"}
 
 ## Rules the owner taught (these override your intuition)
 

@@ -1,0 +1,254 @@
+# ============================================================================
+# LA BATERÍA  ·  the cheatsheet
+# ============================================================================
+# A "batería" is the little sheet you copied from in school. This is that, for
+# the classifier: the things you have learned about your own world, written
+# down so the scripts do not have to guess them again.
+#
+# Every user keeps their own. Edit it freely — it is data, not code.
+#
+# How the classifier uses it, in order:
+#   1. `marcas`     — a name found in a subject decides Tag 1 and whether the
+#                     brand leaves the subject.
+#   2. `productos`  — a known product fixes the subject and the model tag.
+#   3. `programas`  — software: its maker, and whether the program name is a
+#                     brand of its own (most open source is).
+#   4. `companias`  — what a company makes, so a company name never becomes a
+#                     subject by accident.
+#   5. `servicios`  — anything hired rather than bought: hosting, courier,
+#                     subscription. Pillar = Servicios.
+#   6. `conceptos`  — recurring subjects that must survive as filters.
+#   7. `sin_marca`  — products with no corporate owner: their own name is the
+#                     brand. This is the common case in open source.
+# ============================================================================
+
+version: 1
+updated: 2026-11-09
+owner: jorge
+
+# ---------------------------------------------------------------------------
+# MARCAS — name found in a subject -> Tag 1
+#   strip: true  = the brand leaves the subject ("Dell Inspiron" -> "Inspiron")
+#   strip: false = the brand is part of the product name ("ThinkPad P53")
+# ---------------------------------------------------------------------------
+marcas:
+  lenovo:
+    tag1: Lenovo
+    strip: false
+    lineas: [ThinkPad, ThinkCentre, Legion, IdeaPad]
+    nota: "ThinkPad es la LÍNEA, no la marca. El sujeto conserva 'ThinkPad P53'."
+  dell:
+    tag1: Dell
+    strip: true
+    lineas: [Inspiron, Latitude, Precision, XPS, OptiPlex]
+  apple:
+    tag1: Apple
+    strip: false
+    lineas: [Mac mini, Mac Studio, MacBook, iPhone, iPad, Apple Watch]
+    nota: "El nombre del equipo se queda en el sujeto: 'Mac mini M4'."
+  amd:
+    tag1: AMD
+    strip: false
+    productos: [Gorgon Halo, Strix Halo, Ryzen AI Max, Ryzen, Threadripper]
+    nota: "NO abreviar estos nombres: 'Gorgon' a secas no significa nada."
+  nvidia:
+    tag1: NVIDIA
+    strip: false
+    productos: [RTX 5090, RTX 4090, Quadro, A5000, A3000, Spark]
+  dji:
+    tag1: DJI
+    strip: false
+    productos: [Air 2S, Air 2, Avata 360, Osmo Pocket, Mini, Mavic, RC 2]
+  insta360:
+    tag1: Insta360
+    strip: false
+    productos: [X4, GO Ultra, Luna Ultra, Sphere]
+  orico:
+    tag1: ORICO
+    strip: false
+    productos: [Case USB, DD28C3C, 8628SUS3]
+  google:
+    tag1: Google
+    strip: true
+    productos: [Gemini, Gemini Flash Lite, Gemini Pro, Workspace, Drive, Pixel]
+  anthropic:
+    tag1: Anthropic
+    strip: true
+    productos: [Claude, Claude Code, Haiku, Sonnet, Opus]
+  openai:
+    tag1: OpenAI
+    strip: true
+    productos: [ChatGPT, GPT, o1, o3]
+  moonshot:
+    tag1: Moonshot
+    strip: true
+    productos: [Kimi, K2, K3]
+  alibaba:
+    tag1: Alibaba
+    strip: true
+    productos: [Qwen, Qwen3]
+  xai:
+    tag1: xAI
+    strip: true
+    productos: [Grok]
+  deepseek:
+    tag1: DeepSeek
+    strip: true
+    productos: [V4, V4 Flash, V4 Pro, R1]
+  microsoft:
+    tag1: Microsoft
+    strip: true
+    productos: [Windows, Office, Copilot, OneDrive, Teams]
+  steren:
+    tag1: Steren
+    strip: true
+    productos: [Teclado, COM-6900]
+
+# ---------------------------------------------------------------------------
+# PROGRAMAS — software whose own name is the brand.
+# This is the open-source rule: no company to point at, so the program names
+# itself. If `marca` is set, that wins.
+# ---------------------------------------------------------------------------
+programas:
+  pinokio:
+    marca: Pinokio
+    maker: cocktailpeanut
+    licencia: MIT
+    nota: "Lanzador local de apps de IA. Sin empresa detrás: el nombre ES la marca."
+  ornith:
+    marca: Ornith
+    maker: Ornith
+    nota: "Modelos abiertos servidos por Nous Portal."
+  logseq:
+    marca: Logseq
+  obsidian:
+    marca: Obsidian
+  devonthink:
+    marca: DEVONthink
+    maker: DEVONtechnologies
+  tinderbox:
+    marca: Tinderbox
+    maker: Eastgate
+  cyberpanel:
+    marca: CyberPanel
+    maker: CyberPersons
+  rustdesk:
+    marca: RustDesk
+  brave:
+    marca: Brave
+    maker: Brave Software
+  hermes:
+    marca: Hermes Agent
+    nota: "Hermes Agent · Hermes Desktop · Hermes Terminal · Hermes Telegram. Nunca 'Hermes' a secas."
+  ollama:
+    marca: Ollama
+  llamacpp:
+    marca: llama.cpp
+  comfyui:
+    marca: ComfyUI
+  handbrake:
+    marca: HandBrake
+  resolve:
+    marca: DaVinci Resolve
+    maker: Blackmagic Design
+  skillspector:
+    marca: Nvidia
+    programa: SkillSpector
+    nota: "Programa de Nvidia: el fabricante va en Tag1 y el nombre del programa en la descripción."
+  voicebox:
+    marca: VoiceBox
+
+# ---------------------------------------------------------------------------
+# PRODUCTOS — things bought, with brand and model separated.
+# Tag1 = marca · Tag2 = modelo · Pilar = Productos
+# ---------------------------------------------------------------------------
+productos:
+  teclado:
+    forma: "sujeto = el objeto genérico, Tag1 = marca, Tag2 = modelo"
+    ejemplos:
+      - { sujeto: Teclado, tag1: Steren, tag2: COM-6900 }
+  laptop:
+    ejemplos:
+      - { sujeto: Precision 7760, tag1: Dell }
+      - { sujeto: ThinkPad P53, tag1: Lenovo }
+      - { sujeto: ThinkPad E580, tag1: Lenovo }
+  dron:
+    ejemplos:
+      - { sujeto: Air 2S, tag1: DJI, tag2: Ebay }
+      - { sujeto: Avata 360, tag1: DJI }
+  case_usb:
+    ejemplos:
+      - { sujeto: Case USB, tag1: ORICO }
+  disco:
+    nota: "El disco es el objeto; la capacidad va en la descripción salvo que sea el tema."
+    ejemplos:
+      - { sujeto: Hard Drive, tag1: Marca Desconocida, verbo: Falta de Espacio }
+  memoria:
+    nota: "Aquí la spec SÍ es el sujeto, porque la sesión trata de ella."
+    ejemplos:
+      - { sujeto: "16 GB Ram", tag6: Mac mini M4 }
+  tarjeta_grafica:
+    ejemplos:
+      - { sujeto: RTX 5090, tag1: NVIDIA }
+      - { sujeto: Quadro T1000, tag1: NVIDIA }
+
+# ---------------------------------------------------------------------------
+# COMPAÑIAS — never a subject by accident.
+# ---------------------------------------------------------------------------
+companias:
+  nous: { nombre: Nous Research, hace: [Hermes Agent, Ornith] }
+  cyberpersons: { nombre: CyberPersons, hace: [CyberPanel] }
+  blackmagic: { nombre: Blackmagic Design, hace: [DaVinci Resolve] }
+  eastgate: { nombre: Eastgate, hace: [Tinderbox] }
+  panama_express: { nombre: Miami Express, hace: [courier, casillero] }
+
+# ---------------------------------------------------------------------------
+# SERVICIOS — hired, not bought. Pilar = Servicios.
+# ---------------------------------------------------------------------------
+servicios:
+  hosting: { ejemplos: [CyberPersons, VPS, dominio, correo] }
+  courier: { ejemplos: [Miami Express, casillero, freight forwarder] }
+  suscripcion: { ejemplos: [Google AI Pro, iCloud, Backblaze] }
+
+# ---------------------------------------------------------------------------
+# CONCEPTOS — recurring subjects that are also filters.
+# A concept is a permanent noun, not a description.
+# ---------------------------------------------------------------------------
+conceptos:
+  hack_history:
+    nombre: Hack History
+    que_es: >
+      Archivo de amenazas, incidentes y exposición del agente: qué ataques se
+      han documentado, qué vectores se han visto, qué se aprendió. Más propio
+      del mundo OpenClaude, que tiene más historia en ese terreno.
+    tag2: Data Security
+    ejemplos: [872]
+  ventana_permisos:
+    nombre: Ventana Permisos
+    que_es: "El diálogo de permisos del sistema. Tema recurrente a lo largo de meses."
+    tag1: Hermes Agent
+    tag2: Data Security
+    ejemplos: [10, 13, 90, 533, 720, 821, 877]
+  protocolo:
+    nombre: Protocolo
+    que_es: "El gateway roto: se nombra el punto de falla, no el componente."
+    tag2: Troubleshooting
+    ejemplos: [20, 81]
+  spotlight:
+    nombre: Spotlight
+    que_es: "El indexador de macOS. La acción de indexar va al verbo, no al sujeto."
+    tag1: Tahoe
+    ejemplos: [19819]
+
+# ---------------------------------------------------------------------------
+# SIN MARCA — no corporate owner: the product's own name is the brand.
+# This is the default for software.
+# ---------------------------------------------------------------------------
+sin_marca:
+  regla: >
+    Si un producto o programa no tiene empresa detrás, su propio nombre es la
+    marca y va en Tag1. Nunca se deja vacío y nunca cae a "Hermes Agent".
+  ejemplos: [Pinokio, Ornith, Logseq, Obsidian, HandBrake, ComfyUI, RustDesk]
+  error_comun: >
+    Asignar "Hermes Agent" porque no se reconoce la marca. Eso convierte el
+    filtro más usado en un cajón de sastre.

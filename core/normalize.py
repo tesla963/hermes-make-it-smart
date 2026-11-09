@@ -128,6 +128,28 @@ def core_subject(subject: str) -> str:
     return s
 
 
+_SPEC_TAIL = re.compile(r"\s+\d+\s?(?:GB|TB|MB)\s*$", re.I)
+_SPEC_IS_SUBJECT = re.compile(r"^\d+\s?(?:GB|TB|MB)\s+RAM$", re.I)
+
+
+def strip_spec(subject: str) -> tuple[str, str]:
+    """Take a trailing capacity out of the subject and return it as the spec.
+
+    "Gorgon Halo 192GB" -> ("Gorgon Halo", "192GB").
+    "16 GB Ram" is left alone: there the spec IS the subject.
+    """
+    s = (subject or "").strip()
+    if not s or _SPEC_IS_SUBJECT.match(s):
+        return s, ""
+    m = _SPEC_TAIL.search(s)
+    if not m:
+        return s, ""
+    rest = s[: m.start()].strip()
+    if len(rest) < 3:
+        return s, ""
+    return rest, m.group(0).strip()
+
+
 def slug_key(subject: str) -> str:
     """Case- and accent-insensitive key used for the MMM counter."""
     s = unicodedata.normalize("NFKD", (subject or "").strip().lower())
@@ -140,7 +162,14 @@ def slug_key(subject: str) -> str:
 # --------------------------------------------------------------------------- #
 
 
-def render(nnn: int, facets: Facets, date: str, *, max_len: int = MAX_TITLE_LENGTH) -> str:
+def render(
+    nnn: int,
+    facets: Facets,
+    date: str = "",
+    *,
+    max_len: int = MAX_TITLE_LENGTH,
+    with_date: bool = False,
+) -> str:
     """Build the title, spending the budget in priority order.
 
     Subject and tags are never truncated. The description is compressed, then
@@ -152,7 +181,10 @@ def render(nnn: int, facets: Facets, date: str, *, max_len: int = MAX_TITLE_LENG
         head += f" [{facets.tag1}]"
     if facets.tag2:
         head += f" [{facets.tag2}]"
-    if date:
+    # The date is a first-class filter in the catalog, and repeating it inside
+    # the title spends six of the hundred characters on a duplicate. It is off
+    # by default; `with_date=True` restores the old shape.
+    if date and with_date:
         head += f" {date}"
 
     if len(head) >= max_len:
@@ -197,6 +229,7 @@ __all__ = [
     "telegram",
     "fit_description",
     "core_subject",
+    "strip_spec",
     "slug_key",
     "render",
     "validate",
