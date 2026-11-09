@@ -694,7 +694,9 @@ function exportarCorrecciones(){
 // straight into the session as text. No file, no round trip.
 async function copiarResultado(){
   const vis=DATA.filter(d=>pass(d)).sort((a,b)=>a.n-b.n);
-  const txt=vis.map(d=>d.raw).join('\n');
+  // The id rides along after a tab: tab-separated so it is invisible when pasted
+  // as text, but still there for anyone reading the clipboard line by line.
+  const txt=vis.map(d=>d.raw+'\t'+d.id).join('\n');
   let ok=false;
   try{ await navigator.clipboard.writeText(txt); ok=true; }
   catch(e){
