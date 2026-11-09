@@ -85,7 +85,6 @@ OVERRIDES: dict[str, tuple[str, str, str]] = {
     # subject (lower) -> (new subject, new tag1, note)
     "dell inspiron 5570": ("Inspiron 5570", "Dell", "marca al tag1"),
     "gemini flash lite": ("Flash Lite", "Google", "marca al tag1"),
-    "ornith 2.0": ("Lanzamiento 2.0", "Ornith", "sujeto no repite tag1"),
     "pinokio": ("Control CLI", "Pinokio", "sujeto no repite tag1"),
     "gorgon halo 192gb": ("Gorgon Halo", "AMD", "spec a la descripción"),
     "thinkpad p53": ("ThinkPad P53", "Lenovo", "marca corporativa al tag1"),

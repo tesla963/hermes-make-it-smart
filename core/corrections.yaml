@@ -314,6 +314,20 @@
     - { nnn: 872, wrong_subject: "Amenazas de Hermes", right_subject: "Hack History", note: "Hermes in the subject is redundant with tag1" }
   control_question: "Who is doing the work — my agent, or another company's software?"
 
+- id: brand-equals-subject-exception
+  taught: 2026-11-09
+  rule: >
+    The "subject must not repeat Tag1" rule has one exception: when the brand
+    and the product share the same name and the subject adds a version or
+    generation, the repetition is correct. "Ornith 2.0" with Tag1 "Ornith" is
+    right — the version is the information, and inventing a synonym
+    ("Lanzamiento 2.0") destroys the filter. Same for a model line whose name is
+    the maker's name.
+  examples:
+    - { nnn: 243, right: "[Ornith 2.0] [Ornith]", wrong: "[Lanzamiento 2.0] [Ornith]" }
+    - { rule_of_thumb: "If the only difference is a version, keep it." }
+  control_question: "Is the extra token a version of the same name, or a different noun?"
+
 - id: concept-vocabulary
   taught: 2026-11-09
   rule: >
