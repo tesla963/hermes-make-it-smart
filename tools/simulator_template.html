@@ -116,14 +116,14 @@ th.tags,td.tags{width:186px;min-width:186px;max-width:186px}
 /* ---- barra inferior fija (KPIs) ---- */
 .kbar{position:fixed;left:var(--aside-w,264px);right:0;bottom:0;z-index:60;display:flex;align-items:stretch;gap:0;
 background:#0f0c13d9;backdrop-filter:blur(8px);border-top:1px solid var(--line2);padding:0 4px}
-.kbar .kpi{flex:1 1 0;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:0;
-padding:3px 10px;border-right:1px solid #1d1726;background:none;border-radius:0}
+.kbar .kpi{flex:1 1 0;display:flex;flex-direction:row;align-items:flex-end;justify-content:flex-start;gap:6px;
+padding:2px 10px 4px;border-right:1px solid #1d1726;background:none;border-radius:0}
 .kbar .kpi:last-child{border-right:none}
-/* Number and label share the same left edge, so the five blocks read as one row
-   of columns instead of five centred clumps. */
-.kbar .kpi b{display:block;font-size:12px;line-height:1.08;font-variant-numeric:tabular-nums;
-letter-spacing:-.01em;font-weight:650;margin:0}
-.kbar .kpi .lb{display:flex;flex-direction:column;line-height:1.0;margin-top:1px}
+/* Number sits to the left of its label and rests on the label's last baseline,
+   so it reads as one line instead of a stacked block. */
+.kbar .kpi b{display:block;font-size:12px;line-height:1.0;font-variant-numeric:tabular-nums;
+letter-spacing:-.01em;font-weight:650;margin:0 0 -1px 0}
+.kbar .kpi .lb{display:flex;flex-direction:column;line-height:1.05}
 .kbar .kpi .lb i{font-style:normal;font-size:7.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--tx3)}
 body{padding-bottom:30px}
 .kbar .kpi.accent b{color:var(--wine2)} .kbar .kpi.good b{color:var(--ok)}
