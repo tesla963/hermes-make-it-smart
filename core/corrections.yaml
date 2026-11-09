@@ -1,42 +1,25 @@
 # Corrections taught by the owner.
 # Every entry is a rule AND the evidence that taught it.
 # Rendered into the classifier prompt as few-shot examples and mirrored in tests/eval/.
+#
+# The rule is what generalizes. The example is what proves it. The control
+# question is what to ask when the rule does not obviously apply.
 
-- id: product-marketplace-shape
+# --------------------------------------------------------------------------- #
+# NAMES
+# --------------------------------------------------------------------------- #
+
+- id: name-the-agent
   taught: 2026-11-09
   rule: >
-    When the session evaluates a product, Tag1 is the brand and Tag2 is the
-    marketplace. Subject is the product itself.
+    The assistant has a name the owner chose. When the session is about the
+    assistant itself — its identity, its availability, whether it responds —
+    the subject is that NAME ("Lisa"), never a paraphrase like "Disponibilidad
+    del asistente" or "Identidad y modelo". Call things by their name.
   examples:
-    - { nnn: 748, subject: "Air 2S", tag1: "DJI", tag2: "Ebay" }
-    - { nnn: 812, subject: "Trace Minerals", tag1: "Dr. Berg", tag2: "Amazon" }
-    - { nnn: 582, subject: "Case USB", tag1: "ORICO", tag2: "Comparación" }
-  control_question: "Does the tag tell me who makes it, or where we looked?"
-
-- id: subject-is-never-the-program
-  taught: 2026-11-07
-  rule: >
-    The subject names the object, problem or symptom. The platform goes in Tag1.
-    If they are nearly the same, something is wrong.
-  examples:
-    - { nnn: 582, wrong_subject: "Hermes", right_subject: "Case USB", tag1: "ORICO" }
-  note: 187 sessions corrected on this rule.
-
-- id: failure-point-naming
-  taught: 2026-11-08
-  rule: >
-    Name the point of failure, not the component. A broken gateway is
-    "Protocolo"; a permission dialog is "Ventana Permisos".
-  examples:
-    - { nnn: 20, subject: "Protocolo", tag1: "Telegram Gateway", tag2: "Troubleshooting" }
-    - { nnn: 13, subject: "Ventana Permisos", tag1: "Hermes Agent", tag2: "Data Security" }
-
-- id: troubleshooting-only-on-complaint
-  taught: 2026-11-08
-  rule: >
-    Tag2 is Troubleshooting only when the user reports something failing, not
-    when the topic is merely mentioned.
-  note: 98 candidates reviewed; 28 confirmed, 5 reverted.
+    - { nnn: 1, subject: "Lisa", tag1: "Hermes Telegram" }
+    - { nnn: 12, subject: "Lisa", tag1: "Hermes Desktop", tag2: "Troubleshooting" }
+  control_question: "Is the owner talking TO the assistant, or ABOUT something else?"
 
 - id: full-product-names
   taught: 2026-11-08
@@ -53,6 +36,29 @@
     description and leave 96 titles with no text. The search bridges all forms.
   bridge: ["IA", "AI", "Inteligencia Artificial", "Artificial Intelligence"]
 
+# --------------------------------------------------------------------------- #
+# SUBJECT
+# --------------------------------------------------------------------------- #
+
+- id: subject-is-never-the-program
+  taught: 2026-11-07
+  rule: >
+    The subject names the object, problem or symptom. The platform goes in Tag1.
+    If they are nearly the same, something is wrong.
+  examples:
+    - { nnn: 582, wrong_subject: "Hermes", right_subject: "Case USB", tag1: "ORICO" }
+  note: 187 sessions corrected on this rule.
+
+- id: subject-never-carries-the-action
+  taught: 2026-11-09
+  rule: >
+    The subject is the actor or the object, never the action done to it.
+    "Indexación Spotlight" is wrong; the subject is "Spotlight".
+  examples:
+    - { nnn: 6, wrong_subject: "Indexación Spotlight", right_subject: "Spotlight", verb: "Indexación" }
+    - { nnn: 10, wrong_subject: "Vocabulario Constitución", right_subject: "Constitución", verb: "Vocabulario" }
+    - { nnn: 4, wrong_subject: "Cambios de precios", right_subject: "Precios", verb: "Cotizar" }
+
 - id: subject-strips-action-prefix
   taught: 2026-11-08
   rule: Strip the action prefix; the verb belongs at the end of the description.
@@ -61,19 +67,163 @@
     - { wrong: "Dolor Interoseos", right: "Interoseos" }
     - { wrong: "Auto-arranque Gateway Telegram", right: "Gateway Telegram" }
 
+- id: failure-point-naming
+  taught: 2026-11-08
+  rule: >
+    Name the point of failure, not the component. A broken gateway is
+    "Protocolo"; a permission dialog is "Ventana Permisos".
+  examples:
+    - { nnn: 20, subject: "Protocolo", tag1: "Telegram Gateway", tag2: "Troubleshooting" }
+    - { nnn: 13, subject: "Ventana Permisos", tag1: "Hermes Agent", tag2: "Data Security" }
+
+# --------------------------------------------------------------------------- #
+# THE VERB DECIDES THE SUBJECT
+# --------------------------------------------------------------------------- #
+
+- id: verb-first-then-subject
+  taught: 2026-11-09
+  rule: >
+    Decide the verb FIRST, then shape the subject around it. The verb tells you
+    what kind of noun the subject must be: a thing (Costo → "Pedido"), the actor
+    being tested (Testing → "Lisa"), a failing part (Falta de Espacio →
+    "Hard Drive"). A subject chosen before the verb is usually the wrong noun.
+  examples:
+    - { verb: "Costo", subject: "Pedido" }
+    - { verb: "Falta de Espacio", subject: "Hard Drive" }
+    - { verb: "Cotizar", subject: "Precios" }
+  control_question: "What action was taken — and what noun does that action demand?"
+
+- id: money-verb-is-costo
+  taught: 2026-11-09
+  rule: >
+    When the session is about money — what something cost, a balance, a bill, a
+    real cost per item — the verb is "Costo". Never "Analizar".
+  examples:
+    - { nnn: 2, subject: "Claude API", verb: "Costo" }
+    - { nnn: 13, subject: "Pedido", verb: "Costo", tag2: "" }
+
+- id: quoting-is-cotizar
+  taught: 2026-11-09
+  rule: >
+    When the session prices a product or a service — Amazon, a marketplace, a
+    local store, a supplier — the verb is "Cotizar". A quote is always about a
+    Product or a Service, so the pillar is "Productos" or "Servicios".
+  examples:
+    - { nnn: 4, subject: "Precios", tag1: "Amazon", tag2: "Compras", pillar: "Productos", verb: "Cotizar" }
+  control_question: "Was a price being quoted or compared? Then Cotizar."
+
+- id: testing-not-verificar
+  taught: 2026-11-09
+  rule: >
+    In a technical session where something is being exercised to see whether it
+    works, the verb is "Testing", not "Verificar". "Verificar" confirms a fact;
+    "Testing" exercises a system.
+  examples:
+    - { nnn: 3, subject: "Lisa", tag1: "Hermes Terminal", verb: "Testing" }
+
+- id: problems-are-verbs
+  taught: 2026-11-09
+  rule: >
+    A problem is an action the system failed at, not the subject. "Disco lleno"
+    names the symptom; "Hard Drive" names the thing and "Falta de Espacio" names
+    the failure. Problems live in the verb vocabulary.
+  examples:
+    - { nnn: 9, wrong_subject: "Disco lleno", right_subject: "Hard Drive", verb: "Falta de Espacio" }
+
+- id: troubleshooting-only-on-complaint
+  taught: 2026-11-08
+  rule: >
+    Tag2 is Troubleshooting only when the user reports something failing, or is
+    determining whether a configuration he made actually works — not when the
+    topic is merely mentioned.
+  note: 98 candidates reviewed; 28 confirmed, 5 reverted.
+
+- id: marketplace-verb
+  taught: 2026-11-09
+  rule: >
+    For a marketplace evaluation the description ends with "· Comparar" when
+    weighing options, "· Cotizar" when producing a price, "· Analizar" when
+    reading a listing in depth.
+  examples:
+    - { nnn: 748, description_ends: "· Comparar" }
+
+# --------------------------------------------------------------------------- #
+# PRODUCTS
+# --------------------------------------------------------------------------- #
+
+- id: product-marketplace-shape
+  taught: 2026-11-09
+  rule: >
+    When the session evaluates a product, Tag1 is the brand and Tag2 is the
+    marketplace. Subject is the product itself.
+  examples:
+    - { nnn: 748, subject: "Air 2S", tag1: "DJI", tag2: "Ebay" }
+    - { nnn: 812, subject: "Trace Minerals", tag1: "Dr. Berg", tag2: "Amazon" }
+    - { nnn: 582, subject: "Case USB", tag1: "ORICO", tag2: "Comparación" }
+  control_question: "Does the tag tell me who makes it, or where we looked?"
+
+- id: product-shape
+  taught: 2026-11-09
+  rule: >
+    For a product being evaluated or bought inside a marketplace session: the
+    subject is the generic thing ("Teclado"), Tag1 is the brand ("Steren"),
+    Tag2 is the MODEL ("COM-6900"), and the pillar is "Productos". The model is
+    not part of the subject — it is the second tag, which is what distinguishes
+    two otherwise identical items.
+  examples:
+    - { nnn: 8, wrong: "Teclado COM-6900 / Hermes Agent / Comparación", right: "Teclado / Steren / COM-6900 / Productos" }
+  control_question: "Is this a thing someone buys? Then brand and model are tags."
+
+- id: spec-belongs-to-its-machine
+  taught: 2026-11-09
+  rule: >
+    When the subject is a component or specification of a piece of equipment,
+    the subject is the concrete spec ("16 GB Ram") and Tag6 names the equipment
+    ("Mac mini M4"). Tag6 is not only computers: a monitor, a blender, a washing
+    machine, a book — anything a spec can belong to.
+  examples:
+    - { nnn: 5, wrong_subject: "Consumo Memoria", right_subject: "16 GB Ram", tag6: "Mac mini M4", verb: "Solucionar" }
+
+# --------------------------------------------------------------------------- #
+# TAGS
+# --------------------------------------------------------------------------- #
+
+- id: abbreviate-only-common-vocabulary
+  taught: 2026-11-09
+  rule: >
+    Abbreviate when the long form is redundant for someone who lives in the
+    domain: "MacOS Tahoe" is just "Tahoe". But NEVER abbreviate what is not
+    common vocabulary: "Gorgon Halo" and "Strix Halo" mean nothing when
+    shortened, so they stay whole and Tag1 carries the maker ("AMD").
+  examples:
+    - { long: "MacOS Tahoe", short: "Tahoe" }
+    - { keep: "Gorgon Halo", tag1: "AMD" }
+  control_question: "Would a knowledgeable reader lose meaning if I shorten this?"
+
+- id: country-goes-in-its-own-tag
+  taught: 2026-11-09
+  rule: >
+    For laws, decrees, the Official Gazette and constitutions, the country goes
+    in the country tag, never in the subject. The subject stays "Constitución"
+    so the concept can be filtered across countries.
+  examples:
+    - { nnn: 10, subject: "Constitución", country: "Panamá", tag1: "Hermes Agent", tag2: "Data Mining" }
+    - { nnn: 11, subject: "Constitución", tag1: "Hermes Agent", tag2: "Data Mining", verb: "Organizar" }
+
 - id: constitution-is-law-not-geopolitics
   taught: 2026-11-08
   rule: Panama's Constitution belongs to the Derecho pillar, not Geopolítica.
   examples:
     - { subject: "Constitución", pillar: "Derecho" }
 
-- id: pillar-never-in-title
-  taught: 2026-11-08
+- id: no-redundant-tag
+  taught: 2026-11-09
   rule: >
-    The pillar is a filter, never part of the title. Measured: including it
-    leaves 877 of 884 titles with no description.
+    If Tag2 only repeats what the subject or Tag1 already says, leave it empty.
+    A tag that adds nothing is noise in the filter list.
   examples:
-    - { pillar: "Asistente IA", in_title: false }
+    - { nnn: 13, subject: "Pedido", tag1: "Amazon", tag2: "", note: "Compras added nothing" }
+  control_question: "Does this tag tell me something the subject and Tag1 did not?"
 
 - id: subject-does-not-repeat-tag1
   taught: 2026-11-08
@@ -83,6 +233,14 @@
   examples:
     - { nnn: 12, wrong_subject: "Transcripción de Video", right_subject: "Transcripción", tag1: "YouTube" }
 
+- id: pillar-never-in-title
+  taught: 2026-11-08
+  rule: >
+    The pillar is a filter, never part of the title. Measured: including it
+    leaves 877 of 884 titles with no description.
+  examples:
+    - { pillar: "Asistente IA", in_title: false }
+
 - id: ventana-permisos-series
   taught: 2026-11-08
   rule: >
@@ -91,10 +249,17 @@
   examples:
     - { ssns: [10, 13, 90, 533, 720, 821, 877], subject: "Ventana Permisos", tag1: "Hermes Agent", tag2: "Data Security" }
 
-- id: marketplace-verb
+# --------------------------------------------------------------------------- #
+# LANGUAGE
+# --------------------------------------------------------------------------- #
+
+- id: bilingual-vocabulary
   taught: 2026-11-09
   rule: >
-    For a marketplace evaluation the description ends with "· Comparar" when
-    weighing options, "· Analizar" when reading a listing in depth.
+    The plugin is bilingual. The two initial languages are Spanish and English.
+    Labels are produced in the language of the session. The owner may write in
+    Spanish inside an English session, or the reverse (Spanglish); classify by
+    meaning, not by the language of the first word.
   examples:
-    - { nnn: 748, description_ends: "· Comparar" }
+    - { mixed: "Lisa revisa el backup del VPS y dime el cost", language: "es" }
+  control_question: "What did they mean, regardless of the language they said it in?"

@@ -19,6 +19,8 @@ PILLARS: Final[tuple[str, ...]] = (
     "Asistente IA",
     "VPS",
     "Compras",
+    "Productos",      # sub-pillar of Compras: a thing you buy
+    "Servicios",      # sub-pillar of Compras: a service you hire
     "Data Backup",
     "Derecho",
     "Youtuber",
@@ -150,18 +152,48 @@ MACHINES: Final[tuple[str, ...]] = (
 # --------------------------------------------------------------------------- #
 
 VERBS: Final[tuple[str, ...]] = (
+    # --- knowledge work ---
     "Investigar",
     "Verificar",
+    "Testing",       # testing a configuration, the tech word for "verificar"
     "Comparar",
+    "Analizar",
+    "Documentar",
+    "Organizar",
+    "Vocabulario",   # building a vocabulary / glossary
+    "Indexación",    # indexing, reindexing a store
+    "Scrapping",     # harvesting pages, PDFs, listings to keep a local copy
+    # --- money ---
+    "Costo",         # what did this cost / what is the real cost
+    "Cotizar",       # pricing a product or a service
+    # --- machines ---
     "Configurar",
     "Instalar",
-    "Organizar",
-    "Analizar",
-    "Respaldar",
     "Corregir",
-    "Documentar",
+    "Solucionar",
+    "Respaldar",
     "Migrar",
     "Monitorear",
+    "Falta de Espacio",   # a disk problem is an action, not a subject
+)
+
+# Abbreviations that make a title shorter without losing meaning, for people who
+# live in the domain. Applied only when the long form would be redundant.
+ABBREVIATIONS: Final[dict[str, str]] = {
+    "macos tahoe": "Tahoe",
+    "macos sequoia": "Sequoia",
+    "macos ventura": "Ventura",
+    "hermes agent": "Hermes Agent",   # never a bare "Hermes"
+}
+
+# Names that must NOT be abbreviated: they are not common vocabulary, and the
+# short form means nothing to a human. Keep the full string and let Tag1 carry
+# the maker.
+KEEP_FULL: Final[tuple[str, ...]] = (
+    "Gorgon Halo",
+    "Strix Halo",
+    "Ryzen AI Max",
+    "Insta360",
 )
 
 
@@ -203,6 +235,35 @@ def normalize_family(value: str | None) -> str:
     return value.strip()
 
 
+def apply_abbreviation(text: str) -> str:
+    """Shorten only what is common vocabulary; never touch what is not."""
+    if not text:
+        return text
+    low = text.strip().lower()
+    for keep in KEEP_FULL:
+        if keep.lower() in low:
+            return text.strip()
+    for long_form, short in ABBREVIATIONS.items():
+        if low == long_form:
+            return short
+        if low.startswith(long_form + " "):
+            return short + text.strip()[len(long_form):]
+    return text.strip()
+
+
+def is_redundant_tag(subject: str, tag: str) -> bool:
+    """True when the tag only repeats what the subject already says."""
+    if not tag:
+        return False
+    s = subject.strip().lower()
+    t = tag.strip().lower()
+    if not s or not t:
+        return False
+    if s == t:
+        return True
+    return t in s.split() or s in t.split()
+
+
 def normalize_verb(value: str | None) -> str:
     if not value:
         return ""
@@ -228,4 +289,8 @@ __all__ = [
     "normalize_pillar",
     "normalize_family",
     "normalize_verb",
+    "apply_abbreviation",
+    "is_redundant_tag",
+    "ABBREVIATIONS",
+    "KEEP_FULL",
 ]

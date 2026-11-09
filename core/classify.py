@@ -25,6 +25,8 @@ from .normalize import Facets, core_subject
 from .prompt import build_messages
 from .taxonomy import (
     DEFAULT_PLATFORM,
+    apply_abbreviation,
+    is_redundant_tag,
     normalize_family,
     normalize_pillar,
     normalize_platform,
@@ -51,6 +53,8 @@ class ClassifyConfig:
     max_tokens: int = 1200   # the model spends part of this reasoning; below ~1000 the answer comes back empty
     timeout: int = 60
     retries: int = 1
+    agent_name: str = "Lisa"   # what the owner calls the assistant
+    language: str = "Spanish"
 
 
 @dataclass
@@ -130,16 +134,31 @@ def parse_json_object(raw: str) -> dict[str, Any]:
 
 
 def to_facets(obj: dict[str, Any], ordinal: int = 1) -> Facets:
-    """Fold the model's answer onto the closed vocabularies."""
+    """Fold the model's answer onto the closed vocabularies and the invariants."""
     subject = core_subject(str(obj.get("subject") or "").strip())
-    tag1 = normalize_platform(str(obj.get("tag1") or "").strip())
+    subject = apply_abbreviation(subject)
+    raw_tag1 = str(obj.get("tag1") or "").strip()
+    tag1 = apply_abbreviation(normalize_platform(raw_tag1))
     tag2 = normalize_family(str(obj.get("tag2") or "").strip())
     pillar = normalize_pillar(str(obj.get("pillar") or "").strip())
     verb = normalize_verb(str(obj.get("verb") or "").strip())
     desc = re.sub(r"\s+", " ", str(obj.get("description") or "")).strip()
+    country = str(obj.get("country") or "").strip()
+    year = str(obj.get("year") or "").strip()
+    machine = str(obj.get("machine") or "").strip()
+
+    # A brand the closed list does not know is still a brand. Forcing it to
+    # "Hermes Agent" loses the single most identifying word of the session.
+    if pillar in ("Productos", "Servicios") and raw_tag1 and tag1 == DEFAULT_PLATFORM:
+        if raw_tag1.lower() not in ("hermes", "hermes agent", ""):
+            tag1 = raw_tag1.title() if raw_tag1.islower() else raw_tag1
 
     if subject and tag1 and subject.strip().lower() == tag1.strip().lower():
         subject = ""
+
+    # A tag that only repeats the subject or Tag1 is noise in the filter list.
+    if is_redundant_tag(subject, tag2):
+        tag2 = ""
 
     return Facets(
         subject=subject,
@@ -147,6 +166,9 @@ def to_facets(obj: dict[str, Any], ordinal: int = 1) -> Facets:
         tag1=tag1 or DEFAULT_PLATFORM,
         tag2=tag2,
         pillar=pillar,
+        country=country,
+        year=year,
+        machine=machine,
         description=desc,
         verb=verb,
     )
@@ -160,6 +182,10 @@ def problems_with(facets: Facets) -> list[str]:
         out.append("subject too long")
     if facets.tag2 and facets.tag2 == facets.tag1:
         out.append("tag2 repeats tag1")
+    if facets.tag2 and is_redundant_tag(facets.subject, facets.tag2):
+        out.append("tag2 repeats the subject")
+    if facets.subject and facets.verb and facets.verb.lower() in facets.subject.lower():
+        out.append("verb repeated inside the subject")
     return out
 
 
@@ -247,6 +273,8 @@ def classify_one(
         current_title=current_title,
         channel=channel,
         corrections=corrections,
+        agent_name=config.agent_name,
+        language=config.language,
     )
     base_payload: dict[str, Any] = {
         "model": config.model,

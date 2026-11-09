@@ -91,12 +91,19 @@ def main() -> int:
     ap.add_argument("--n", type=int, default=50)
     ap.add_argument("--out", default=str(Path.home() / "Desktop" / "review_eval.html"))
     ap.add_argument("--model", default="deepseek-flash")
+    ap.add_argument("--agent", default="Lisa", help="the assistant's name")
     ap.add_argument("--no-classify", action="store_true")
     ap.add_argument("--cache", default="/tmp/make_review_cache.json")
+    ap.add_argument("--exclude", help="JSON list of session ids to leave out")
     args = ap.parse_args()
 
     print("reading sessions…", file=sys.stderr)
     universe = build_universe()
+    if args.exclude and Path(args.exclude).exists():
+        skip = set(json.loads(Path(args.exclude).read_text(encoding="utf-8")))
+        before = len(universe)
+        universe = [u for u in universe if u["id"] not in skip]
+        print(f"excluding {before - len(universe)} already-reviewed sessions", file=sys.stderr)
     picked = sample(universe, args.n)
     print(f"universe {len(universe)} → sampled {len(picked)}", file=sys.stderr)
 
@@ -128,12 +135,14 @@ def main() -> int:
             facets = Facets(
                 subject=p["subject"], subject_ordinal=len(rows) + 1,
                 tag1=p["tag1"], tag2=p["tag2"], pillar=p["pillar"],
+                country=p.get("country", ""), year=p.get("year", ""),
+                machine=p.get("machine", ""),
                 description=p["description"], verb=p["verb"],
             )
             row["titulo"] = render(len(rows) + 1, facets, short_date(s["fecha"]))
             rows.append(row)
     else:
-        cfg = ClassifyConfig(api_key=get_key(), model=args.model)
+        cfg = ClassifyConfig(api_key=get_key(), model=args.model, agent_name=args.agent)
         for i, s in enumerate(picked, 1):
             res = classify_one(
                 messages=s["msgs"],
@@ -158,6 +167,9 @@ def main() -> int:
                         "tag1": f.tag1,
                         "tag2": f.tag2,
                         "pillar": f.pillar,
+                        "country": f.country,
+                        "year": f.year,
+                        "machine": f.machine,
                         "description": f.description,
                         "verb": f.verb,
                     },

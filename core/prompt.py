@@ -92,7 +92,10 @@ def render_corrections(corrections: list[dict[str, Any]]) -> str:
 
 
 def build_system_prompt(
-    corrections: list[dict[str, Any]] | None = None, *, language: str = "Spanish"
+    corrections: list[dict[str, Any]] | None = None,
+    *,
+    language: str = "Spanish",
+    agent_name: str = "Hermes Agent",
 ) -> str:
     """The full system prompt. Deterministic: same inputs, same text."""
     corrections = corrections if corrections is not None else load_corrections()
@@ -103,7 +106,26 @@ You receive the first messages a user wrote in one session. You return the
 facets that identify it. You do NOT write the session title, you do NOT
 number it, and you do NOT invent a date: those are added afterwards by code.
 
-## The five fields you return
+## The assistant's name
+
+The owner calls this assistant **{agent_name}**. When the session is about the
+assistant itself — its identity, whether it responds, whether it is available —
+the subject is exactly "{agent_name}". Not a paraphrase. Call things by their name.
+
+## Order of thought: verb first, then subject
+
+Decide the **verb** before the subject. The verb tells you which noun the subject
+must be:
+
+    Costo            → what was counted: "Pedido", "Claude API"
+    Cotizar          → what was priced: "Precios", "Teclado"
+    Testing          → who or what was exercised: "{agent_name}"
+    Falta de Espacio → what ran out: "Hard Drive"
+    Indexación       → what was indexed: "Spotlight"
+
+A subject chosen before the verb is usually the wrong noun.
+
+## The nine fields you return
 
 subject     What the session is ABOUT: the object, the problem, the symptom.
             2-4 words, written in {language}. NEVER the name of a program or platform.
@@ -111,6 +133,11 @@ subject     What the session is ABOUT: the object, the problem, the symptom.
             adjectives ("trancado", "inusual", "con error").
             If it is a failure, name the POINT OF FAILURE ("Protocolo"),
             not the component.
+            It must be a NOUN PHRASE. If your subject reads like a sentence
+            ("prende gateway hablar telegram"), it is wrong — find the thing
+            being talked about.
+            When the subject is a component or spec of a machine, use the
+            concrete spec ("16 GB Ram") and put the machine in `machine`.
 
 tag1        The PROTAGONIST: who or what is really doing the work.
             Pick ONE from the platform list below. If nothing fits and the
@@ -128,6 +155,19 @@ tag2        The KIND OF WORK. Pick ONE from the family list below, or "".
             If the subject already says it, leave tag2 empty.
 
 pillar      The WORK FRONT. Pick ONE from the pillar list below.
+            A quote or a purchase is "Productos" (a thing) or "Servicios"
+            (a service); "Compras" is the parent front, used when neither fits.
+
+country     Where, when the subject is tied to a place: laws, decrees, the
+            Official Gazette, a constitution, a local store. Otherwise "".
+            NEVER put the country inside the subject.
+
+year        Only when the session is about a specific edition or year
+            ("2026"). Otherwise "".
+
+machine     The equipment a spec or a component belongs to: "Mac mini M4",
+            "ThinkPad P53", "VPS", "Teléfono". Not only computers — anything a
+            specification can belong to. Otherwise "".
 
 description What subject + tags could NOT say. One short telegraphic clause,
             written in {language}, no filler, no restating the subject.
@@ -160,11 +200,35 @@ Marketplace (used with a brand in tag1): {", ".join(MARKET_FAMILIES)}
 
 {render_corrections(corrections)}
 
+## Products
+
+A thing someone buys has a shape of its own:
+
+    subject = the generic thing      "Teclado"
+    tag1    = the brand              "Steren"
+    tag2    = the model              "COM-6900"
+    pillar  = "Productos"            (or "Servicios" for a service)
+
+The model is NOT part of the subject: it is the second tag, which is what
+distinguishes two otherwise identical items.
+
+## Abbreviations
+
+Shorten only what a knowledgeable reader would find redundant:
+"MacOS Tahoe" → "Tahoe". Never shorten what is not common vocabulary:
+"Gorgon Halo", "Strix Halo" stay whole, and Tag1 carries the maker ("AMD").
+
+## Language
+
+Produce the labels in the language of the session. The owner may mix Spanish and
+English in the same message; classify by meaning, not by the first word.
+
 ## Output
 
 Return ONE JSON object, nothing else, with exactly these keys:
 
 {{"subject": str, "tag1": str, "tag2": str, "pillar": str,
+ "country": str, "year": str, "machine": str,
  "description": str, "verb": str}}
 
 No markdown, no comments, no explanation. Empty string when a field does not
@@ -224,10 +288,12 @@ def build_messages(
     current_title: str = "",
     channel: str = "",
     corrections: list[dict[str, Any]] | None = None,
+    agent_name: str = "Lisa",
+    language: str = "Spanish",
 ) -> list[dict[str, str]]:
     """The full chat payload, ready for any OpenAI-compatible endpoint."""
     return [
-        {"role": "system", "content": build_system_prompt(corrections)},
+        {"role": "system", "content": build_system_prompt(corrections, language=language, agent_name=agent_name)},
         {
             "role": "user",
             "content": build_user_prompt(
@@ -237,11 +303,18 @@ def build_messages(
     ]
 
 
-def prompt_fingerprint(corrections: list[dict[str, Any]] | None = None) -> str:
+def prompt_fingerprint(
+    corrections: list[dict[str, Any]] | None = None,
+    *,
+    agent_name: str = "Lisa",
+    language: str = "Spanish",
+) -> str:
     """Short hash of the system prompt, to stamp every classification run."""
     import hashlib
 
-    digest = hashlib.sha256(build_system_prompt(corrections).encode("utf-8")).hexdigest()
+    digest = hashlib.sha256(
+        build_system_prompt(corrections, language=language, agent_name=agent_name).encode("utf-8")
+    ).hexdigest()
     return digest[:12]
 
 

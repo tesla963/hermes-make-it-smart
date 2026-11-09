@@ -29,7 +29,7 @@ border-radius:6px;padding:9px 11px;margin-bottom:11px;white-space:pre-wrap;max-h
 .old{font-family:var(--mono);font-size:11.5px;color:#8f86a0;background:#120f17;border:1px dashed var(--line);
 border-radius:5px;padding:6px 9px;margin-bottom:10px;word-break:break-word}
 .old b{color:var(--dim);font-weight:500;font-family:inherit}
-.prop{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.prop{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:8px}
 .fld{background:#0f0c13;border:1px solid var(--line);border-radius:6px;padding:6px 8px}
 .fld .l{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--dim);margin-bottom:2px}
 .fld .v{font-size:12.5px;word-break:break-word}
@@ -95,8 +95,9 @@ font-size:12px;color:#d8c8a0;margin:0 0 14px}
 </footer>
 <script>
 const DATA = __DATA__;
-const F = ['subject','tag1','tag2','pillar','description','verb'];
-const LB = {subject:'Sujeto',tag1:'Tag 1 · Plataforma',tag2:'Tag 2 · Familia',pillar:'Pilar',description:'Descripción',verb:'Verbo'};
+const F = ['subject','tag1','tag2','pillar','country','year','machine','description','verb'];
+const LB = {subject:'Sujeto',tag1:'Tag 1 · Plataforma',tag2:'Tag 2 · Familia',pillar:'Tag 3 · Pilar',
+country:'Tag 4 · País',year:'Tag 5 · Año',machine:'Tag 6 · Máquina',description:'Descripción',verb:'Verbo'};
 let state = {}; let cur = 0;
 const KEY='mmws-eval-v1';
 function load(){ try{ state=JSON.parse(localStorage.getItem(KEY)||'{}'); }catch(e){ state={}; } }
