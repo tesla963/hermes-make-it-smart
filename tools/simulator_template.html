@@ -585,8 +585,9 @@ function chips(){
   const host=document.getElementById('chips');
   const hay=out.length>0;
   const nVis=DATA.filter(d=>pass(d)).length;
-  host.innerHTML=`<button class="primary${hay?'':' ghost'}" id="clr"${hay?'':' disabled'}>Limpiar filtros</button>`+
-    `<button class="ghost" id="expc" title="Descarga las ${nVis} sesiones visibles en CSV: título actual, sujeto, tags y descripción, más columnas vacías para corregir y una para tus observaciones">Exportar Títulos · ${nVis}</button>`+
+  host.innerHTML=`<button class="primary${hay?'':' ghost'}" id="clr"${hay?'':' disabled'}>Limpiar</button>`+
+    `<button class="ghost" id="copia" title="Copia los ${nVis} títulos al portapapeles para pegarlos en la sesión">Copiar · ${nVis}</button>`+
+    `<button class="ghost" id="expc" title="Descarga las ${nVis} sesiones visibles en CSV: título actual, sujeto, tags y descripción, más columnas vacías para corregir y una para tus observaciones">Exportar · ${nVis}</button>`+
     `<span class="chipwrap">`+out.map(([k,v])=>`<span class="chip">${v} <b data-k="${k}">✕</b></span>`).join('')+`</span>`;
   host.querySelectorAll('b').forEach(b=>b.onclick=()=>{
     const k=b.dataset.k;
@@ -689,8 +690,26 @@ function exportarCorrecciones(){
   a.click(); URL.revokeObjectURL(a.href);
   setTimeout(()=>{const b=document.getElementById('expc'); if(b){b.textContent=`✔ ${tag} descargado · ${vis.length}`;}},60);
 }
+// Puts the visible titles on the clipboard, one per line, so they can be pasted
+// straight into the session as text. No file, no round trip.
+async function copiarResultado(){
+  const vis=DATA.filter(d=>pass(d)).sort((a,b)=>a.n-b.n);
+  const txt=vis.map(d=>d.raw).join('\n');
+  let ok=false;
+  try{ await navigator.clipboard.writeText(txt); ok=true; }
+  catch(e){
+    const ta=document.createElement('textarea');
+    ta.value=txt; ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.select();
+    try{ ok=document.execCommand('copy'); }catch(_){ ok=false; }
+    ta.remove();
+  }
+  const b=document.getElementById('copia');
+  if(b){ b.textContent=ok?`✔ Copiado · ${vis.length}`:`✗ Sin permiso`; }
+}
 document.getElementById('chips').addEventListener('click',e=>{
   if(e.target.closest('#expc')) exportarCorrecciones();
+  if(e.target.closest('#copia')) copiarResultado();
 });
 document.getElementById('q').addEventListener('input',e=>{S.q=norm(e.target.value);S.numSel=numSel(e.target.value);S.qs=S.numSel?'':sin(e.target.value);full();});
 ['dia','d1','d2'].forEach(id=>document.getElementById(id).addEventListener('change',e=>{
