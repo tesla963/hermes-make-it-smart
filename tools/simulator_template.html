@@ -109,6 +109,11 @@ th.tags,td.tags{width:186px;min-width:186px;max-width:186px}
 /* Buttons keep one line: without nowrap they wrapped to two and doubled their
    height next to a label that took the remaining space. */
 .pbar button{white-space:nowrap;flex:0 0 auto}
+/* The long id is reference data, not a headline: it goes last, small and dim. */
+.pidfoot{margin-top:10px;padding-top:8px;border-top:1px solid var(--line);
+font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px;line-height:1.45;
+color:var(--tx3);word-break:break-all;user-select:all}
+.pidfoot span{text-transform:uppercase;letter-spacing:.06em;font-size:9px;opacity:.7;margin-right:4px}
 .pbar.bottom{border-bottom:none;border-top:1px solid var(--line)}
 .pbar .x{margin-left:auto;cursor:pointer;color:var(--tx3);font-size:16px}
 .openbtn{background:var(--wine);border:1px solid var(--wine);color:#fff;border-radius:6px;padding:3px 8px;font-size:12px;font-weight:600;cursor:pointer}
@@ -233,7 +238,7 @@ aside .chips,aside .chip{max-width:100%}
 
 <div id="sbar"><div id="sthumbb"></div></div>
 <div class="panel" id="panel">
-  <div class="pbar"><span class="mono" id="pId" style="color:var(--tx3);font-size:11px"></span><span class="x" id="pclose">✕</span></div>
+  <div class="pbar"><span class="x" id="pclose">✕</span></div>
   <div class="pbody">
     <div class="pname" id="pname">—</div>
     <h3 class="ptitle" id="ptema">—</h3>
@@ -243,6 +248,7 @@ aside .chips,aside .chip{max-width:100%}
     <ul class="klist" id="pclaves"></ul>
     <div class="why" id="pwhy"></div>
     <button id="pedit" style="margin-top:6px">✎ Editar nombre y reentrenar el algoritmo</button>
+    <div id="pidfoot" class="pidfoot"></div>
   </div>
   <div class="pbar bottom"><button id="pcopia" title="Copia la ficha completa para pegarla en la sesión y comentarla">Copiar sesión</button><button class="openbtn" id="openBot" title="Abre la conversación en el panel de Hermes">Abrir sesión</button></div>
 </div>
@@ -259,6 +265,12 @@ const fmtC=c=>c>=1?'$'+c.toFixed(2):Math.round(c*100)+'¢';
 const fmtT=n=>n>=1e9?(n/1e9).toFixed(1)+'B':n>=1e8?Math.round(n/1e6)+'M':n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e3?Math.round(n/1e3)+'k':String(n);
 const fmtP=n=>n>=1000?(n/1000).toFixed(1)+'k':String(n);
 const fmtH=m=>m<60?m+'m':(m%60<5?Math.floor(m/60)+'h':Math.floor(m/60)+'h'+String(m%60).padStart(2,'0')+'m');
+// Shared noise test, defined up here so the panel and the clipboard agree on
+// what counts as something the owner actually said.
+const esRuido = x => !x || /^\s*\[/.test(x) || /^##\s*(script output|run context)/i.test(x)
+  || /you are running as a scheduled cron job/i.test(x) || /^\s*<system/i.test(x)
+  || /^-{3}\s*\n?\s*name:/.test(x) || /^\s*-{3}\s*name:/i.test(x)
+  || /description:\s*"Use when/i.test(x.slice(0,160));
 const norm=s=>(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
 const S={numSel:null,qs:'',tag3:null,cat1:null,cat2:null,cat3:null,tag1:null,tag2:null,tag4:null,tag5:null,tag6:null,autor:null,mes:null,sem:null,q:'',dia:'',d1:'',d2:''};
 const OPN=new Set(['c1:Software']);
@@ -644,38 +656,55 @@ function openPanel(d,tr){
   document.querySelectorAll('tr.r.sele').forEach(x=>x.classList.remove('sele'));tr.classList.add('sele');
   document.getElementById('pname').textContent=d.raw;     // el nombre de la sesión va primero
   document.getElementById('ptema').textContent=d.desc;
-  document.getElementById('pId').textContent='#'+d.n+' · '+d.id;
-  document.getElementById('psum').textContent=d.resumen;
+  const pf=document.getElementById('pidfoot');
+  if(pf) pf.innerHTML='<span>id</span> '+(d.prof&&d.prof!=='default'?'· perfil '+d.prof+' · ':'')+d.id;
+  document.getElementById('psum').textContent=esRuido(d.resumen)?'':d.resumen;
   document.getElementById('pkv').innerHTML=
     '<div>Sujeto</div><div><b>'+d.sujeto+'</b> · ordinal '+String(d.mmm).padStart(3,'0')+'</div>'+
     '<div>Tag 1</div><div>'+(d.tag1||'—')+'</div><div>Tag 2</div><div>'+(d.tag2||'—')+'</div>'+
     '<div style="grid-column:1/-1;border-top:1px solid var(--line);margin:6px 0 2px"></div>'+
-    '<div>Tag 3</div><div>'+(d.tag3||'—')+' <span style="color:var(--tx3)">(área)</span></div>'+
-    '<div>Tag 4</div><div>'+(d.tag4||'—')+' <span style="color:var(--tx3)">(entorno)</span></div>'+
-    '<div>Tag 5</div><div>'+(d.tag5||'—')+' <span style="color:var(--tx3)">(familia)</span></div>'+
-    '<div>Tag 6</div><div>'+(d.tag6||'—')+' <span style="color:var(--tx3)">(máquina)</span></div>'+
+    '<div>Pilar</div><div>'+(d.pilar||'—')+'</div>'+
+    '<div>País</div><div>'+(d.pais||'—')+'</div>'+
+    '<div>Año</div><div>'+(d.anio||'—')+'</div>'+
+    '<div>Máquina</div><div>'+(d.tag6||'—')+'</div>'+
     '<div>Ruta</div><div>'+d.dom+' › '+d.tag5+' › '+(d.tag1||'—')+'</div>'+
     '<div>Costo</div><div>'+fmtC(d.costo)+'</div><div>Horas</div><div>'+fmtH(d.horas)+'</div>'+
     '<div>Mensajes</div><div>'+d.mc+'</div><div>Fecha</div><div>'+d.fecha+'</div>'+
     '<div>Motor de IA</div><div>'+(d.motor||'—')+(d.motor_det?' <span style=\"opacity:.6;font-size:10.5px\">('+d.motor_det+')</span>':'')+'</div>'+'<div>Autor</div><div>'+d.autor+'</div><div>Perfil</div><div>'+d.prof+'</div>';
-  document.getElementById('pclaves').innerHTML=(d.claves.length?d.claves:['(sin mensajes de usuario en esta sesión)']).map(c=>'<li>'+c+'</li>').join('');
-  document.getElementById('pwhy').innerHTML='<b>ADN de la sesión:</b> sujeto <b>'+d.sujeto+'</b> · tag1 <b>'+(d.tag1||'—')+'</b> (plataforma) · tag2 <b>'+(d.tag2||'—')+'</b> (acción, país o marca) · tag3 <b>'+d.tag3+'</b> y tag4 <b>'+d.tag4+'</b> (taxonomía interna) · tag5 <b>'+d.tag5+'</b> (tipo de trabajo). Solo tag1 y tag2 aparecen en el nombre.';
+  const clv=(d.claves||[]).map(x=>String(x)).filter(x=>!esRuido(x));
+  document.getElementById('pclaves').innerHTML=(clv.length?clv:['(sin mensajes de usuario útiles en esta sesión)']).map(c=>'<li>'+c+'</li>').join('');
+  document.getElementById('pwhy').innerHTML='<b>ADN de la sesión:</b> sujeto <b>'+d.sujeto+'</b> · tag1 <b>'+(d.tag1||'—')+'</b> (plataforma) · tag2 <b>'+(d.tag2||'—')+'</b> (familia de trabajo) · pilar <b>'+(d.pilar||'—')+'</b> · máquina <b>'+(d.tag6||'—')+'</b>. Solo tag1 y tag2 aparecen en el nombre; el resto son filtros.';
   document.getElementById('panel').classList.add('on');updBar(); updBar();
 }
 document.getElementById('pclose').onclick=()=>{document.getElementById('panel').classList.remove('on');updBar();};
 document.getElementById('openBot').onclick=abrir;
 // Copies the whole card — title, id, facets, key messages — so it can be pasted
 // into the session and corrected in words instead of in a spreadsheet.
+// Loose helper: cron sessions and skill launches open with machine preamble, and
+// none of it is something the owner said.
+function fichaTexto(d){
+  const k=(v,alt)=> (v===undefined||v===null||v==='')? (alt||'—') : v;
+  const L=[d.raw,
+    'sujeto: '+d.sujeto+' · ordinal '+String(d.mmm).padStart(3,'0'),
+    'tag1: '+k(d.tag1)+' | tag2: '+k(d.tag2),
+    'pilar: '+k(d.pilar||d.tag3)+' | país: '+k(d.pais||d.tag4)+' | año: '+k(d.anio||d.tag5),
+    'máquina: '+k(d.tag6),
+    'descripción: '+k(d.desc),
+    'fecha: '+k(d.fecha)+' · mensajes: '+k(d.mc)+' · posts: '+k(d.posts),
+    'costo: '+fmtC(d.costo)+' · horas: '+fmtH(d.horas)+' · tokens: '+(d.tok_tot?Math.round(d.tok_tot/1000)+'k':'—'),
+    'motor: '+k(d.motor)+(d.motor_det?' ('+d.motor_det+')':'')+' · autor: '+k(d.autor)+' · perfil: '+k(d.prof)
+  ];
+  const cl=(d.claves||[]).map(x=>String(x).replace(/\s+/g,' ')).filter(x=>!esRuido(x));
+  if(cl.length){ L.push('--- mensajes clave del usuario ---');
+    cl.slice(0,6).forEach(x=>L.push('> '+x.slice(0,400))); }
+  else if(d.resumen && !esRuido(d.resumen)){ L.push('--- resumen ---'); L.push('> '+String(d.resumen).replace(/\s+/g,' ').slice(0,600)); }
+  else { L.push('--- mensajes clave del usuario ---'); L.push('> (no hay: los turnos útiles viven en el transcript, no en el índice)'); }
+  L.push('id: '+d.id);
+  return L.join('\n');
+}
 document.getElementById('pcopia').onclick=async()=>{
   if(!current) return;
-  const d=current;
-  const L=[d.raw,'id: '+d.id,
-           'sujeto: '+d.sujeto+' | tag1: '+d.tag1+' | tag2: '+(d.tag2||'—'),
-           'descripción: '+(d.desc||'—')];
-  const cl=(d.claves||[]).filter(x=>x&&!/^\[important/i.test(x)&&!/^##\s*script/i.test(x));
-  if(cl.length){ L.push('--- mensajes clave ---');
-    cl.slice(0,4).forEach(x=>L.push('> '+String(x).replace(/\s+/g,' ').slice(0,320))); }
-  const txt=L.join('\n'); let ok=false;
+  const txt=fichaTexto(current); let ok=false;
   try{ await navigator.clipboard.writeText(txt); ok=true; }
   catch(e){ const ta=document.createElement('textarea'); ta.value=txt;
     ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select();
