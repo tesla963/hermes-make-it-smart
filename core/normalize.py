@@ -90,6 +90,7 @@ def fit_description(text: str, budget: int) -> str:
     cut = compact or text
     if len(cut) > budget:
         cut = cut[:budget].rsplit(" ", 1)[0]
+    cut = cut.rstrip(" ,;:.-—·")
     return cut if _is_usable(cut) else ""
 
 

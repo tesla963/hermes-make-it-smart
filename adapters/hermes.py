@@ -50,6 +50,8 @@ class SessionRecord:
 _ATTACHMENT_RE = re.compile(r"\[The user sent (?:an? )?\w+~?\s*\.\.\..*?\]", re.S)
 _COMPACTION_RE = re.compile(r"\[CONTEXT COMPACTION[^\]]*\].*?(?=\n\n|\Z)", re.S)
 _GROUP_ENVELOPE_RE = re.compile(r'^\[Group chat:\s*"[^"]*"\]\s*You are @[\w.-]+[,.]?\s*', re.S)
+_CRON_RE = re.compile(r"^\[IMPORTANT:\s*You are running as a scheduled cron job.*?(?=\n\n|\Z)", re.S | re.I)
+_SYSTEM_NOISE_RE = re.compile(r"^(?:\[IMPORTANT:|\[SYSTEM:|\[REMINDER:).*?(?=\n\n|\Z)", re.S)
 _URL_RE = re.compile(r"https?://\S+")
 _MD_FENCE_RE = re.compile(r"```.*?```", re.S)
 
@@ -67,6 +69,8 @@ def clean_message(text: str) -> str:
     t = _ATTACHMENT_RE.sub(" ", t)
     t = _COMPACTION_RE.sub(" ", t)
     t = _GROUP_ENVELOPE_RE.sub("", t)
+    t = _CRON_RE.sub("", t)
+    t = _SYSTEM_NOISE_RE.sub("", t)
     t = _URL_RE.sub(" ", t)
     t = re.sub(r"\s+", " ", t)
     return t.strip()
