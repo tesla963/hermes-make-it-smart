@@ -252,7 +252,9 @@ class HermesTitleWriter:
         key = str(db_path) if db_path else "__default__"
         db = self._dbs.get(key)
         if db is None:
-            db = self._SessionDB(db_path) if db_path else self._SessionDB()
+            # SessionDB expects a Path: a bare str dies inside _open_writer on
+            # db_path.parent with an AttributeError that reads like a host bug.
+            db = self._SessionDB(Path(db_path)) if db_path else self._SessionDB()
             self._dbs[key] = db
         return db
 
