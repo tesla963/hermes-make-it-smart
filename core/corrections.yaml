@@ -1,0 +1,100 @@
+# Corrections taught by the owner.
+# Every entry is a rule AND the evidence that taught it.
+# Rendered into the classifier prompt as few-shot examples and mirrored in tests/eval/.
+
+- id: product-marketplace-shape
+  taught: 2026-11-09
+  rule: >
+    When the session evaluates a product, Tag1 is the brand and Tag2 is the
+    marketplace. Subject is the product itself.
+  examples:
+    - { nnn: 748, subject: "Air 2S", tag1: "DJI", tag2: "Ebay" }
+    - { nnn: 812, subject: "Trace Minerals", tag1: "Dr. Berg", tag2: "Amazon" }
+    - { nnn: 582, subject: "Case USB", tag1: "ORICO", tag2: "Comparación" }
+  control_question: "Does the tag tell me who makes it, or where we looked?"
+
+- id: subject-is-never-the-program
+  taught: 2026-11-07
+  rule: >
+    The subject names the object, problem or symptom. The platform goes in Tag1.
+    If they are nearly the same, something is wrong.
+  examples:
+    - { nnn: 582, wrong_subject: "Hermes", right_subject: "Case USB", tag1: "ORICO" }
+  note: 187 sessions corrected on this rule.
+
+- id: failure-point-naming
+  taught: 2026-11-08
+  rule: >
+    Name the point of failure, not the component. A broken gateway is
+    "Protocolo"; a permission dialog is "Ventana Permisos".
+  examples:
+    - { nnn: 20, subject: "Protocolo", tag1: "Telegram Gateway", tag2: "Troubleshooting" }
+    - { nnn: 13, subject: "Ventana Permisos", tag1: "Hermes Agent", tag2: "Data Security" }
+
+- id: troubleshooting-only-on-complaint
+  taught: 2026-11-08
+  rule: >
+    Tag2 is Troubleshooting only when the user reports something failing, not
+    when the topic is merely mentioned.
+  note: 98 candidates reviewed; 28 confirmed, 5 reverted.
+
+- id: full-product-names
+  taught: 2026-11-08
+  rule: >
+    Never abbreviate the host's own names: Hermes Agent, Hermes Desktop,
+    Hermes Terminal, Hermes Telegram. Never a bare "Hermes".
+  examples:
+    - { right: "Hermes Agent", wrong: "Hermes" }
+
+- id: ia-short-form
+  taught: 2026-11-08
+  rule: >
+    Use "IA" in titles, not "Inteligencia Artificial": 22 characters eat the
+    description and leave 96 titles with no text. The search bridges all forms.
+  bridge: ["IA", "AI", "Inteligencia Artificial", "Artificial Intelligence"]
+
+- id: subject-strips-action-prefix
+  taught: 2026-11-08
+  rule: Strip the action prefix; the verb belongs at the end of the description.
+  examples:
+    - { wrong: "Suplemento Vitamina C", right: "Vitamina C" }
+    - { wrong: "Dolor Interoseos", right: "Interoseos" }
+    - { wrong: "Auto-arranque Gateway Telegram", right: "Gateway Telegram" }
+
+- id: constitution-is-law-not-geopolitics
+  taught: 2026-11-08
+  rule: Panama's Constitution belongs to the Derecho pillar, not Geopolítica.
+  examples:
+    - { subject: "Constitución", pillar: "Derecho" }
+
+- id: pillar-never-in-title
+  taught: 2026-11-08
+  rule: >
+    The pillar is a filter, never part of the title. Measured: including it
+    leaves 877 of 884 titles with no description.
+  examples:
+    - { pillar: "Asistente IA", in_title: false }
+
+- id: subject-does-not-repeat-tag1
+  taught: 2026-11-08
+  rule: >
+    If Tag1 is YouTube, the subject does not say "Video"; it says
+    "Transcripción".
+  examples:
+    - { nnn: 12, wrong_subject: "Transcripción de Video", right_subject: "Transcripción", tag1: "YouTube" }
+
+- id: ventana-permisos-series
+  taught: 2026-11-08
+  rule: >
+    Permission dialogs are a recurring theme across months of work, not a
+    one-off. They form one series.
+  examples:
+    - { ssns: [10, 13, 90, 533, 720, 821, 877], subject: "Ventana Permisos", tag1: "Hermes Agent", tag2: "Data Security" }
+
+- id: marketplace-verb
+  taught: 2026-11-09
+  rule: >
+    For a marketplace evaluation the description ends with "· Comparar" when
+    weighing options, "· Analizar" when reading a listing in depth.
+  examples:
+    - { nnn: 748, description_ends: "· Comparar" }

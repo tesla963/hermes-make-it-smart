@@ -1,0 +1,11 @@
+name: hermes-make-my-work-smart
+version: 0.1.0
+description: "Session categorization, tagging and renaming to access all your sessions — faster than it takes to press 3 clicks."
+author: "Jorge Matsufuji"
+license: MIT
+homepage: https://github.com/tesla963/hermes-make-my-work-smart
+manifest_version: 2
+api_version: 1
+provides_hooks:
+  - on_session_end
+requires_env: []
