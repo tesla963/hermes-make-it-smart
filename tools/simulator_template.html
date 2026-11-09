@@ -106,9 +106,12 @@ th.tags,td.tags{width:186px;min-width:186px;max-width:186px}
 .pbody::-webkit-scrollbar-thumb{background:#4a3f57;border-radius:6px;border:2px solid transparent;background-clip:content-box}
 .pbody::-webkit-scrollbar-thumb:hover{background:#6b5b7d;background-clip:content-box}
 .pbar{padding:9px 16px;border-bottom:1px solid var(--line);display:flex;gap:8px;align-items:center;background:#100d12}
+/* Buttons keep one line: without nowrap they wrapped to two and doubled their
+   height next to a label that took the remaining space. */
+.pbar button{white-space:nowrap;flex:0 0 auto}
 .pbar.bottom{border-bottom:none;border-top:1px solid var(--line)}
 .pbar .x{margin-left:auto;cursor:pointer;color:var(--tx3);font-size:16px}
-.openbtn{background:var(--wine);border:1px solid var(--wine);color:#fff;border-radius:7px;padding:5px 12px;font-size:12.5px;font-weight:600;cursor:pointer}
+.openbtn{background:var(--wine);border:1px solid var(--wine);color:#fff;border-radius:6px;padding:3px 8px;font-size:12px;font-weight:600;cursor:pointer}
 .pname{font-family:ui-monospace,Menlo,monospace;font-size:11.5px;color:#f0dbe4;background:#1d1420;border:1px solid #3a2030;border-radius:8px;padding:9px 11px;margin:0 0 10px;line-height:1.5;word-break:break-word}
 .ptitle{font-size:14.5px;font-weight:650;margin:0 0 6px;line-height:1.35}
 .psum{font-size:13px;color:var(--tx2);background:#1a1520;border-left:3px solid var(--wine);padding:9px 11px;border-radius:0 7px 7px 0;margin:0 0 12px}
@@ -230,7 +233,7 @@ aside .chips,aside .chip{max-width:100%}
 
 <div id="sbar"><div id="sthumbb"></div></div>
 <div class="panel" id="panel">
-  <div class="pbar"><button class="openbtn" id="openTop">Abrir sesión</button><span class="mono" id="pId" style="color:var(--tx3);font-size:11px"></span><span class="x" id="pclose">✕</span></div>
+  <div class="pbar"><span class="mono" id="pId" style="color:var(--tx3);font-size:11px"></span><span class="x" id="pclose">✕</span></div>
   <div class="pbody">
     <div class="pname" id="pname">—</div>
     <h3 class="ptitle" id="ptema">—</h3>
@@ -241,7 +244,7 @@ aside .chips,aside .chip{max-width:100%}
     <div class="why" id="pwhy"></div>
     <button id="pedit" style="margin-top:6px">✎ Editar nombre y reentrenar el algoritmo</button>
   </div>
-  <div class="pbar bottom"><button class="openbtn" id="openBot">Abrir sesión</button><span class="sub" style="font-size:11px">Abre la conversación en el panel de Hermes</span></div>
+  <div class="pbar bottom"><button id="pcopia" title="Copia la ficha completa para pegarla en la sesión y comentarla">Copiar sesión</button><button class="openbtn" id="openBot" title="Abre la conversación en el panel de Hermes">Abrir sesión</button></div>
 </div>
 
 <div class="modal" id="modal"><div class="box">
@@ -659,7 +662,26 @@ function openPanel(d,tr){
   document.getElementById('panel').classList.add('on');updBar(); updBar();
 }
 document.getElementById('pclose').onclick=()=>{document.getElementById('panel').classList.remove('on');updBar();};
-document.getElementById('openTop').onclick=abrir;document.getElementById('openBot').onclick=abrir;
+document.getElementById('openBot').onclick=abrir;
+// Copies the whole card — title, id, facets, key messages — so it can be pasted
+// into the session and corrected in words instead of in a spreadsheet.
+document.getElementById('pcopia').onclick=async()=>{
+  if(!current) return;
+  const d=current;
+  const L=[d.raw,'id: '+d.id,
+           'sujeto: '+d.sujeto+' | tag1: '+d.tag1+' | tag2: '+(d.tag2||'—'),
+           'descripción: '+(d.desc||'—')];
+  const cl=(d.claves||[]).filter(x=>x&&!/^\[important/i.test(x)&&!/^##\s*script/i.test(x));
+  if(cl.length){ L.push('--- mensajes clave ---');
+    cl.slice(0,4).forEach(x=>L.push('> '+String(x).replace(/\s+/g,' ').slice(0,320))); }
+  const txt=L.join('\n'); let ok=false;
+  try{ await navigator.clipboard.writeText(txt); ok=true; }
+  catch(e){ const ta=document.createElement('textarea'); ta.value=txt;
+    ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select();
+    try{ ok=document.execCommand('copy'); }catch(_){ ok=false; } ta.remove(); }
+  const b=document.getElementById('pcopia');
+  if(b) b.textContent=ok?'✔ Copiada':'✗ Sin permiso';
+};
 function abrir(){if(current)alert('En el plugin esto abre la sesión #'+current.n+'.\nID: '+current.id);}
 document.getElementById('pedit').onclick=()=>{if(!current)return;document.getElementById('medit').value=current.raw;
   document.getElementById('mhint').textContent='Al guardar, el plugin escribe el título con autoridad de usuario y registra la corrección.';
