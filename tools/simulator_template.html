@@ -679,10 +679,15 @@ function exportarCorrecciones(){
   const csv='\ufeff'+head.join(',')+'\n'+rows.join('\n')+'\n';
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  // [CCCC] is a running count of exports, so the files sort and can be cited
+  // by number the way sessions are cited by NNN.
+  const nExp=(+(localStorage.getItem('mmws-export-count')||0))+1;
+  localStorage.setItem('mmws-export-count',nExp);
+  const tag='['+String(nExp).padStart(4,'0')+']';
   const t=new Date(), z=x=>String(x).padStart(2,'0');
-  a.download=`correcciones_${t.getFullYear()}${z(t.getMonth()+1)}${z(t.getDate())}_${z(t.getHours())}${z(t.getMinutes())}_${vis.length}sesiones.csv`;
+  a.download=`${tag} ${t.getFullYear()}${z(t.getMonth()+1)}${z(t.getDate())}_${z(t.getHours())}${z(t.getMinutes())}_${vis.length}sesiones.csv`;
   a.click(); URL.revokeObjectURL(a.href);
-  setTimeout(()=>{const b=document.getElementById('expc'); if(b){b.textContent='✔ Descargado · '+vis.length;}},60);
+  setTimeout(()=>{const b=document.getElementById('expc'); if(b){b.textContent=`✔ ${tag} descargado · ${vis.length}`;}},60);
 }
 document.getElementById('chips').addEventListener('click',e=>{
   if(e.target.closest('#expc')) exportarCorrecciones();
