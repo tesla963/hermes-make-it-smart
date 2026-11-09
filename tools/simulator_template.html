@@ -634,6 +634,7 @@ function full(){
 }
 document.getElementById('btnElim').onclick=()=>{verElim=!verElim;full();};
 
+function resetCopia(){const b=document.getElementById('pcopia'); if(b) b.textContent='Copiar sesión';}
 function openPanel(d,tr){
   const p=document.getElementById('panel');
   if(current && current.n===d.n && p.classList.contains('on')){   // clic en la misma sesion -> cierra
@@ -681,6 +682,7 @@ document.getElementById('pcopia').onclick=async()=>{
     try{ ok=document.execCommand('copy'); }catch(_){ ok=false; } ta.remove(); }
   const b=document.getElementById('pcopia');
   if(b) b.textContent=ok?'✔ Copiada':'✗ Sin permiso';
+  setTimeout(()=>{ if(b) b.textContent='Copiar sesión'; },1600);
 };
 function abrir(){if(current)alert('En el plugin esto abre la sesión #'+current.n+'.\nID: '+current.id);}
 document.getElementById('pedit').onclick=()=>{if(!current)return;document.getElementById('medit').value=current.raw;
