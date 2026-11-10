@@ -489,7 +489,9 @@ function pintarIdioma(){
   document.documentElement.lang=LANG;
 }
 const norm=s=>(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
-const S={numSel:null,qs:'',tag3:null,cat1:null,cat2:null,cat3:null,tag1:null,tag2:null,tag4:null,tag5:null,tag6:null,autor:null,anio:null,mes:null,sem:null,q:'',dia:'',d1:'',d2:''};
+// tag3 = Tema (pilar). tag3i = Intencion: dos bloques distintos no pueden
+// compartir variable o el filtro compara contra el campo equivocado.
+const S={numSel:null,qs:'',tag3:null,tag3i:null,cat1:null,cat2:null,cat3:null,tag1:null,tag2:null,tag4:null,tag5:null,tag6:null,autor:null,anio:null,mes:null,sem:null,q:'',dia:'',d1:'',d2:''};
 const OPN=new Set(['c1:Software']);
 const EXP=new Set();   // filtros desplegados del todo (+10 opciones)
 // Por defecto: marca y tema abiertos, contexto e intención plegados. Con los
@@ -617,6 +619,7 @@ function pass(d,...skips){
   if(!skips.includes('cat')&&S.cat2&&(d.tag2||'Sin familia')!==S.cat2)return false;
   if(!skips.includes('cat')&&S.cat3&&(d.tag1||'Sin plataforma')!==S.cat3)return false;
   if(!skips.includes('tag3')&&S.tag3&&d.pilar!==S.tag3)return false;
+  if(!skips.includes('tag3i')&&S.tag3i&&d.tag3!==S.tag3i)return false;
   if(!skips.includes('tag4')&&S.tag4&&d.pais!==S.tag4)return false;
   if(!skips.includes('tag5')&&S.tag5&&d.anio!==S.tag5)return false;
   if(!skips.includes('tag1')&&S.tag1&&d.tag1!==S.tag1)return false;
@@ -782,11 +785,11 @@ function buildTags(){
   document.querySelectorAll('#fTag1 input').forEach(i=>i.onchange=()=>{S.tag1=S.tag1===i.dataset.tag1?null:i.dataset.tag1;full();});
 
   const Ci=counts(['tag3']);
-  const hi=Object.keys(E.t3).filter(k=>k&&((Ci.tag3[k]||0)>0||S.tag3===k)).sort((a,b)=>(Ci.tag3[b]||0)-(Ci.tag3[a]||0))
-    .map(k=>{const n=Ci.tag3[k]||0;return `<label class="opt${S.tag3===k?' sel':''}${n?'':' zero'}"><input type="radio" name="tag3" ${S.tag3===k?'checked':''} data-tag3v="${k}"><span>${k}</span><span class="n">${n}</span></label>`;}).join('');
+  const hi=Object.keys(E.t3).filter(k=>k&&((Ci.tag3[k]||0)>0||S.tag3i===k)).sort((a,b)=>(Ci.tag3[b]||0)-(Ci.tag3[a]||0))
+    .map(k=>{const n=Ci.tag3[k]||0;return `<label class="opt${S.tag3i===k?' sel':''}${n?'':' zero'}"><input type="radio" name="tag3v" ${S.tag3i===k?'checked':''} data-tag3v="${k}"><span>${k}</span><span class="n">${n}</span></label>`;}).join('');
   const ci=document.getElementById('fTag3i');
   if(ci){ ci.innerHTML=hi||'<div class="opt empty">—</div>';
-    ci.querySelectorAll('input').forEach(i=>i.onchange=()=>{S.tag3=S.tag3===i.dataset.tag3v?null:i.dataset.tag3v;full();}); }
+    ci.querySelectorAll('input').forEach(i=>i.onchange=()=>{S.tag3i=S.tag3i===i.dataset.tag3v?null:i.dataset.tag3v;full();}); }
 
   const C2=counts(['tag2']);
   const todas2=Object.keys(E.t2).filter(k=>k&&((C2.tag2[k]||0)>0||S.tag2===k)).sort((a,b)=>(C2.tag2[b]||0)-(C2.tag2[a]||0));
@@ -902,12 +905,13 @@ function render(){
   }
   document.getElementById('counter').innerHTML=t('mostrando')+' <b>'+vis+'</b> '+t('de')+' <b>'+DATA.length+'</b>'+extra;
   const qs=document.getElementById('qshow');
-  if(qs) qs.onclick=()=>{S.cat1=S.cat2=S.cat3=null;S.tag1=S.tag2=S.tag4=S.tag5=S.tag6=null;S.autor=null;S.anio=S.mes=S.sem=null;S.dia='';S.d1='';S.d2='';full();};
+  if(qs) qs.onclick=()=>{S.cat1=S.cat2=S.cat3=null;S.tag1=S.tag2=S.tag3i=S.tag4=S.tag5=S.tag6=null;S.autor=null;S.anio=S.mes=S.sem=null;S.dia='';S.d1='';S.d2='';full();};
 }
 
 function chips(){
   const out=[];
   if(S.cat3)out.push(['cat3',S.cat3]);
+  if(S.tag3i)out.push(['tag3i',S.tag3i]);
   if(S.tag3)out.push(['tag3',S.tag3]); else if(S.cat2)out.push(['cat2',S.cat2]); else if(S.cat1)out.push(['cat1',S.cat1]);
   if(S.tag1)out.push(['tag1',S.tag1]);
   if(S.tag2)out.push(['tag2',S.tag2]);
@@ -941,7 +945,7 @@ function chips(){
     full();});
   const c=document.getElementById('clr'); if(c) c.onclick=limpiar;
 }
-function limpiar(){S.cat1=S.cat2=S.cat3=S.tag1=S.tag2=S.tag3=S.tag4=S.tag5=S.tag6=S.autor=S.motor=S.mes=S.sem=null;S.q=S.qs=S.dia=S.d1=S.d2='';S.numSel=null;
+function limpiar(){S.cat1=S.cat2=S.cat3=S.tag1=S.tag2=S.tag3=S.tag3i=S.tag4=S.tag5=S.tag6=S.autor=S.motor=S.mes=S.sem=null;S.q=S.qs=S.dia=S.d1=S.d2='';S.numSel=null;
   ['q','dia','d1','d2'].forEach(i=>document.getElementById(i).value='');
   orden={k:'fecha',asc:false};document.querySelectorAll('[data-s]').forEach(b=>b.classList.toggle('on',b.dataset.s==='fecha'));full();}
 function fitCheck(){
