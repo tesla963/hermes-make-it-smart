@@ -1,65 +1,77 @@
 /**
- * Hermes, Make All My Work Smart! — desktop plugin (v0.1)
+ * Hermes, make all my work Smart! — desktop plugin (v0.1)
  *
  * A full page that turns the session archive into a browsable catalog:
  * facets on the left, sessions in the middle, the detail card on the right.
  *
  * Data comes from `plugin-data/<id>/index.json`, built by tools/build_index.py.
  * The plugin never reads state.db itself: the Python indexer already did the
- * work (classification, subjects, counters, costs), and the window only paints.
+ * work (classification, subjects, counters, costs) and the window only paints.
+ * That is the modular seam — another host can reuse the indexer, another window
+ * can reuse this index.
  *
- * What it can do today:
- *   - filter by pillar, tag1, tag2 and free text (with synonyms)
- *   - select sessions by number: "126,305" or "50-75"
- *   - copy the visible titles, or one full card, to the clipboard
- *   - export the visible rows to CSV with a running [CCCC] counter
- *   - open a stored session in the app, in place or in a tab
- *
- * Everything here is read-only against the host. The one write — renaming —
- * goes through host.request('session.title'), never a raw database call.
+ * The disk file is loaded UNCOMPILED, so: no JSX syntax, and the only
+ * importable specifiers are @hermes/plugin-sdk, react and react/jsx-runtime.
+ * `jsx(type, props)` carries its children inside props, so everything below
+ * goes through the tiny `h()` helper instead of raw runtime calls.
  */
 
-import { host, ROUTES_AREA, SIDEBAR_NAV_AREA, jsx } from '@hermes/plugin-sdk'
+import { host, ROUTES_AREA, SIDEBAR_NAV_AREA } from '@hermes/plugin-sdk'
+import { jsx, jsxs, Fragment } from 'react/jsx-runtime'
+import { useState, useEffect, useMemo } from 'react'
 
 const ID = 'make-my-work-smart'
-const NAME = 'Hermes, Make All My Work Smart!'
+const NAME = 'Hermes, make all my work Smart!'
 const VERSION = '0.1.0'
 const ROUTE = '/smart'
+
+/**
+ * jsx-runtime wants `children` inside props:
+ *   jsx('div', { props })   /   jsxs('div', { props, children: [...] })
+ * This keeps the call sites readable — h(tag, props, ...children).
+ */
+function h(type, props, ...kids) {
+  const p = { ...(props || {}) }
+  if (kids.length === 1) return jsx(type, { ...p, children: kids[0] })
+  if (kids.length > 1) return jsxs(type, { ...p, children: kids })
+  return jsx(type, p)
+}
 
 const CSS = `
 .mmws{display:grid;grid-template-columns:220px 1fr 340px;height:100%;font-size:13px;color:#e8dde4;background:#0d0b0e}
 .mmws aside{border-right:1px solid #2a2330;overflow:auto;padding:10px}
-.mmws main{overflow:auto}
+.mmws main{overflow:auto;min-width:0}
 .mmws .panel{border-left:1px solid #2a2330;overflow:auto;padding:12px}
-.mmws h1{font-size:15px;margin:0 0 8px}
+.mmws h1{font-size:14px;margin:0 0 8px;font-weight:800;letter-spacing:.01em;line-height:1.3}
 .mmws input{width:100%;padding:6px 8px;border-radius:6px;border:1px solid #3a3040;background:#17131a;color:inherit}
 .mmws .grp{margin:12px 0}
 .mmws .grp h4{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:#8b8095;margin:0 0 5px}
-.mmws .opt{display:flex;justify-content:space-between;padding:3px 6px;border-radius:5px;cursor:pointer}
+.mmws .opt{display:flex;justify-content:space-between;gap:8px;padding:3px 6px;border-radius:5px;cursor:pointer}
 .mmws .opt:hover{background:#1d1822}
 .mmws .opt.on{background:#2a1a24;color:#f0dbe4}
 .mmws .opt i{font-style:normal;color:#8b8095}
-.mmws .bar{display:flex;gap:6px;align-items:center;padding:8px 10px;border-bottom:1px solid #2a2330;position:sticky;top:0;background:#100d12;z-index:2}
-.mmws button{padding:3px 8px;font-size:12px;border-radius:6px;border:1px solid #3a3040;background:#1d1822;color:#cfc4d4;cursor:pointer}
+.mmws .bar{display:flex;gap:6px;align-items:center;padding:8px 10px;border-bottom:1px solid #2a2330;position:sticky;top:0;background:#100d12;z-index:2;flex-wrap:wrap}
+.mmws button{padding:3px 8px;font-size:12px;border-radius:6px;border:1px solid #3a3040;background:#1d1822;color:#cfc4d4;cursor:pointer;white-space:nowrap}
 .mmws button.on{background:#5a2040;border-color:#7a2a56;color:#fff}
 .mmws table{width:100%;border-collapse:collapse}
-.mmws th{font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;color:#8b8095;text-align:left;padding:6px 8px;position:sticky;top:41px;background:#100d12}
+.mmws th{font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;color:#8b8095;text-align:left;padding:6px 8px;position:sticky;top:41px;background:#100d12;z-index:1}
 .mmws td{padding:3px 8px;vertical-align:top}
-.mmws tr.t td{padding-top:9px;font-family:ui-monospace,Menlo,monospace;font-size:11px;font-weight:700;color:#f4e6ee}
-.mmws tr.t span.f{color:#f4e6ee}
+.mmws tr.t td{padding-top:9px;font-family:ui-monospace,Menlo,monospace;font-size:11px;font-weight:700;color:#f4e6ee;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:0}
 .mmws tr.r{cursor:pointer}
 .mmws tr.r td{border-bottom:2px solid #3d3346;color:#cfc4d4}
-.mmws tr.r.sel{background:#251521}
+.mmws tr.r:hover td{background:#171320}
+.mmws tr.r.sel td{background:#251521}
 .mmws .num{text-align:center;font-variant-numeric:tabular-nums}
 .mmws .pill{display:inline-block;padding:1px 6px;border-radius:20px;background:#241d2b;font-size:10.5px;margin-right:4px}
 .mmws .empty{padding:30px;text-align:center;color:#8b8095}
-.mmws .kbar{position:sticky;bottom:0;display:flex;gap:14px;padding:6px 10px;background:#100d12;border-top:1px solid #2a2330;font-size:11px}
-.mmws .kbar b{font-size:15px;margin-right:4px}
+.mmws .kbar{position:sticky;bottom:0;display:flex;gap:16px;padding:6px 10px;background:#100d12;border-top:1px solid #2a2330;font-size:11px;align-items:baseline}
+.mmws .kbar b{font-size:15px;margin-right:4px;font-variant-numeric:tabular-nums}
 .mmws .kbar i{font-style:normal;font-size:8px;text-transform:uppercase;color:#8b8095}
-.mmws .card h2{font-size:13px;margin:0 0 8px;font-family:ui-monospace,Menlo,monospace;line-height:1.4}
+.mmws .card h2{font-size:12.5px;margin:0 0 8px;font-family:ui-monospace,Menlo,monospace;line-height:1.45}
 .mmws .kv{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;font-size:11.5px}
 .mmws .kv div:nth-child(odd){color:#8b8095}
-.mmws .key{margin:6px 0;padding-left:8px;border-left:2px solid #3a3040;color:#cfc4d4;font-size:11.5px}
+.mmws .key{margin:6px 0;padding-left:8px;border-left:2px solid #3a3040;color:#cfc4d4;font-size:11.5px;line-height:1.4}
+.mmws .hint{color:#8b8095;font-size:11px;margin-left:auto}
 `
 
 const norm = (s) =>
@@ -69,9 +81,16 @@ const norm = (s) =>
     .toLowerCase()
 
 const fmtC = (v) => (v >= 1 ? '$' + v.toFixed(2) : Math.round(v * 100) + '¢')
-const fmtH = (m) => (m >= 60 ? Math.floor(m / 60) + 'h' + String(Math.round(m % 60)).padStart(2, '0') : Math.round(m) + 'm')
+const fmtH = (m) =>
+  m >= 60 ? Math.floor(m / 60) + 'h' + String(Math.round(m % 60)).padStart(2, '0') : Math.round(m) + 'm'
 const fmtN = (n) =>
-  n >= 1e9 ? (n / 1e9).toFixed(1) + 'B' : n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(1) + 'k' : String(n || 0)
+  n >= 1e9
+    ? (n / 1e9).toFixed(1) + 'B'
+    : n >= 1e6
+      ? (n / 1e6).toFixed(1) + 'M'
+      : n >= 1e3
+        ? (n / 1e3).toFixed(1) + 'k'
+        : String(n || 0)
 
 /** "126,305" or "50-75" selects by number; anything else is text. */
 function numSel(text) {
@@ -92,10 +111,9 @@ function numSel(text) {
 
 async function copyText(ctx, text) {
   try {
-    const ok = await ctx.os.writeClipboard(text)
-    if (ok) return true
+    if (await ctx.os.writeClipboard(text)) return true
   } catch (e) {
-    /* fall through */
+    /* fall through to the browser API */
   }
   try {
     await navigator.clipboard.writeText(text)
@@ -106,9 +124,6 @@ async function copyText(ctx, text) {
 }
 
 function App({ ctx }) {
-  const React = ctx.React
-  const { useState, useEffect, useMemo } = React
-
   const [data, setData] = useState(null)
   const [error, setError] = useState(null)
   const [q, setQ] = useState('')
@@ -121,12 +136,12 @@ function App({ ctx }) {
     let alive = true
     ;(async () => {
       try {
-        const raw = await ctx.files.readText('data', 'index.json')
+        const res = await ctx.files.readText('data', 'index.json')
         if (!alive) return
-        if (!raw) throw new Error('no index.json — run tools/build_index.py first')
-        setData(JSON.parse(raw))
+        if (!res || !res.ok || !res.text) throw new Error('falta index.json — corre tools/build_index.py')
+        setData(JSON.parse(res.text))
       } catch (e) {
-        if (alive) setError(String(e && e.message ? e.message : e))
+        if (alive) setError(String((e && e.message) || e))
       }
     })()
     return () => {
@@ -142,7 +157,7 @@ function App({ ctx }) {
     if (nums) {
       if (!nums.has(s.n)) return false
     } else if (q) {
-      const hay = norm(s.raw + ' ' + s.id)
+      const hay = norm(s.raw + ' ' + s.id + ' ' + s.desc)
       if (!q.split(/\s+/).filter(Boolean).every((w) => hay.includes(norm(w)))) return false
     }
     if (f.pilar && s.pilar !== f.pilar) return false
@@ -162,33 +177,38 @@ function App({ ctx }) {
   const totals = useMemo(
     () =>
       visible.reduce(
-        (a, s) => ({ costo: a.costo + (s.costo || 0), horas: a.horas + (s.horas || 0), tok: a.tok + (s.tok || 0), posts: a.posts + (s.posts || 0) }),
+        (a, s) => ({
+          costo: a.costo + (s.costo || 0),
+          horas: a.horas + (s.horas || 0),
+          tok: a.tok + (s.tok || 0),
+          posts: a.posts + (s.posts || 0),
+        }),
         { costo: 0, horas: 0, tok: 0, posts: 0 }
       ),
     [visible]
   )
 
   if (error)
-    return jsx('div', { className: 'mmws' }, jsx('div', { className: 'empty' }, 'No pude leer el índice: ' + error))
-  if (!data) return jsx('div', { className: 'mmws' }, jsx('div', { className: 'empty' }, 'Cargando índice…'))
+    return h('div', { className: 'mmws' }, h('div', { className: 'empty' }, 'No pude leer el índice: ' + error))
+  if (!data) return h('div', { className: 'mmws' }, h('div', { className: 'empty' }, 'Cargando índice…'))
 
   const optRow = (key, value, n) =>
-    jsx(
+    h(
       'div',
       {
         key: key + value,
         className: 'opt' + (f[key] === value ? ' on' : ''),
         onClick: () => setF((p) => ({ ...p, [key]: p[key] === value ? null : value })),
       },
-      jsx('span', null, value),
-      jsx('i', null, n)
+      h('span', null, value),
+      h('i', null, n)
     )
 
   const group = (title, key) =>
-    jsx(
+    h(
       'div',
-      { className: 'grp' },
-      jsx('h4', null, title),
+      { className: 'grp', key },
+      h('h4', null, title),
       countBy(key).slice(0, 40).map(([v, n]) => optRow(key, v, n))
     )
 
@@ -226,13 +246,22 @@ function App({ ctx }) {
 
   const exportCsv = async () => {
     const esc = (v) => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"'
-    const head = ['n', 'id', 'fecha', 'titulo_actual', 'sujeto', 'tag1', 'tag2', 'descripcion', 'sujeto_nuevo', 'tag1_nuevo', 'tag2_nuevo', 'descripcion_nueva', 'observaciones']
+    const head = [
+      'n', 'id', 'fecha', 'titulo_actual', 'sujeto', 'tag1', 'tag2', 'descripcion',
+      'sujeto_nuevo', 'tag1_nuevo', 'tag2_nuevo', 'descripcion_nueva', 'observaciones',
+    ]
     const rows = visible
       .slice()
       .sort((a, b) => a.n - b.n)
-      .map((s) => [s.n, s.id, s.fecha, s.raw, s.sujeto, s.tag1, s.tag2, s.desc, '', '', '', '', ''].map(esc).join(','))
-    const ok = await ctx.files.writeText('data', 'last-export.csv', '\ufeff' + head.join(',') + '\n' + rows.join('\n') + '\n')
-    setNote(ok ? '✔ exportado a plugin-data/data/last-export.csv' : '✗ no pude escribir')
+      .map((s) =>
+        [s.n, s.id, s.fecha, s.raw, s.sujeto, s.tag1, s.tag2, s.desc, '', '', '', '', ''].map(esc).join(',')
+      )
+    const res = await ctx.files.writeText(
+      'data',
+      'last-export.csv',
+      '\ufeff' + head.join(',') + '\n' + rows.join('\n') + '\n'
+    )
+    setNote(res && res.ok ? '✔ exportado a plugin-data/data/last-export.csv' : '✗ no pude escribir')
     setTimeout(() => setNote(''), 3000)
   }
 
@@ -240,130 +269,147 @@ function App({ ctx }) {
     try {
       host.openSession(s.id, { profile: s.prof, intent: 'tab' })
     } catch (e) {
-      setNote('✗ ' + (e.message || e))
+      setNote('✗ ' + ((e && e.message) || e))
+      setTimeout(() => setNote(''), 3000)
     }
   }
 
-  return jsx(
+  return h(
     'div',
     { className: 'mmws' },
-    jsx('style', null, CSS),
-    jsx(
+    h('style', null, CSS),
+
+    h(
       'aside',
       null,
-      jsx('h1', null, NAME),
-      jsx('input', { placeholder: 'Buscar o 126,305 · 50-75', value: q, onChange: (e) => setQ(e.target.value) }),
-      jsx('div', { className: 'grp' }, jsx('h4', null, 'Pilar'), countBy('pilar').map(([v, n]) => optRow('pilar', v, n))),
+      h('h1', null, NAME),
+      h('input', { placeholder: 'Buscar · 126,305 · 50-75', value: q, onChange: (e) => setQ(e.target.value) }),
+      h('div', { className: 'grp' }, h('h4', null, 'Pilar'), countBy('pilar').map(([v, n]) => optRow('pilar', v, n))),
       group('Tag 1 · plataforma', 'tag1'),
       group('Tag 2 · familia', 'tag2')
     ),
-    jsx(
+
+    h(
       'main',
       null,
-      jsx(
+      h(
         'div',
         { className: 'bar' },
-        jsx('strong', null, visible.length + ' de ' + sessions.length),
-        jsx('button', { onClick: () => { setF({ pilar: null, tag1: null, tag2: null }); setQ('') } }, 'Limpiar'),
-        jsx('button', { onClick: copyTitles }, 'Copiar · ' + visible.length),
-        jsx('button', { onClick: exportCsv }, 'Exportar · ' + visible.length),
-        jsx('button', { className: showCron ? 'on' : '', onClick: () => setShowCron((v) => !v) }, (showCron ? 'Hide' : 'Show') + ' Cron · ' + sessions.filter((s) => s.esCron).length),
-        jsx('span', { style: { marginLeft: 'auto', color: '#8b8095', fontSize: '11px' } }, note)
+        h('strong', null, visible.length + ' de ' + sessions.length),
+        h('button', { onClick: () => { setF({ pilar: null, tag1: null, tag2: null }); setQ('') } }, 'Limpiar'),
+        h('button', { onClick: copyTitles }, 'Copiar · ' + visible.length),
+        h('button', { onClick: exportCsv }, 'Exportar · ' + visible.length),
+        h(
+          'button',
+          { className: showCron ? 'on' : '', onClick: () => setShowCron((v) => !v) },
+          (showCron ? 'Hide' : 'Show') + ' Cron · ' + sessions.filter((s) => s.esCron).length
+        ),
+        h('span', { className: 'hint' }, note)
       ),
-      jsx(
+
+      h(
         'table',
         null,
-        jsx('thead', null, jsx('tr', null, ['Nº', 'Fecha', 'Sesión', 'Tags', 'Costo', 'Horas', 'Tokens', 'Posts'].map((h) => jsx('th', { key: h }, h)))),
-        jsx(
+        h(
+          'thead',
+          null,
+          h(
+            'tr',
+            null,
+            ['Nº', 'Fecha', 'Sesión', 'Tags', 'Costo', 'Horas', 'Tokens', 'Posts'].map((x) => h('th', { key: x }, x))
+          )
+        ),
+        h(
           'tbody',
           null,
-          visible.map((s) =>
-            jsx(
-              React.Fragment,
-              { key: s.id },
-              jsx(
-                'tr',
-                { className: 't' },
-                jsx('td', { className: 'num' }, s.n),
-                jsx(
-                  'td',
-                  { colSpan: 7 },
-                  jsx('span', { className: 'f' }, '[' + s.sujeto + '] ' + String(s.mmm).padStart(3, '0') + (s.tag1 ? ' [' + s.tag1 + ']' : '') + (s.tag2 ? ' [' + s.tag2 + ']' : '')),
-                  ' ',
-                  jsx('span', { className: 'd' }, s.desc)
-                )
-              ),
-              jsx(
-                'tr',
-                { className: 'r' + (sel && sel.id === s.id ? ' sel' : ''), onClick: () => setSel(s) },
-                jsx('td', { className: 'num' }, ''),
-                jsx('td', null, s.fecha),
-                jsx('td', null, s.sujeto),
-                jsx('td', null, jsx('span', { className: 'pill' }, s.tag1 || '—'), jsx('span', { className: 'pill' }, s.tag2 || '—')),
-                jsx('td', { className: 'num' }, fmtC(s.costo)),
-                jsx('td', { className: 'num' }, fmtH(s.horas)),
-                jsx('td', { className: 'num' }, fmtN(s.tok)),
-                jsx('td', { className: 'num' }, s.posts)
+          visible.flatMap((s) => [
+            h(
+              'tr',
+              { className: 't', key: s.id + '-t' },
+              h('td', { className: 'num' }, s.n),
+              h(
+                'td',
+                { colSpan: 7 },
+                '[' + s.sujeto + '] ' + String(s.mmm).padStart(3, '0') +
+                  (s.tag1 ? ' [' + s.tag1 + ']' : '') +
+                  (s.tag2 ? ' [' + s.tag2 + ']' : '') +
+                  (s.desc ? ' ' + s.desc : '')
               )
-            )
-          )
+            ),
+            h(
+              'tr',
+              { className: 'r' + (sel && sel.id === s.id ? ' sel' : ''), key: s.id + '-r', onClick: () => setSel(s) },
+              h('td', { className: 'num' }, ''),
+              h('td', null, s.fecha),
+              h('td', null, s.sujeto),
+              h('td', null, h('span', { className: 'pill' }, s.tag1 || '—'), h('span', { className: 'pill' }, s.tag2 || '—')),
+              h('td', { className: 'num' }, fmtC(s.costo)),
+              h('td', { className: 'num' }, fmtH(s.horas)),
+              h('td', { className: 'num' }, fmtN(s.tok)),
+              h('td', { className: 'num' }, s.posts)
+            ),
+          ])
         )
       ),
-      jsx(
+
+      h(
         'div',
         { className: 'kbar' },
-        jsx('span', null, jsx('b', null, visible.length), jsx('i', null, 'sesiones')),
-        jsx('span', null, jsx('b', null, '$' + totals.costo.toFixed(2)), jsx('i', null, 'costo')),
-        jsx('span', null, jsx('b', null, Math.round(totals.horas / 60) + ' h'), jsx('i', null, 'horas')),
-        jsx('span', null, jsx('b', null, fmtN(totals.posts)), jsx('i', null, 'posts')),
-        jsx('span', null, jsx('b', null, fmtN(totals.tok)), jsx('i', null, 'tokens'))
+        h('span', null, h('b', null, visible.length), h('i', null, 'sesiones')),
+        h('span', null, h('b', null, '$' + totals.costo.toFixed(2)), h('i', null, 'costo')),
+        h('span', null, h('b', null, Math.round(totals.horas / 60) + ' h'), h('i', null, 'horas')),
+        h('span', null, h('b', null, fmtN(totals.posts)), h('i', null, 'posts')),
+        h('span', null, h('b', null, fmtN(totals.tok)), h('i', null, 'tokens'))
       )
     ),
-    jsx(
+
+    h(
       'div',
       { className: 'panel card' },
       sel
-        ? jsx(
-            React.Fragment,
+        ? h(
+            Fragment,
             null,
-            jsx('h2', null, sel.raw),
-            jsx(
+            h('h2', null, sel.raw),
+            h(
               'div',
               { className: 'kv' },
-              jsx('div', null, 'Sujeto'),
-              jsx('div', null, sel.sujeto + ' · ' + String(sel.mmm).padStart(3, '0')),
-              jsx('div', null, 'Tag 1'),
-              jsx('div', null, sel.tag1 || '—'),
-              jsx('div', null, 'Tag 2'),
-              jsx('div', null, sel.tag2 || '—'),
-              jsx('div', null, 'Pilar'),
-              jsx('div', null, sel.pilar || '—'),
-              jsx('div', null, 'Máquina'),
-              jsx('div', null, sel.tag6 || '—'),
-              jsx('div', null, 'Fecha'),
-              jsx('div', null, sel.fecha),
-              jsx('div', null, 'Costo'),
-              jsx('div', null, fmtC(sel.costo) + ' · ' + fmtH(sel.horas)),
-              jsx('div', null, 'Tokens'),
-              jsx('div', null, fmtN(sel.tok) + ' · ' + sel.posts + ' posts'),
-              jsx('div', null, 'Motor'),
-              jsx('div', null, sel.motor || '—'),
-              jsx('div', null, 'Perfil'),
-              jsx('div', null, sel.prof)
+              h('div', null, 'Sujeto'), h('div', null, sel.sujeto + ' · ' + String(sel.mmm).padStart(3, '0')),
+              h('div', null, 'Tag 1'), h('div', null, sel.tag1 || '—'),
+              h('div', null, 'Tag 2'), h('div', null, sel.tag2 || '—'),
+              h('div', null, 'Pilar'), h('div', null, sel.pilar || '—'),
+              h('div', null, 'Máquina'), h('div', null, sel.tag6 || '—'),
+              h('div', null, 'Fecha'), h('div', null, sel.fecha),
+              h('div', null, 'Costo'), h('div', null, fmtC(sel.costo) + ' · ' + fmtH(sel.horas)),
+              h('div', null, 'Tokens'), h('div', null, fmtN(sel.tok) + ' · ' + sel.posts + ' posts'),
+              h('div', null, 'Motor'), h('div', null, sel.motor || '—'),
+              h('div', null, 'Perfil'), h('div', null, sel.prof)
             ),
-            jsx('h4', { style: { fontSize: '10px', color: '#8b8095', margin: '14px 0 4px' } }, 'MENSAJES CLAVE DEL USUARIO'),
+            h('h4', { style: { fontSize: '10px', color: '#8b8095', margin: '14px 0 4px' } }, 'MENSAJES CLAVE DEL USUARIO'),
             (sel.claves || []).length
-              ? sel.claves.map((c, i) => jsx('div', { className: 'key', key: i }, c))
-              : jsx('div', { className: 'key' }, '(sin mensajes de usuario útiles en esta sesión)'),
-            jsx(
+              ? (sel.claves || []).map((c, i) => h('div', { className: 'key', key: i }, c))
+              : h('div', { className: 'key' }, '(sin mensajes de usuario útiles en esta sesión)'),
+            h(
               'div',
               { style: { display: 'flex', gap: '6px', marginTop: '12px' } },
-              jsx('button', { onClick: copyCard }, 'Copiar sesión'),
-              jsx('button', { onClick: () => openSession(sel) }, 'Abrir sesión')
+              h('button', { onClick: copyCard }, 'Copiar sesión'),
+              h('button', { onClick: () => openSession(sel) }, 'Abrir sesión')
             ),
-            jsx('div', { style: { marginTop: '10px', fontSize: '10px', color: '#8b8095', fontFamily: 'monospace', wordBreak: 'break-all' } }, 'id ' + sel.id)
+            h(
+              'div',
+              {
+                style: {
+                  marginTop: '10px',
+                  fontSize: '10px',
+                  color: '#8b8095',
+                  fontFamily: 'monospace',
+                  wordBreak: 'break-all',
+                },
+              },
+              'id ' + sel.id
+            )
           )
-        : jsx('div', { className: 'empty' }, 'Elige una sesión para ver su ficha.')
+        : h('div', { className: 'empty' }, 'Elige una sesión para ver su ficha.')
     )
   )
 }
@@ -375,7 +421,7 @@ export default {
 
   register(ctx) {
     ctx.registerMany([
-      { id: 'page', area: ROUTES_AREA, data: { path: ROUTE }, render: () => jsx(App, { ctx }) },
+      { id: 'page', area: ROUTES_AREA, data: { path: ROUTE }, render: () => h(App, { ctx }) },
       { id: 'nav', area: SIDEBAR_NAV_AREA, data: { path: ROUTE, label: 'Make It Smart', codicon: 'archive' } },
     ])
   },
