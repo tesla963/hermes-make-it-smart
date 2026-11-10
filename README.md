@@ -36,35 +36,72 @@ An agent that forgets the shape of your work is an agent you have to re-brief ev
 ## The naming format
 
 ```
-NNN [Subject MMM] [Tag1] [Tag2] Date Description · Verb
+NNN [Subject] MMM [Tag1] [Tag2] Description · Verb
 ```
 
 | Part | Question it answers | Example |
 |---|---|---|
 | `NNN` | global sequence, never reused | `748` |
-| `[Subject MMM]` | *what* the session is about, and which one of the series | `[Air 2S 003]` |
+| `[Subject]` | *what* the session is about | `[Air 2S]` |
+| `MMM` | which one of the series — the ordinal, **outside** the bracket | `003` |
 | `[Tag1]` | *who/what* is the real protagonist | `[DJI]` |
 | `[Tag2]` | *what kind of work* | `[Ebay]` |
-| `Date` | when | `19ago` |
 | `Description` | everything the three previous fields could not say | `Compare the Fly More bundle` |
 | `· Verb` | the action taken, as an appendix | `· Comparar` |
+
+The ordinal stays outside the bracket on purpose: inside, a reader takes
+`Air 2S 003` for the subject's name instead of its counter. There is no date —
+the date is a column and a filter, and repeating it spends six characters of a
+hundred to say something the table already says.
 
 The result reads like a telegram. Three fields carry a complete idea:
 
 ```
-748 [Air 2S 003] [DJI] [Ebay] 19ago Compare the Fly More bundle · Comparar
+748 [Air 2S] 003 [DJI] [Ebay] Compare the Fly More bundle · Comparar
 ```
 
 Change the marketplace and the same shape still works:
 
 ```
-812 [Trace Minerals 001] [Dr. Berg] [Amazon] 22ago Evaluate the supplement facts · Analizar
+812 [Trace Minerals] 001 [Dr. Berg] [Amazon] Evaluate the supplement facts · Analizar
 ```
 
 That is the core insight of this project: **subject + two tags is enough to express a
 complete idea, if each field answers exactly one question.**
 
 The full rules live in [`docs/ALGORITHM.md`](docs/ALGORITHM.md).
+
+## Install
+
+```bash
+git clone https://github.com/tesla963/hermes-make-my-work-smart
+cd hermes-make-my-work-smart
+
+# 1. build the index the window reads (Python, reads state.db read-only)
+~/.hermes/hermes-agent/scripts/run-in-hermes-env python3 tools/build_index.py
+
+# 2. copy the plugin where Hermes Desktop looks for it
+mkdir -p ~/.hermes/desktop-plugins/make-my-work-smart
+cp desktop/plugin.js ~/.hermes/desktop-plugins/make-my-work-smart/
+
+# 3. restart Hermes Desktop, then open "Make It Smart" in the sidebar
+```
+
+The plugin never touches `state.db`: step 1 reads it and writes one JSON file to
+`~/.hermes/plugin-data/make-my-work-smart/index.json`, and the window only paints
+that file. Re-run step 1 (or press **Refresh DB**) whenever you want new sessions
+in the catalogue.
+
+### Verify without the app
+
+```bash
+node tests/test_plugin.mjs      # 22 checks: shape, register(), first render, helpers
+python3 tests/test_invariants.py   # 11 checks on the naming rules
+```
+
+The plugin smoke test loads the real `desktop/plugin.js` against the real React
+and renders a frame, so a bad import or a syntax error fails here instead of
+showing a white screen.
 
 ## Host-agnostic by design
 
