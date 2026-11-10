@@ -318,7 +318,7 @@ table{table-layout:fixed}
 <header class="top">
   <div class="brandrow">
     <h1>Hermes, Make My Work Smart</h1>
-    <span class="sub">884 sesiones · NNN [Sujeto] MMM [Tag1] [Tag2] Descripción · Verbo</span>
+    <span class="sub"><b id="nTot">—</b> sesiones · NNN [Sujeto] MMM [Tag1] [Tag2] Descripción · Verbo</span>
     <button class="ghost langsw" id="btnLang" title="Idioma de la interfaz · Interface language"><span data-l="es">ES</span><span data-l="en">EN</span></button>
   </div>
 </header>
@@ -433,7 +433,7 @@ const I18N={
   vIntro:'Catálogo navegable de tus sesiones: las indexa de las 12 bases, les pone nombre canónico y las deja filtrar por plataforma, familia y pilar. La ventana del plugin solo pinta — el clasificador es Python puro y no sabe que existe Hermes.',
   vSub:'v0.23 · simulador',
   vVer:'ESTA VERSIÓN',vReg:'REGLAS QUE APRENDIÓ',vCerrar:'Cerrar',
-  v1:'884 sesiones · 625 sujetos · 44 reglas aprendidas',
+  v1:'Catálogo de sesiones · NNN [Sujeto] MMM [Tag1] [Tag2] Descripción · Verbo',
   v2:'Nueve tags declarados; tag1 y tag2 en el nombre, el resto filtros',
   v3:'El ordinal <b>MMM</b> fuera del corchete del sujeto',
   v4:'Sin fecha en el título; la fecha es columna y filtro',
@@ -464,7 +464,7 @@ const I18N={
   vIntro:'A browsable catalogue of your sessions: it indexes them from the 12 databases, gives each a canonical name and lets you filter by platform, family and pillar. The plugin window only paints — the classifier is pure Python and does not know Hermes exists.',
   vSub:'v0.23 · simulator',
   vVer:'THIS VERSION',vReg:'RULES IT LEARNED',vCerrar:'Close',
-  v1:'884 sessions · 625 subjects · 44 learned rules',
+  v1:'Session catalogue · NNN [Subject] MMM [Tag1] [Tag2] Description · Verb',
   v2:'Nine tags declared; tag1 and tag2 in the name, the rest are filters',
   v3:'The <b>MMM</b> ordinal sits outside the subject bracket',
   v4:'No date in the title; the date is a column and a filter',
@@ -991,6 +991,7 @@ if(_bl) _bl.onclick=()=>{
   pintarIdioma(); full();
 };
 function full(){
+  const nt=document.getElementById('nTot'); if(nt) nt.textContent=DATA.length;
   pintarIdioma();   // la barra KPI vive fuera del <script>: hay que repintarla aquí
   const nElim=DATA.filter(esBorrada).length;
   const b=document.getElementById('btnElim');
