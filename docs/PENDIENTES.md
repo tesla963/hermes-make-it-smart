@@ -92,8 +92,9 @@ ahora lo detecta y lo dice.
 - **Filtro «Vacío»/«Empty»**, el tercero de la fila de estado y **activado por
   defecto**: las sesiones sin mensajes no aparecen en el listado. Se desactiva con
   un clic.
-- El toolbar de filtros y comandos ahora arranca en el borde izquierdo, igual que la
-  fila del nombre, y el panel de filtros empieza debajo (`--toolbar-h` medido en JS).
+- Horas en **tiempo activo** (intervalos entre mensajes < 30 min), en minutos
+  enteros y con días cuando pasa de 24 h (`1d 20h`). Antes se calculaba
+  apertura→cierre y una sesión reabierta durante meses marcaba 2.019 horas.
 
 **Regla del proyecto:** el panel solo pinta e informa. Pausar jobs, borrar sesiones o
 escribir en la base es del dueño o de su agente. «No estamos invitados a ese velorio.»
