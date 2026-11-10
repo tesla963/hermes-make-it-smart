@@ -1,15 +1,16 @@
 # Status — what actually works
 
-Last verified: 2026-11-09, on the author's machine (12 profiles, 908 sessions).
+Last verified: 2026-11-10, on the author's machine (12 profiles, 909 sessions).
 
 ## Working
 
 | Piece | Evidence |
 |---|---|
-| Read-only adapter | Opens 12 `state.db` files, reads **908 sessions**, never writes |
+| Read-only adapter | Opens 12 `state.db` files, reads **909 sessions** (titled or not), never writes |
 | Message cleaning | Strips attachments, group-chat envelopes, compaction carriers, cron preamble |
 | Title rendering | Produces titles ≤100 chars, telegram fallback, verb appendix |
-| Taxonomy folding | Model output is folded onto 42 platforms / 28 families / 10 pillars / 12 verbs |
+| Title writes | Through `SessionDB.set_session_title`: 848 written, 11 refused by the host (canonical Bot Chat), 50 skipped when the model found no evidence |
+| Taxonomy folding | Model output is folded onto the 2026-11-10 vocabularies: makers, contexts, 7 intentions, themes |
 | Classification | **10 of 10 sessions classified by the model, 0 fallbacks**, ~1,480 prompt tokens |
 | Title write API | `SessionDB.set_session_title`, atomic, provenance-safe, batch receipt |
 | Invariants | **11/11** unit tests pass, including "`core/` never imports the host" |

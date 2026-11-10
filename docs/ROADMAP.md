@@ -2,24 +2,29 @@
 
 Decisions taken on 2026-11-09, recorded so they are not re-argued later.
 
-## 1 · Nine tags, not three
+## 1 · Five tags, and the numbering was settled on 2026-11-10
 
-The session title shows two tags, but the **data model carries nine**:
+The 2026-11-09 design carried nine tags with tag2 as *family* and tag6 as
+*machine*. The owner reorganised it on 2026-11-10 and the code follows the new
+layout; the old one is recorded here only so it is not reintroduced by accident.
 
 ```
-tag1  plataforma o marca        tag6  máquina
-tag2  familia de trabajo        tag7  (reservado)
-tag3  pilar                     tag8  (reservado)
-tag4  país                      tag9  (reservado)
-tag5  año
+tag1  maker — adjective for the subject      tag4  theme
+tag2  context — store, country or machine    tag5  year
+tag3  intention — seven, closed              tag6  does not exist
 ```
 
-Only `tag1` and `tag2` reach the name. The rest are filters. The point of
-declaring nine now is that **gaining intelligence later must not cost a schema
-migration**: a new axis is a new column already present, not a rewrite of 884
-titles and every query.
+Only `tag1` and `tag2` reach the name. `tag3`, `tag4` and `tag5` are filters.
 
-An unused tag is not waste. It is a socket.
+Why the change: tag2 had become a sack. It held work families, themes and
+intentions in one column, so no filter built on it could be trusted — the same
+value meant "WebHosting" in one session and "Comparar" in another. Splitting it
+cost one re-classification and bought three filters that mean exactly one thing
+each. The machine moved into tag2 because a machine is context, exactly like a
+store: reading `ThinkPad P53 · Lenovo · Mac mini M4` is one idea.
+
+Reserved sockets are gone. An unused tag is not a socket any more; with five
+fields that each mean one thing, it is an empty promise.
 
 ## 2 · The renaming engine is not the plugin
 
