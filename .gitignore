@@ -24,3 +24,6 @@ core/bateria.personal.yaml
 # Datos de trabajo: backups del dataset (pueden contener texto de sesiones)
 tools/sim80_backup_*.json
 tools/sim80_pre-redact_*.json
+
+# Correcciones puntuales del dueno
+core/corrections.personal.yaml

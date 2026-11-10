@@ -17,8 +17,6 @@
     the subject is that NAME ("Lisa"), never a paraphrase like "Disponibilidad
     del asistente" or "Identidad y modelo". Call things by their name.
   examples:
-    - { nnn: 1, subject: "Lisa", tag1: "Hermes Telegram" }
-    - { nnn: 12, subject: "Lisa", tag1: "Hermes Desktop", tag2: "Troubleshooting" }
   control_question: "Is the owner talking TO the assistant, or ABOUT something else?"
 
 - id: full-product-names
@@ -46,7 +44,6 @@
     The subject names the object, problem or symptom. The platform goes in Tag1.
     If they are nearly the same, something is wrong.
   examples:
-    - { nnn: 582, wrong_subject: "Hermes", right_subject: "Case USB", tag1: "ORICO" }
   note: 187 sessions corrected on this rule.
 
 - id: subject-never-carries-the-action
@@ -55,9 +52,6 @@
     The subject is the actor or the object, never the action done to it.
     "Indexación Spotlight" is wrong; the subject is "Spotlight".
   examples:
-    - { nnn: 6, wrong_subject: "Indexación Spotlight", right_subject: "Spotlight", verb: "Indexación" }
-    - { nnn: 10, wrong_subject: "Vocabulario Constitución", right_subject: "Constitución", verb: "Vocabulario" }
-    - { nnn: 4, wrong_subject: "Cambios de precios", right_subject: "Precios", verb: "Cotizar" }
 
 - id: subject-strips-action-prefix
   taught: 2026-11-08
@@ -73,8 +67,6 @@
     Name the point of failure, not the component. A broken gateway is
     "Protocolo"; a permission dialog is "Ventana Permisos".
   examples:
-    - { nnn: 20, subject: "Protocolo", tag1: "Telegram Gateway", tag2: "Troubleshooting" }
-    - { nnn: 13, subject: "Ventana Permisos", tag1: "Hermes Agent", tag2: "Data Security" }
 
 # --------------------------------------------------------------------------- #
 # THE VERB DECIDES THE SUBJECT
@@ -99,8 +91,6 @@
     When the session is about money — what something cost, a balance, a bill, a
     real cost per item — the verb is "Costo". Never "Analizar".
   examples:
-    - { nnn: 2, subject: "Claude API", verb: "Costo" }
-    - { nnn: 13, subject: "Pedido", verb: "Costo", tag2: "" }
 
 - id: quoting-is-cotizar
   taught: 2026-11-09
@@ -109,7 +99,6 @@
     local store, a supplier — the verb is "Cotizar". A quote is always about a
     Product or a Service, so the pillar is "Productos" or "Servicios".
   examples:
-    - { nnn: 4, subject: "Precios", tag1: "Amazon", tag2: "Compras", pillar: "Productos", verb: "Cotizar" }
   control_question: "Was a price being quoted or compared? Then Cotizar."
 
 - id: testing-not-verificar
@@ -119,7 +108,6 @@
     works, the verb is "Testing", not "Verificar". "Verificar" confirms a fact;
     "Testing" exercises a system.
   examples:
-    - { nnn: 3, subject: "Lisa", tag1: "Hermes Terminal", verb: "Testing" }
 
 - id: problems-are-verbs
   taught: 2026-11-09
@@ -128,7 +116,6 @@
     names the symptom; "Hard Drive" names the thing and "Falta de Espacio" names
     the failure. Problems live in the verb vocabulary.
   examples:
-    - { nnn: 9, wrong_subject: "Disco lleno", right_subject: "Hard Drive", verb: "Falta de Espacio" }
 
 - id: troubleshooting-only-on-complaint
   taught: 2026-11-08
@@ -145,7 +132,6 @@
     weighing options, "· Cotizar" when producing a price, "· Analizar" when
     reading a listing in depth.
   examples:
-    - { nnn: 748, description_ends: "· Comparar" }
 
 # --------------------------------------------------------------------------- #
 # PRODUCTS
@@ -157,9 +143,6 @@
     When the session evaluates a product, Tag1 is the brand and Tag2 is the
     marketplace. Subject is the product itself.
   examples:
-    - { nnn: 748, subject: "Air 2S", tag1: "DJI", tag2: "Ebay" }
-    - { nnn: 812, subject: "Trace Minerals", tag1: "Dr. Berg", tag2: "Amazon" }
-    - { nnn: 582, subject: "Case USB", tag1: "ORICO", tag3: "Comparar" }
   control_question: "Does the tag tell me who makes it, or where we looked?"
 
 - id: product-shape
@@ -172,7 +155,6 @@
     not part of the subject — it is the second tag, which is what distinguishes
     two otherwise identical items.
   examples:
-    - { nnn: 8, wrong: "Teclado COM-6900 / Hermes Agent / Comparación", right: "Teclado / Steren / COM-6900 / Productos" }
   control_question: "Is this a thing someone buys? Then brand and model are tags."
 
 - id: spec-belongs-to-its-machine
@@ -183,7 +165,6 @@
     ("Mac mini M4"). Tag2 is not only computers: a monitor, a blender, a washing
     machine, a book — anything a spec can belong to.
   examples:
-    - { nnn: 5, wrong_subject: "Consumo Memoria", right_subject: "16 GB Ram", tag6: "Mac mini M4", verb: "Solucionar" }
 
 # --------------------------------------------------------------------------- #
 # TAGS
@@ -208,8 +189,6 @@
     in the country tag, never in the subject. The subject stays "Constitución"
     so the concept can be filtered across countries.
   examples:
-    - { nnn: 10, subject: "Constitución", country: "Panamá", tag1: "Hermes Agent", tag2: "Data Mining" }
-    - { nnn: 11, subject: "Constitución", tag1: "Hermes Agent", tag2: "Data Mining", verb: "Organizar" }
 
 - id: constitution-is-law-not-geopolitics
   taught: 2026-11-08
@@ -223,7 +202,6 @@
     If Tag2 only repeats what the subject or Tag1 already says, leave it empty.
     A tag that adds nothing is noise in the filter list.
   examples:
-    - { nnn: 13, subject: "Pedido", tag1: "Amazon", tag2: "", note: "Compras added nothing" }
   control_question: "Does this tag tell me something the subject and Tag1 did not?"
 
 - id: subject-does-not-repeat-tag1
@@ -232,7 +210,6 @@
     If Tag1 is YouTube, the subject does not say "Video"; it says
     "Transcripción".
   examples:
-    - { nnn: 12, wrong_subject: "Transcripción de Video", right_subject: "Transcripción", tag1: "YouTube" }
 
 - id: pillar-never-in-title
   taught: 2026-11-08
@@ -277,7 +254,6 @@
     a FILTER now, so it must be short and repeatable — "Herdr + Ovis vs Multica"
     is not a filter, "Herdr" is.
   examples:
-    - { nnn: 863, wrong_subject: "Herdr + Ovis vs Multica", right_subject: "Herdr", description: "comparar Herdr más Ovis contra Multica" }
   control_question: "Would I ever want to filter by this exact string again?"
 
 - id: spec-goes-to-description
@@ -288,8 +264,6 @@
     the specification IS the subject of the session ("16 GB Ram"), then it stays
     and Tag6 names the machine it belongs to.
   examples:
-    - { nnn: 881, wrong_subject: "Gorgon Halo 192GB", right_subject: "Gorgon Halo", description: "servidor de 192GB, tarea cron de monitoreo" }
-    - { nnn: 5, keep_subject: "16 GB Ram", tag6: "Mac mini M4" }
   control_question: "Is the session ABOUT the number, or about the thing that has the number?"
 
 - id: brand-never-in-subject
@@ -300,7 +274,6 @@
     work is the agent evaluating something — that is what Tag2 says, not the
     subject.
   examples:
-    - { nnn: 870, wrong_subject: "Dell Precision 7760", right_subject: "Precision 7760", tag1: "Dell", tag2: "Review" }
 
 - id: third-party-program-is-tag1-not-subject
   taught: 2026-11-09
@@ -311,8 +284,6 @@
     is the thing being assessed. Never assign "Hermes Agent" to a session whose
     protagonist is someone else's software.
   examples:
-    - { nnn: 871, program: "SkillSpector (Nvidia)", tag1: "Nvidia", subject: "Skill", description: "evaluar SkillSpector" }
-    - { nnn: 872, wrong_subject: "Amenazas de Hermes", right_subject: "Hack History", note: "Hermes in the subject is redundant with tag1" }
   control_question: "Who is doing the work — my agent, or another company's software?"
 
 - id: brand-equals-subject-exception
@@ -325,7 +296,6 @@
     ("Lanzamiento 2.0") destroys the filter. Same for a model line whose name is
     the maker's name.
   examples:
-    - { nnn: 243, right: "[Ornith 2.0] [Ornith]", wrong: "[Lanzamiento 2.0] [Ornith]" }
     - { rule_of_thumb: "If the only difference is a version, keep it." }
   control_question: "Is the extra token a version of the same name, or a different noun?"
 
@@ -337,7 +307,6 @@
     threat archives, mostly from the OpenClaude world), "Ventana Permisos",
     "Protocolo". A concept is a permanent filter, not a description.
   examples:
-    - { nnn: 872, subject: "Hack History", tag1: "Hermes Agent", tag2: "Data Security" }
   note: Concepts live in a growing glossary the prompt carries.
 
 - id: harness-agent
@@ -348,7 +317,6 @@
     when languages and platforms are compared by their ability to run agents.
     Never "Motor", never "Lenguaje".
   examples:
-    - { nnn: 14, wrong: "Motor", right: "Harness Agent", tag1: "Hermes Agent", tag2: "Programming" }
   control_question: "Are we talking about the model, or about the machinery around it?"
 
 - id: subject-is-a-point-not-a-sentence
@@ -366,11 +334,6 @@
     sentence in disguise;
     (S4) it never repeats Tag1 unless the difference is a version.
   examples:
-    - { nnn: 98, wrong: "Serie samurái ciego", right: "Samurái Ciego", tag1: "Película", tag2: "Serie", country: "Japón" }
-    - { nnn: 97, wrong: "Buscador open source", right: "Buscador OS" }
-    - { nnn: 96, wrong: "Recordatorio demo", right: "Tarea Cron" }
-    - { nnn: 95, wrong: "Aprender a programar", right: "Programming Language" }
-    - { nnn: 93, wrong: "Comparación con Ollama", right: "Ollama" }
   control_question: "Could this be a filter chip someone clicks, or is it a heading?"
   audit: tools/audit_subjects.py
 
@@ -383,7 +346,6 @@
     objects. Contrast with "Comparación con Ollama", where "con" joins an action
     to its object: that one is a sentence in disguise.
   examples:
-    - { nnn: 267, right: "Descuentos a Jubilados", wrong: "Descuentos jubilados hispanos" }
     - { allow: ["Descuentos a Jubilados", "Beneficios a Jubilados"] }
     - { forbid: ["Comparación con Ollama", "Reunión con alcaldes"] }
   control_question: "Is the phrase after the preposition the thing's own name, or a second object?"
@@ -397,7 +359,6 @@
     that product is Tag1. "Memoria Persistente" belongs to HermesOffice, not to
     Hermes Agent. When in doubt, ask who is sick, not who is holding the chart.
   examples:
-    - { nnn: 443, subject: "Memoria Persistente", tag1: "HermesOffice" }
   control_question: "Whose problem is this — mine, or someone else's?"
 
 - id: vs-means-comparison
@@ -408,8 +369,6 @@
     first thing compared, and the DESCRIPTION carries the full "A vs B". The
     comparison itself is never the subject.
   examples:
-    - { nnn: 826, subject: "Mac Studio Ultra", tag1: "Apple", tag3: "Comparar", description: "Mac Studio Ultra vs RTX 5090" }
-    - { nnn: 93, subject: "Ollama", tag3: "Comparar" }
   audit: scan every session for " vs ", "versus", "frente a", "comparar"
 
 - id: lisa-is-the-subject
@@ -420,8 +379,6 @@
     NAME ("Lisa"), and Tag2 is "Testing". Not "Presentación del agente", not
     "Identidad y modelo".
   examples:
-    - { nnn: 143, subject: "Lisa", tag1: "Hermes Desktop", tag3: "Testear" }
-    - { nnn: 144, subject: "Lisa", tag1: "Hermes Desktop", tag3: "Testear" }
 
 - id: tag2-follows-the-context
   taught: 2026-11-09
@@ -431,7 +388,6 @@
     and the safe ways to do it is "Data Security", not "VPS". When two families
     fit, choose the one that describes the WORK, not the place.
   examples:
-    - { nnn: 336, subject: "SSH", tag1: "CyberPanel", tag2: "Data Security" }
   control_question: "What did we do — audit, install, compare, secure, migrate?"
 
 - id: flight-path-vs-avata-360
@@ -444,10 +400,6 @@
     "Waypoints" and "paths programables" are the same subject and must not
     split the filter.
   examples:
-    - { nnn: 157, subject: "Flight Path", tag1: "DJI", tag2: "Automation" }
-    - { nnn: 773, subject: "Flight Path", tag1: "Antigravity A1" }
-    - { nnn: 654, subject: "Avata 360", tag1: "DJI" }
-    - { nnn: 802, subject: "Avata 360", tag1: "DJI" }
   control_question: "Is this about the aircraft, or about where it flies itself?"
 
 - id: productos-vs-compras
@@ -459,9 +411,6 @@
     watches a price is Productos, not Compras. Regulation about a product (an
     FAA ban, a licence) is neither: it belongs to the pillar of the domain.
   examples:
-    - { nnn: 254, right: "Productos", why: "comparar RTX por memoria y ancho de banda" }
-    - { nnn: 150, right: "Productos", why: "tarea que vigila el precio de un producto" }
-    - { nnn: 366, right: "Temas Varios", why: "prohibición de la FAA: regulación, no compra" }
   control_question: "Am I moving the box, or judging what is inside it?"
 
 - id: one-series-one-pillar
@@ -472,7 +421,6 @@
     (VPS, Automation) for the same recurring task. When a subject already has
     a hundred siblings, the odd one out is wrong, not exceptional.
   examples:
-    - { subject: "Gorgon Halo", nnn: 881, tag2: "Automation", pillar: "VPS" }
   control_question: "Does this look like its 42 siblings?"
 
 - id: qualifier-is-not-identity
@@ -490,12 +438,6 @@
     Putting a domain in the subject breaks the same rule it was meant to follow:
     a domain says *which one*, never *what is wrong*.
   examples:
-    - { nnn: 556, wrong: "DNS + Correo example.com", right: "DNS + Correo", description: "example.com — Revisar a las 8 am el DNS" }
-    - { nnn: 467, wrong: "Correos example.com", right: "DNS + Correo" }
-    - { nnn: 474, wrong: "Certificados example.com", right: "Certificados" }
-    - { nnn: 379, wrong: "Dominio example.org", right: "Dominio" }
-    - { nnn: 452, wrong: "importadoralosangeles.net", right: "Sitio Web", description: "importadoralosangeles.net — Comprobar que el sitio funciona" }
-    - { nnn: 744, wrong: "USPS Ground Advantage", right: "Ground Advantage", tag1: "USPS", why: "marca y producto se separan" }
   control_question: "Is the part after the space naming the subject, or narrowing it?"
   applies_to: [domain, ip, email, file path, hostname]
 
@@ -519,8 +461,6 @@
     Ground", "UPS Ground", "DHL Express", "Adobe Acrobat", "Microsoft 365".
     A brand never stays inside a subject when the product can stand alone.
   examples:
-    - { nnn: 744, tag1: "USPS", subject: "Ground Advantage", tag2: "Logistica" }
-    - { nnn: 667, tag1: "FedEx", subject: "Envío" }
   control_question: "If I remove the brand from the name, does the product still name itself?"
   bateria: core/bateria.yaml → logistica
 
@@ -546,8 +486,6 @@
     "[DJI]" with the wrong subject. The brand is an attribute of the subject,
     not a magnet that pulls all of its products into one pile.
   examples:
-    - { nnn: 369, wrong: "control y gafas", right: "RC 2", tag1: "DJI",
-        tag2: "Compatibilidad", description: "Comparar gafas RayNeo para volar dron" }
   control_question: "Which of the two does the user already hold in his hand?"
 
 - id: brand-of-a-program-comes-from-its-site
@@ -560,8 +498,6 @@
     "DEVONthink". When the script cannot name the company from the batería, it
     asks the model to look up the official site before it names anything.
   examples:
-    - { nnn: 71, right: "DEVONthink", tag1: "Devon Technologies",
-        description: "Evaluar si organiza todos los PDFs" }
   control_question: "Whose site is the download page on?"
 
 - id: tag2-carries-the-intent
@@ -574,10 +510,6 @@
     family ("Electronica", "IA") is what Tag2 says when the intent was never
     read — not what it says when the intent is obvious.
   examples:
-    - { nnn: 353, wrong: "Electronica", right: "Instalar" }
-    - { nnn: 71,  wrong: "Productivity", right: "Feature" }
-    - { nnn: 397, wrong: "IA", right: "Version" }
-    - { nnn: 369, wrong: "Electronica", right: "Compatibilidad" }
   control_question: "What verb would the user put in front of this session if he named it himself?"
 
 - id: python-decides-llm-investigates
@@ -614,12 +546,6 @@
     user was installing a box he had just received). The names were knowable; the
     model was being asked to guess what a YAML file already held.
   examples:
-    - { nnn: 100, actors: "Avata 360 / DJI", intent: "Investigar" }
-    - { nnn: 71,  actors: "DEVONthink / Devon Technologies", intent: "Feature" }
-    - { nnn: 397, actors: "V4.1 Flash / DeepSeek", intent: "Update" }
-    - { nnn: 369, actors: "RC 2 / DJI", intent: "Comparación" }
-    - { nnn: 353, actors: "Hygrometer / GoveeLife", intent: "Instalar" }
-    - { nnn: 462, actors: "iOS (fuera de la batería)", intent: "Update" }
   layers:
     script: core/actors.py — find_actors(), subject_candidate(), brand_of_subject()
     intent: core/intent.py — classify_intent() by keywords, prompt_for_intent() for the rest
@@ -637,8 +563,6 @@
     describe a hundred unrelated sessions, it is not a tag — it is a category
     that escaped.
   examples:
-    - { nnn: 462, wrong: "(vacío)", right: "Update", why: "'comprobar si ya salió la versión'" }
-    - { nnn: 353, wrong: "Electronica", right: "Instalar" }
   control_question: "Could this same Tag2 label a session about something completely different?"
 
 # --------------------------------------------------------------------------- #
@@ -660,7 +584,4 @@
     has nothing honest to say, leave it empty: an empty field is data, a filled
     one that lies is not.
   examples:
-    - { nnn: 826, subject: "Mac Studio Ultra", tag1: "Apple", tag3: "Comparar", tag4: "Hardware" }
-    - { nnn: 748, subject: "Air 2S", tag1: "DJI", tag2: "Ebay", tag3: "Cotizar", tag4: "Hardware" }
-    - { nnn: 353, subject: "Higrómetro", tag1: "GoveeLife", tag3: "Instalar", tag4: "Hardware" }
   control_question: "Is the value I am about to write in tag2 a store, a country or a machine — or is it something else wearing its clothes?"
