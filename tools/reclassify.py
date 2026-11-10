@@ -84,22 +84,37 @@ def api_key() -> str:
 
 
 def collect() -> list[dict]:
+    """Every session in every database — titled or not.
+
+    A session without the catalogue's NNN [Subject] MMM shape used to be skipped,
+    and 25 of them never reached the simulator. 'None left outside' means the
+    collector cannot filter by shape any more: it reads them all and hands the
+    untitled ones a number after the last one in use.
+    """
     rows = []
     seen = set()
     for profile, path in discover_databases():
         for rec in read_sessions(profile, path):
             title = (rec.title or "").strip()
-            m = TITLE_RE.match(title)
-            if not m or rec.id in seen:
+            if rec.id in seen:
                 continue
             seen.add(rec.id)
+            m = TITLE_RE.match(title)
             rec = attach_messages(rec, path)
             rows.append({
                 "id": rec.id, "db": str(path), "prof": profile,
-                "nnn": int(m.group("nnn")), "mmm": int(m.group("mmm")),
+                "nnn": int(m.group("nnn")) if m else 0,
+                "mmm": int(m.group("mmm")) if m else 1,
                 "old": title, "date": str(rec.created_at or "")[:10],
                 "turns": human_turns(rec.messages),
+                "untitled": m is None,
+                "messages": len(rec.messages or []),
             })
+    # Untitled sessions are numbered after the last number in use, oldest first.
+    siguientes = max((r["nnn"] for r in rows if r["nnn"]), default=0) + 1
+    for r in sorted((x for x in rows if not x["nnn"]), key=lambda x: x["date"]):
+        r["nnn"] = siguientes
+        siguientes += 1
     rows.sort(key=lambda r: r["nnn"])
     return rows
 
