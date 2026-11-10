@@ -645,19 +645,36 @@ position:relative;display:flex;flex-direction:column;width:100%;height:100%;min-
 .mmws .modal .row{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
 .mmws button.bok{margin-left:auto;background:#2a1a3d;border-color:#6b4a9e;color:#e8dde4}
 .mmws button.bok:hover{background:#38234f;border-color:#8f6bc4}
+.mmws .errbanner{background:#2b1118;border-bottom:1px solid #8c2d3e;color:#ffd4dc;padding:7px 14px;font-size:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.mmws .errbanner b{color:#ff7a90;font-family:ui-monospace,Menlo,monospace}
+.mmws .errbanner .errlist{flex:1 1 auto;display:flex;flex-direction:column;gap:2px;font-family:ui-monospace,Menlo,monospace;font-size:11.5px}
 `
 
 /* ------------------------------------------------------------------ */
 /* Gateway RPC & File Bridge                                          */
 /* ------------------------------------------------------------------ */
 
-async function callRpc(ctx, method, params) {
+async function callRpc(ctx, method, params, errors) {
   const req = (ctx && ctx.host && ctx.host.request) || (host && host.request)
-  if (typeof req !== 'function') return null
+  if (typeof req !== 'function') {
+    if (Array.isArray(errors)) {
+      errors.push({ method, message: 'host.request no está disponible en @hermes/plugin-sdk ni en ctx.host' })
+    }
+    return null
+  }
   try {
     const res = await req(method, params || {})
     return res && typeof res === 'object' ? res : null
-  } catch (_) {
+  } catch (err) {
+    const msg = (err && (err.message || err.code || String(err))) || 'Error RPC desconocido'
+    try {
+      console.error('[make-all-my-work-smart] RPC error:', method, params, err)
+    } catch (_) {
+      /* ignore console error */
+    }
+    if (Array.isArray(errors)) {
+      errors.push({ method, message: String(msg) })
+    }
     return null
   }
 }
@@ -689,24 +706,42 @@ async function copyText(ctx, text) {
 }
 
 /**
- * Fetch real sessions from Hermes Desktop via `profiles.list` + `session.list`
- * (and `profileRoutes` / `requestProfile` when configured), merging precomputed
- * metrics/facets from `index.json` and `facets.json` in plugin-data.
+ * Fetch real sessions from Hermes Desktop via:
+ * 1) `ctx.files.readText('data', 'index.json' | 'facets.json')`
+ * 2) `profiles.list` + `host.listPersistedSessions` (`/api/profiles/sessions`)
+ * 3) `host.request('session.list', { limit: 200, scope: 'stored', include_hidden: true })`
+ * recording any RPC/HTTP/file errors for visible diagnostic display in the UI.
  */
 async function loadCatalogue(ctx) {
+  const errors = []
   let idxData = null
   let facetsMap = {}
 
-  if (ctx && ctx.files && typeof ctx.files.readText === 'function') {
+  const filesApi = (ctx && ctx.files) || (host && host.files)
+  if (filesApi && typeof filesApi.readText === 'function') {
     try {
       const [idxRes, facRes] = await Promise.all([
-        ctx.files.readText('data', 'index.json').catch(() => null),
-        ctx.files.readText('data', 'facets.json').catch(() => null),
+        filesApi.readText('data', 'index.json').catch((e) => ({ ok: false, error: String((e && e.message) || e) })),
+        filesApi.readText('data', 'facets.json').catch((e) => ({ ok: false, error: String((e && e.message) || e) })),
       ])
-      if (idxRes && idxRes.ok && idxRes.text) idxData = JSON.parse(idxRes.text)
-      if (facRes && facRes.ok && facRes.text) facetsMap = JSON.parse(facRes.text)
-    } catch (_) {
-      /* optional cache */
+      if (idxRes && idxRes.ok && idxRes.text) {
+        try {
+          idxData = JSON.parse(idxRes.text)
+        } catch (e) {
+          errors.push({ method: 'JSON.parse(index.json)', message: String((e && e.message) || e) })
+        }
+      } else if (idxRes && !idxRes.ok && idxRes.error && idxRes.error !== 'not-found') {
+        errors.push({ method: "files.readText('data','index.json')", message: String(idxRes.error) })
+      }
+      if (facRes && facRes.ok && facRes.text) {
+        try {
+          facetsMap = JSON.parse(facRes.text)
+        } catch (e) {
+          errors.push({ method: 'JSON.parse(facets.json)', message: String((e && e.message) || e) })
+        }
+      }
+    } catch (e) {
+      errors.push({ method: 'files.readText', message: String((e && e.message) || e) })
     }
   }
 
@@ -719,36 +754,75 @@ async function loadCatalogue(ctx) {
 
   // 1. Discover profiles via host.request('profiles.list')
   const profNames = new Set(['default'])
-  const profRes = await callRpc(ctx, 'profiles.list', { include_sessions: false })
+  const profRpcErrors = []
+  const profRes = await callRpc(ctx, 'profiles.list', { include_sessions: false }, profRpcErrors)
   if (profRes && Array.isArray(profRes.profiles)) {
     for (const p of profRes.profiles) {
       if (p && p.name) profNames.add(String(p.name))
     }
-  } else if (ctx && ctx.host && ctx.host.profiles && typeof ctx.host.profiles.list === 'function') {
-    try {
-      const list = await ctx.host.profiles.list()
-      if (Array.isArray(list)) list.forEach((p) => p && p.name && profNames.add(String(p.name)))
-    } catch (_) {
-      /* ignore */
+  } else {
+    const profListFn =
+      (ctx && ctx.host && ctx.host.profiles && ctx.host.profiles.list) ||
+      (host && host.profiles && host.profiles.list)
+    if (typeof profListFn === 'function') {
+      try {
+        const list = await profListFn()
+        if (Array.isArray(list)) list.forEach((p) => p && p.name && profNames.add(String(p.name)))
+      } catch (e) {
+        errors.push({ method: 'host.profiles.list', message: String((e && e.message) || e) })
+      }
+    } else if (profRpcErrors.length && idxById.size === 0) {
+      errors.push(...profRpcErrors)
     }
   }
 
-  // 2. Query session.list per profile via host.request
   const liveById = new Map()
-  await Promise.all(
-    [...profNames].map(async (prof) => {
-      const res = await callRpc(ctx, 'session.list', { limit: 2000, profile: prof })
-      if (res && Array.isArray(res.sessions)) {
-        for (const row of res.sessions) {
-          if (row && row.id && !liveById.has(row.id)) {
-            liveById.set(row.id, { ...row, _prof: prof })
-          }
-        }
-      }
-    })
-  )
 
-  // 3. Also query remote profile routes via host.profileRoutes() + host.requestProfile()
+  // 2. Query persisted sessions across all profiles in state.db via SDK host.listPersistedSessions
+  const listPersistedFn =
+    (ctx && ctx.host && ctx.host.listPersistedSessions) || (host && host.listPersistedSessions)
+
+  if (typeof listPersistedFn === 'function') {
+    await Promise.all(
+      [...profNames].map(async (prof) => {
+        try {
+          const rows = await listPersistedFn(null, { profile: prof, limit: 500 })
+          if (Array.isArray(rows)) {
+            for (const row of rows) {
+              if (row && row.id && !liveById.has(row.id)) {
+                liveById.set(row.id, { ...row, _prof: row.profile || prof })
+              }
+            }
+          }
+        } catch (e) {
+          errors.push({
+            method: `host.listPersistedSessions(${prof})`,
+            message: String((e && e.message) || e),
+          })
+        }
+      })
+    )
+  }
+
+  // 3. Query active gateway session.list with valid session_controls.py parameters (limit <= 200, scope: 'stored', no sibling profile)
+  const sessRpcErrors = []
+  const resStored = await callRpc(
+    ctx,
+    'session.list',
+    { limit: 200, scope: 'stored', include_hidden: true },
+    sessRpcErrors
+  )
+  if (resStored && Array.isArray(resStored.sessions)) {
+    for (const row of resStored.sessions) {
+      if (row && row.id && !liveById.has(row.id)) {
+        liveById.set(row.id, { ...row, _prof: row.profile || 'default' })
+      }
+    }
+  } else if (sessRpcErrors.length && liveById.size === 0 && idxById.size === 0) {
+    errors.push(...sessRpcErrors)
+  }
+
+  // 4. Also query remote profile routes via host.profileRoutes() + host.requestProfile() with valid limit <= 200
   const routesFn = (ctx && ctx.host && ctx.host.profileRoutes) || (host && host.profileRoutes)
   const reqProfFn = (ctx && ctx.host && ctx.host.requestProfile) || (host && host.requestProfile)
   if (typeof routesFn === 'function' && typeof reqProfFn === 'function') {
@@ -757,7 +831,11 @@ async function loadCatalogue(ctx) {
       await Promise.all(
         routes.map(async (rt) => {
           try {
-            const r = await reqProfFn(rt, 'session.list', { limit: 2000 })
+            const r = await reqProfFn(rt, 'session.list', {
+              limit: 200,
+              scope: 'stored',
+              include_hidden: true,
+            })
             if (r && Array.isArray(r.sessions)) {
               for (const row of r.sessions) {
                 if (row && row.id && !liveById.has(row.id)) {
@@ -766,7 +844,7 @@ async function loadCatalogue(ctx) {
               }
             }
           } catch (_) {
-            /* skip unreachable route */
+            /* skip unreachable remote route */
           }
         })
       )
@@ -775,7 +853,14 @@ async function loadCatalogue(ctx) {
     }
   }
 
-  // 4. Combine live gateway rows with index.json cache
+  if (liveById.size === 0 && idxById.size === 0 && errors.length === 0) {
+    errors.push({
+      method: 'loadCatalogue',
+      message: 'No se recibieron sesiones de index.json, /api/profiles/sessions ni session.list.',
+    })
+  }
+
+  // 5. Combine live gateway rows with index.json cache
   const allIds = new Set([...liveById.keys(), ...idxById.keys()])
   const merged = []
 
@@ -808,13 +893,25 @@ async function loadCatalogue(ctx) {
     const tag6 = (ex.tag6 || idx.tag6 || '').trim()
     const desc = ((g && g.desc) || idx.desc || (live && live.preview) || rawTitle || '').trim()
     const verb = ((g && g.verb) || idx.verb || '').trim()
-    const prof = (live && live._prof) || idx.prof || 'default'
+    const prof = (live && (live._prof || live.profile)) || idx.prof || 'default'
     const mc = Number((live && (live.live_message_count || live.message_count)) || ex.mc || idx.mc || idx.posts || 0)
-    const posts = Number(idx.posts || Math.max(1, Math.round(mc / 2)) || 0)
-    const tok = Number(idx.tok_tot || idx.tok || 0)
-    const costo = Number(idx.costo || 0)
-    const horas = Number(idx.horas || 0)
-    const motor = (ex.motor || idx.motor || '').trim()
+    const posts = Number(idx.posts || (mc > 0 ? Math.max(1, Math.round(mc / 2)) : 0))
+    const liveTok =
+      (Number(live && live.input_tokens) || 0) +
+      (Number(live && live.output_tokens) || 0) +
+      (Number(live && live.cache_read_tokens) || 0) +
+      (Number(live && live.cache_write_tokens) || 0) +
+      (Number(live && live.reasoning_tokens) || 0)
+    const tok = Number(idx.tok_tot || idx.tok || liveTok || 0)
+    const liveCost = live && (live.actual_cost_usd != null ? live.actual_cost_usd : live.estimated_cost_usd)
+    const costo = Number(idx.costo != null ? idx.costo : liveCost || 0)
+    const liveEnd = live && (live.ended_at || live.last_active)
+    const liveMin =
+      live && live.started_at && liveEnd && liveEnd > live.started_at
+        ? Math.min(480, Math.max(1, Math.round((liveEnd - live.started_at) / 60)))
+        : 0
+    const horas = Number(idx.horas || liveMin || 0)
+    const motor = (ex.motor || idx.motor || (live && live.model) || '').trim()
     const autor = (idx.autor || (prof === 'default' ? 'Lisa' : prof)).trim()
     const claves = Array.isArray(idx.claves) ? idx.claves : []
     const resumen = idx.resumen || (claves[0] || (live && live.preview) || '')
@@ -883,6 +980,7 @@ async function loadCatalogue(ctx) {
     canonicalCount,
     newCount: merged.length - canonicalCount,
     fromLiveRpc: liveById.size > 0,
+    errors,
   }
 }
 
@@ -893,6 +991,7 @@ async function loadCatalogue(ctx) {
 function App({ ctx }) {
   const [sessions, setSessions] = useState([])
   const [loading, setLoading] = useState(true)
+  const [rpcErrors, setRpcErrors] = useState([])
   const [q, setQ] = useState('')
   const [f, setF] = useState({
     tag1: null,
@@ -946,6 +1045,7 @@ function App({ ctx }) {
   const refreshData = async (reportBtn = false) => {
     const res = await loadCatalogue(ctx)
     setSessions(res.sessions)
+    setRpcErrors(Array.isArray(res.errors) ? res.errors : [])
     setLoading(false)
     // Open the newest year node in Fecha tree automatically
     const years = [...new Set(res.sessions.map((d) => (d.mes || '').slice(0, 4)).filter(Boolean))].sort().reverse()
@@ -967,21 +1067,47 @@ function App({ ctx }) {
 
   useEffect(() => {
     let alive = true
-    ;(async () => {
+    const run = async () => {
       try {
         const res = await loadCatalogue(ctx)
         if (!alive) return
         setSessions(res.sessions)
+        setRpcErrors(Array.isArray(res.errors) ? res.errors : [])
         const years = [...new Set(res.sessions.map((d) => (d.mes || '').slice(0, 4)).filter(Boolean))].sort().reverse()
         if (years.length) {
           setOpenNodes(new Set(['y:' + years[0], 'init:' + years[0]]))
         }
+      } catch (err) {
+        if (!alive) return
+        setRpcErrors([{ method: 'loadCatalogue', message: String((err && err.message) || err) }])
       } finally {
         if (alive) setLoading(false)
       }
-    })()
+    }
+    run()
+
+    const gw =
+      (ctx && ctx.host && ctx.host.state && ctx.host.state.gateway) ||
+      (host && host.state && host.state.gateway)
+    let unsub = null
+    if (gw && typeof gw.subscribe === 'function') {
+      try {
+        unsub = gw.subscribe((st) => {
+          if (alive && st === 'open') run()
+        })
+      } catch (_) {
+        /* ignore */
+      }
+    }
     return () => {
       alive = false
+      if (typeof unsub === 'function') {
+        try {
+          unsub()
+        } catch (_) {
+          /* ignore */
+        }
+      }
     }
   }, [ctx])
 
@@ -1724,6 +1850,44 @@ function App({ ctx }) {
         )
       )
     ),
+
+    /* ---------- Visible Diagnostic Error Banner ---------- */
+    rpcErrors && rpcErrors.length > 0
+      ? h(
+          'div',
+          { className: 'errbanner', role: 'alert' },
+          h('b', null, '⚠ Error de carga RPC:'),
+          h(
+            'div',
+            { className: 'errlist' },
+            rpcErrors.map((er, idx) =>
+              h(
+                'span',
+                { key: idx },
+                `[${er.method}] ${er.message}`
+              )
+            )
+          ),
+          h(
+            'button',
+            {
+              className: 'ghost',
+              onClick: () => refreshData(true),
+              style: { fontSize: '11px', padding: '2px 7px' },
+            },
+            'Reintentar'
+          ),
+          h(
+            'button',
+            {
+              className: 'ghost',
+              onClick: () => setRpcErrors([]),
+              style: { fontSize: '11px', padding: '2px 7px' },
+            },
+            '✕'
+          )
+        )
+      : null,
 
     /* ---------- Body (Aside + Main + Slide-over Detail Panel) ---------- */
     h(
