@@ -20,9 +20,12 @@ header.top{position:sticky;top:0;z-index:40;background:linear-gradient(180deg,#1
 aside{width:var(--aside-w,264px);flex:0 0 var(--aside-w,264px);position:sticky;top:var(--hhead,44px);
 /* Stop above the fixed KPI bar, not above a phantom 50 px: the old bottom
    padding left a dead strip that read as a stuck panel. */
-max-height:calc(100vh - var(--hhead,44px) - 33px);overflow-y:auto;overflow-x:hidden;
+max-height:calc(100vh - var(--hhead,44px));overflow-y:auto;overflow-x:hidden;
 scrollbar-width:none;-ms-overflow-style:none;overscroll-behavior:contain;
-border-right:1px solid var(--line);padding:9px 10px 14px;background:var(--bg2)}
+border-right:1px solid var(--line);background:var(--bg2);
+/* The panel runs to the bottom of the window, under the KPI bar: the padding
+   keeps the last filter reachable past it. */
+padding:9px 10px 44px}
 main{flex:1 1 auto;min-width:0;padding:0 0 60px}
 .toolbar{position:sticky;top:var(--hhead,44px);z-index:30;background:rgba(13,11,14,.98);backdrop-filter:blur(6px);border-bottom:1px solid var(--line);padding:8px 16px 7px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .counter{font-size:12.5px;color:var(--tx2);flex:0 0 auto;white-space:nowrap} .counter b{color:#fff}
@@ -317,7 +320,9 @@ function build(){
     // Split on the last "]" so the description can carry the weight.
     const cut=d.raw.lastIndexOf(']');
     // Drop the leading NNN: it is shown in the Nº column, not inside the name.
-    const head=(cut>0?d.raw.slice(0,cut+1):d.raw).replace(/^\d+\s+/,''),
+    const head=(cut>0?d.raw.slice(0,cut+1):d.raw).replace(/^\d+\s+/,'')
+      // The ordinal is not part of the subject's name: "[Gorgon Halo] 043".
+      .replace(/^\[([^\]]+?)\s+(\d{3,4})\]/, '[$1] $2'),
           tail=cut>0?d.raw.slice(cut+1).trim():'';
     const tach=/borrad/i.test(d.sujeto)?' borrada':'';
     // The N column is gone, but its width is kept: the number sits in the title
