@@ -366,7 +366,10 @@ function build(){
     const tr=document.createElement('tr'); tr.className='r'; tr.dataset.i=i;
     tr.innerHTML='<td class="ncol"></td>'+
       '<td class="mono tight fecha" style="color:var(--tx3)">'+d.fecha+'</td>'+
-      '<td class="tight"><span class="pill s pick'+(/borrad/i.test(d.sujeto)?' del':'')+'" data-pick="suj" title="Filtrar por este sujeto">'+d.sujeto+'</span> <span class="mono" style="color:var(--tx3)">'+String(d.mmm).padStart(3,'0')+'</span></td>'+
+      '<td class="tight"><span class="pill s pick'+(/borrad/i.test(d.sujeto)?' del':'')+'" data-pick="suj" title="Filtrar por este sujeto">'+d.sujeto+'</span> <span class="mono" style="color:var(--tx3)">'+String(d.mmm).padStart(3,'0')+'</span>'+
+        (d.tag1?' <span class="pill tag1 pick" data-pick="t1" title="Filtrar por tag1">'+d.tag1+'</span>':'')+
+        (d.tag2?' <span class="pill tag2 pick" data-pick="t2" title="Filtrar por tag2">'+d.tag2+'</span>':'')+
+      '</td>'+
 
       '<td class="num tight cen">'+fmtC(d.costo)+'</td><td class="num tight cen">'+fmtH(d.horas)+'</td>'+
       '<td class="num tight cen" style="color:var(--tx3)">'+fmtT(d.tok_tot)+'</td>'+
@@ -389,8 +392,6 @@ function build(){
     // first bracket, and the stored title still carries its NNN.
     trt.innerHTML='<td class="ncol t">'+d.n+'</td>'+
       '<td colspan="6" class="ttitle'+tach+'"><b class="tfac">'+head+'</b>'+
-      (d.tag1?' <span class="pill tag1 pick" data-pick="t1" title="Filtrar por tag1">'+d.tag1+'</span>':'')+
-      (d.tag2?' <span class="pill tag2 pick" data-pick="t2" title="Filtrar por tag2">'+d.tag2+'</span>':'')+
       (tail?' <b class="tdesc">'+tail+'</b>':'')+'</td>';
     trt.addEventListener('click',()=>openPanel(d,tr));
     // The description now lives inside the title line as bold text, so this

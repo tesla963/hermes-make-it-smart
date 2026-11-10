@@ -473,3 +473,34 @@
   examples:
     - { subject: "Gorgon Halo", nnn: 881, tag2: "Automation", pillar: "VPS" }
   control_question: "Does this look like its 42 siblings?"
+
+- id: qualifier-is-not-identity
+  taught: 2026-11-09
+  rule: >
+    When the subject reads "X <detail>" and the detail is a DOMAIN, an IP, an
+    email or a file path, the subject is X and the detail belongs in the
+    DESCRIPTION. A domain says *which one*, not *what it is*. The series is
+    "DNS + Correo"; "DNS + Correo example.com" splits one series into as many
+    chips as domains the owner has.
+  exception: >
+    If the detail IS the subject — a bare domain with no word in front, like
+    "importadoralosangeles.net" — it stays: there is nothing to qualify.
+  examples:
+    - { nnn: 556, wrong: "DNS + Correo example.com", right: "DNS + Correo", description: "example.com — Revisar a las 8 am el DNS" }
+    - { nnn: 467, wrong: "Correos example.com", right: "DNS + Correo" }
+    - { nnn: 474, wrong: "Certificados example.com", right: "Certificados" }
+    - { nnn: 379, wrong: "Dominio example.org", right: "Dominio" }
+    - { nnn: 452, right: "importadoralosangeles.net", why: "el dominio ES el sujeto" }
+  control_question: "Is the part after the space naming the subject, or narrowing it?"
+  applies_to: [domain, ip, email, file path, hostname]
+
+- id: spelling-variants-are-one-subject
+  taught: 2026-11-09
+  rule: >
+    Two spellings of the same thing are ONE subject, never two. "DNS y Correo"
+    and "DNS + Correo" are the same series; "Correos" and "Correo" are the same
+    noun. Normalise to the form the owner uses most, then renumber the series so
+    the MMM stays gapless.
+  examples:
+    - { variants: ["DNS y Correo", "DNS + Correo", "Correos", "Correo"], canonical: "DNS + Correo" }
+  control_question: "Would a reader click these two chips expecting different things?"
