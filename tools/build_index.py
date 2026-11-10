@@ -97,13 +97,17 @@ def build(with_messages: bool = True) -> dict:
             if with_messages:
                 rec = attach_messages(rec, path)
             msgs = [re.sub(r"\s+", " ", x)[:400] for x in (rec.messages or []) if is_human(x)]
+            # El titulo manda, pero no es la unica fuente: una sesion que el host no
+            # deja renombrar (las del modo Bot, por ejemplo) ya viene clasificada en
+            # facets.json. Descartar ese dato dejaba la sesion sin sujeto ni marca.
+            ex = extra.get(rec.id, {})
             rows.append(
                 {
                     "n": int(g["nnn"]),
                     "mmm": int(g["mmm"]),
-                    "sujeto": g["subject"].strip(),
-                    "tag1": (g["tag1"] or "").strip(),
-                    "tag2": (g["tag2"] or "").strip(),
+                    "sujeto": g["subject"].strip() or (ex.get("sujeto") or "").strip(),
+                    "tag1": (g["tag1"] or "").strip() or (ex.get("tag1") or "").strip(),
+                    "tag2": (g["tag2"] or "").strip() or (ex.get("tag2") or "").strip(),
                     # Nine slots always, empty when unused: gaining an axis later
                     # must not cost a migration of every record.
                     "tag3": extra.get(rec.id, {}).get("tag3", ""),
