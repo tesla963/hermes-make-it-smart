@@ -90,9 +90,10 @@ def build(with_messages: bool = True) -> dict:
         for rec in read_sessions(profile, path):
             title = (rec.title or "").strip()
             m = parse_title(title)
-            if not m:
-                continue
-            g = m.groupdict()
+            # A session without the canonical shape is still a session: it enters
+            # with n=0 and gets a number after the highest one in use, below.
+            g = m.groupdict() if m else {"nnn": "0", "mmm": "1", "subject": "",
+                                         "tag1": "", "tag2": "", "desc": "", "verb": ""}
             if with_messages:
                 rec = attach_messages(rec, path)
             msgs = [re.sub(r"\s+", " ", x)[:400] for x in (rec.messages or []) if is_human(x)]
@@ -103,6 +104,15 @@ def build(with_messages: bool = True) -> dict:
                     "sujeto": g["subject"].strip(),
                     "tag1": (g["tag1"] or "").strip(),
                     "tag2": (g["tag2"] or "").strip(),
+                    # Nine slots always, empty when unused: gaining an axis later
+                    # must not cost a migration of every record.
+                    "tag3": extra.get(rec.id, {}).get("tag3", ""),
+                    "tag4": extra.get(rec.id, {}).get("tag4", ""),
+                    "tag5": extra.get(rec.id, {}).get("tag5", ""),
+                    "tag6": "",
+                    "tag7": extra.get(rec.id, {}).get("tag7", ""),
+                    "tag8": extra.get(rec.id, {}).get("tag8", ""),
+                    "tag9": extra.get(rec.id, {}).get("tag9", ""),
                     "desc": (g["desc"] or "").strip(),
                     "verb": (g["verb"] or "").strip(),
                     "raw": title,
@@ -116,7 +126,6 @@ def build(with_messages: bool = True) -> dict:
                     "esCron": bool(re.match(r"^cron[_-]", rec.id or "")),
                     "pilar": extra.get(rec.id, {}).get("pilar", ""),
                     "motor": extra.get(rec.id, {}).get("motor", ""),
-                    "tag6": extra.get(rec.id, {}).get("tag6", ""),
                     "mc": extra.get(rec.id, {}).get("mc", rec.posts or 0),
                     "claves": msgs[:6],
                 }
@@ -129,6 +138,12 @@ def build(with_messages: bool = True) -> dict:
         "tag2": dict(Counter(r["tag2"] for r in rows if r["tag2"]).most_common()),
         "prof": dict(Counter(r["prof"] for r in rows).most_common()),
     }
+    # Number the untitled ones after the last number in use, oldest first.
+    siguientes = max((r["n"] for r in rows if r["n"]), default=0) + 1
+    for r in sorted((x for x in rows if not x["n"]), key=lambda x: x.get("fecha") or ""):
+        r["n"] = siguientes
+        siguientes += 1
+
     return {
         "generated": datetime.now().isoformat(timespec="seconds"),
         "count": len(rows),

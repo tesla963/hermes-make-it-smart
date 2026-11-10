@@ -34,6 +34,12 @@ class Facets:
     tag3: str = ""                 # the intention — a verb
     tag4: str = ""                 # the work front (theme, with subcategory)
     tag5: str = ""                 # the year
+    # Reserved sockets. The model carries nine so that a new axis later does not
+    # cost a schema migration; they stay empty until one earns its meaning.
+    tag6: str = ""
+    tag7: str = ""
+    tag8: str = ""
+    tag9: str = ""
     # Kept so older call sites keep working; they now mirror the new fields.
     pillar: str = ""
     country: str = ""
