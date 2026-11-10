@@ -12,7 +12,7 @@ pero **sanear los archivos no borra el historial ni lo que ya viajó**.
 
 Pasos:
 
-1. Panel de DeepSeek → revocar la clave `sk-c50…e038` y crear una nueva.
+1. Panel de DeepSeek → revocar la clave de DeepSeek del 11-ago y crear una nueva.
 2. Actualizar `~/.hermes/auth.json` (hermes config / el panel de credenciales).
 3. Comprobar que Hermes responde con la nueva.
 4. Opcional: reescribir el historial de este repo para purgar el blob
