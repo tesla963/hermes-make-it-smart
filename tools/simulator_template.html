@@ -241,6 +241,58 @@ aside input[type="date"]{width:100%;font-size:10.5px;padding:3px 2px}
 aside h4{font-size:9.5px;gap:4px;flex-wrap:wrap}
 aside h4 span{font-size:9.5px}
 aside .chips,aside .chip{max-width:100%}
+
+/* ── La tabla no esconde cifras ─────────────────────────────────────────────
+   table-layout:fixed reparte por el ancho declarado de cada columna y no por
+   el contenido: con auto, una sujeto larga empujaba Costo/Horas/Tokens/Posts
+   fuera del panel y el numero de sesion se partia en dos lineas. */
+table{table-layout:fixed}
+#tb th:nth-child(1){width:48px;text-align:center}
+#tb th:nth-child(2){width:84px}
+#tb th:nth-child(3){width:auto}
+#tb th:nth-child(4){width:56px}
+#tb th:nth-child(5){width:54px}
+#tb th:nth-child(6){width:64px}
+#tb th:nth-child(7){width:50px}
+/* El numero respira igual a los dos lados: 16 px contra el borde izquierdo y
+   8 px de su celda + 8 px de la celda vecina contra el texto de al lado. */
+/* El numero va centrado en su celda y la celda del titulo no suma padding:
+   asi el aire de la izquierda y el de la derecha son el mismo, medido. */
+#tb th:nth-child(1),#tb td.ncol{padding:6px 0;text-align:center;white-space:nowrap}
+.t td.ncol.t{text-align:center;padding:6px 0}
+#tb td.ttitle{padding-left:0}
+#tb td:nth-child(3){padding-left:8px;overflow:hidden;text-overflow:ellipsis}
+#tb td:nth-child(3) .pill{max-width:100%}
+#btnFiltros{display:none}
+
+/* ── Panel angosto: el aside se aparta ──────────────────────────────────────
+   Con 264 px fijos de filtros no queda ancho para siete columnas. Bajo 1000 px
+   el aside pasa a cajon deslizante y el boton Filtros lo abre. */
+@media (max-width:1000px){
+  html{overflow-x:hidden}
+  aside{position:fixed;left:0;top:0;bottom:0;z-index:80;transform:translateX(-100%);
+    transition:transform .18s;box-shadow:20px 0 40px #0009;overflow-y:auto;
+    width:min(300px,86vw);flex:none}
+  body.filtros aside{transform:none}
+  body.filtros{overflow:hidden}
+  .vbadge{display:none}
+  #btnFiltros{display:inline-block}
+  .kbar{left:0}
+  .grip{display:none}
+  #tb th:nth-child(1){width:42px}
+  #tb th:nth-child(2){width:70px}
+  #tb th:nth-child(4){width:48px}
+  #tb th:nth-child(5){width:44px}
+  #tb th:nth-child(6){width:54px}
+  #tb th:nth-child(7){width:42px}
+  #tb th:nth-child(1),#tb td.ncol{padding:6px 0}
+  .t td.ncol.t{padding:6px 0}
+  #tb td.ttitle{padding-left:0}
+  #tb td:nth-child(3){padding-left:6px}
+  #tb td.num{padding-left:2px;padding-right:6px}
+  /* en angosto manda la cifra: las etiquetas de la fila viven en la ficha */
+  .r .pill.tag1,.r .pill.tag2{display:none}
+}
 </style>
 </head>
 <body>
@@ -279,6 +331,7 @@ aside .chips,aside .chip{max-width:100%}
   <main>
     <div class="toolbar">
       <div class="trow">
+      <button id="btnFiltros" title="Mostrar u ocultar los filtros">☰ Filtros</button>
       <span class="sub" style="font-size:11.5px" data-i18n="ordenar">Ordenar:</span>
       <button data-s="n" data-i18n="colN">Nº</button><button data-s="costo" data-i18n="colCosto">Costo</button><button data-s="horas" data-i18n="colHoras">Horas</button><button data-s="fecha" class="on" data-i18n="colFecha">Fecha</button>
       <span style="flex:1;min-width:0"></span>
@@ -291,13 +344,13 @@ aside .chips,aside .chip{max-width:100%}
     </div>
     <table id="tb">
       <thead><tr>
-        <th data-k="n" class="tight" style="width:44px" data-i18n="colN">Nº</th>
-        <th data-k="fecha" class="tight fecha" style="width:88px" data-i18n="colFecha">Fecha</th>
-        <th data-k="sujeto" class="tight" style="width:156px" data-i18n="colSujeto">Sujeto · #</th>
-        <th data-k="costo" class="tight" style="width:54px" data-i18n="colCosto">Costo</th>
-        <th data-k="horas" class="tight" style="width:58px" data-i18n="colHoras">Horas</th>
-        <th data-k="tok_tot" class="tight" style="width:66px" data-i18n="colTokens">Tokens</th>
-        <th data-k="posts" class="tight" style="width:52px" data-i18n="colPosts">Posts</th>
+        <th data-k="n" class="tight" data-i18n="colN">Nº</th>
+        <th data-k="fecha" class="tight fecha" data-i18n="colFecha">Fecha</th>
+        <th data-k="sujeto" class="tight" data-i18n="colSujeto">Sujeto · #</th>
+        <th data-k="costo" class="tight" data-i18n="colCosto">Costo</th>
+        <th data-k="horas" class="tight" data-i18n="colHoras">Horas</th>
+        <th data-k="tok_tot" class="tight" data-i18n="colTokens">Tokens</th>
+        <th data-k="posts" class="tight" data-i18n="colPosts">Posts</th>
       </tr></thead>
       <tbody></tbody>
     </table>
@@ -1209,6 +1262,19 @@ build();full();stickyTop();updBar();updBar();
   // The KPI bar lives after the main script, so its nodes did not exist on the
   // first pass: repaint once they do.
   setTimeout(function(){ try{ if(typeof full==='function') full(); }catch(e){} }, 0);
+})();
+
+// El aside es un cajon deslizante en panel angosto: un boton lo abre y un clic
+// fuera lo cierra. En escritorio el boton esta oculto por CSS.
+(function(){
+  const bf=document.getElementById('btnFiltros');
+  if(bf) bf.onclick=function(e){ e.stopPropagation(); document.body.classList.toggle('filtros'); };
+  document.addEventListener('click',function(e){
+    if(!document.body.classList.contains('filtros')) return;
+    if(e.target.closest('aside')||e.target.closest('#btnFiltros')) return;
+    document.body.classList.remove('filtros');
+  },true);
+  window.addEventListener('keydown',function(e){ if(e.key==='Escape') document.body.classList.remove('filtros'); });
 })();
 </script>
 </body>
