@@ -113,10 +113,15 @@ th.tags,td.tags{width:186px;min-width:186px;max-width:186px}
 .pidfoot{margin-top:10px;padding-top:8px;border-top:1px solid var(--line);
 font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px;line-height:1.45;
 color:var(--tx3);word-break:break-all;user-select:all}
-.t .ttitle{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10.5px;line-height:1.4;
-color:var(--tx3);padding:5px 6px 1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.t .ttitle::before{content:"▸ ";opacity:.45}
-tr.t:hover .ttitle{color:var(--tx2)}
+.t .ttitle{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10.5px;line-height:1.45;
+padding:6px 6px 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.t .ttitle .tfac{color:var(--tx3)}
+/* The description is what the session WAS: it carries the weight and the light. */
+.t .ttitle .tdesc{color:#f4e6ee;font-weight:700;letter-spacing:.005em}
+.t .ttitle::before{content:"▸ ";color:var(--tx3);opacity:.45}
+tr.t:hover .ttitle .tfac{color:var(--tx2)}
+/* A deleted session keeps its line, struck through, so it stays readable. */
+.t .ttitle.borrada .tdesc{text-decoration:line-through;text-decoration-color:rgba(217,79,120,.65);text-decoration-thickness:1px}
 .pidfoot span{text-transform:uppercase;letter-spacing:.06em;font-size:9px;opacity:.7;margin-right:4px}
 .pbar.bottom{border-bottom:none;border-top:1px solid var(--line)}
 .pbar .x{margin-left:auto;cursor:pointer;color:var(--tx3);font-size:16px}
@@ -226,7 +231,6 @@ aside .chips,aside .chip{max-width:100%}
     </div>
     <table id="tb">
       <thead><tr>
-        <th data-k="n" class="tight" style="width:44px">Nº</th>
         <th data-k="fecha" class="tight" style="width:88px">Fecha</th>
         <th data-k="sujeto" class="tight" style="width:156px">Sujeto · #</th>
         <th data-k="tag1" class="tags">Tags</th>
@@ -290,8 +294,7 @@ function build(){
   const frag=document.createDocumentFragment();
   DATA.forEach((d,i)=>{
     const tr=document.createElement('tr'); tr.className='r'; tr.dataset.i=i;
-    tr.innerHTML='<td class="num tight cen"></td>'+
-      '<td class="mono tight cen" style="color:var(--tx3)">'+d.fecha+'</td>'+
+    tr.innerHTML='<td class="mono tight cen" style="color:var(--tx3)">'+d.fecha+'</td>'+
       '<td class="tight"><span class="pill s pick'+(/borrad/i.test(d.sujeto)?' del':'')+'" data-pick="suj" title="Filtrar por este sujeto">'+d.sujeto+'</span> <span class="mono" style="color:var(--tx3)">'+String(d.mmm).padStart(3,'0')+'</span></td>'+
       '<td class="tags"><span class="tcell">'+(d.tag1?'<span class="pill t pick" data-pick="t1" title="Filtrar por Tag 1">'+d.tag1+'</span>':'<span class="pill void">—</span>')+(d.tag2?'<span class="pill t2 pick" data-pick="t2" title="Filtrar por Tag 2">'+d.tag2+'</span>':'<span class="pill void">—</span>')+'</span></td>'+
       '<td class="num tight cen">'+fmtC(d.costo)+'</td><td class="num tight cen">'+fmtH(d.horas)+'</td>'+
@@ -300,11 +303,17 @@ function build(){
     // The full renamed title gets its own line above the data, so the whole
     // sentence is visible instead of being split into columns.
     const trt=document.createElement('tr'); trt.className='t';
-    trt.innerHTML='<td colspan="8" class="ttitle">'+d.raw+'</td>';
+    // The brackets name the session; what comes after them is what happened.
+    // Split on the last "]" so the description can carry the weight.
+    const cut=d.raw.lastIndexOf(']');
+    const head=cut>0?d.raw.slice(0,cut+1):d.raw, tail=cut>0?d.raw.slice(cut+1).trim():'';
+    const tach=/borrad/i.test(d.sujeto)?' borrada':'';
+    trt.innerHTML='<td colspan="7" class="ttitle'+tach+'"><span class="tfac">'+head+'</span>'+
+      (tail?' <b class="tdesc">'+tail+'</b>':'')+'</td>';
     trt.addEventListener('click',()=>openPanel(d,tr));
-    const trd=document.createElement('tr'); trd.className='d';
-    const esBorr=/borrad/i.test(d.sujeto);
-    trd.innerHTML='<td class="num tight cen dnum" style="color:var(--tx3)">'+d.n+'</td><td colspan="7" class="dtext'+(esBorr?' borrada':'')+'">'+d.desc+'</td>';
+    // The description now lives inside the title line as bold text, so this
+    // extra row is gone: the session is two lines, not three.
+    const trd=null;
     tr.addEventListener('click',e=>{
       const pk=e.target.closest('.pick');
       if(pk){
@@ -319,9 +328,8 @@ function build(){
       }
       openPanel(d,tr);
     });
-    trd.addEventListener('click',()=>openPanel(d,tr));
-    frag.appendChild(trt); frag.appendChild(trd); frag.appendChild(tr);
-    ROWS.push(tr); DESCS.push(trd); TITLES.push(trt);
+    frag.appendChild(trt); frag.appendChild(tr);
+    ROWS.push(tr); DESCS.push(null); TITLES.push(trt);
   });
   tb.appendChild(frag);
 }
@@ -571,13 +579,13 @@ function buildFecha(){
 
 function render(){
   let vis=0,costo=0,horas=0; const arr=[];
-  ROWS.forEach((tr,i)=>{const d=DATA[i],ok=pass(d);tr.style.display=ok?'':'none';DESCS[i].style.display=ok?'':'none';if(TITLES[i])TITLES[i].style.display=ok?'':'none';if(ok){vis++;costo+=d.costo;horas+=d.horas;arr.push(d);}});
+  ROWS.forEach((tr,i)=>{const d=DATA[i],ok=pass(d);tr.style.display=ok?'':'none';if(DESCS[i])DESCS[i].style.display=ok?'':'none';if(TITLES[i])TITLES[i].style.display=ok?'':'none';if(ok){vis++;costo+=d.costo;horas+=d.horas;arr.push(d);}});
   arr.sort((a,b)=>{
    if(orden.k==='tag1'){const A=norm((a.tag1||'')+' '+(a.tag2||'')),B=norm((b.tag1||'')+' '+(b.tag2||''));
      if(!a.tag1&&b.tag1) return 1; if(a.tag1&&!b.tag1) return -1;   // sin tag1 al final
      return (A>B?1:A<B?-1:0)*(orden.asc?1:-1);}
    let x=a[orden.k],y=b[orden.k];if(typeof x==='string'){x=norm(x);y=norm(y);}if(x===y) return b.n-a.n;return (x>y?1:x<y?-1:0)*(orden.asc?1:-1);});
-  arr.forEach(d=>{const i=DATA.indexOf(d);tb.appendChild(TITLES[i]);tb.appendChild(DESCS[i]);tb.appendChild(ROWS[i]);});
+  arr.forEach(d=>{const i=DATA.indexOf(d);tb.appendChild(TITLES[i]);tb.appendChild(ROWS[i]);});
   const posts=arr.reduce((a,d)=>a+(d.posts||0),0);
   const toks=arr.reduce((a,d)=>a+(d.tok_tot||0),0);
   document.getElementById('kVis').textContent=vis;
