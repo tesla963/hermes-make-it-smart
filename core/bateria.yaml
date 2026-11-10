@@ -55,6 +55,13 @@ marcas:
     tag1: NVIDIA
     strip: false
     productos: [RTX 5090, RTX 4090, Quadro, A5000, A3000, Spark]
+  goveelife:
+    tag1: GoveeLife
+    sitio: https://www.govee.com/
+    productos: [Hygrometer, Thermometer, H5151, H5101]
+    nota: >
+      La marca es "GoveeLife", la linea domestica de Govee. Sus sensores llevan
+      un gateway propio y se instalan por la app Govee Home.
   rayneo:
     tag1: RayNeo
     sitio: https://www.rayneo.com/
@@ -64,10 +71,6 @@ marcas:
       No es "Ray Neo" ni "RayNEO". Son gafas AR: se conectan por USB-C con
       DP Alt Mode, asi que funcionan con cualquier salida de video compatible,
       incluido el DJI RC 2.
-  deepseek:
-    tag1: DeepSeek
-    sitio: https://www.deepseek.com/
-    productos: [V4 Flash, V4.1 Flash, V4 Pro, V3]
   dji:
     tag1: DJI
     strip: false
@@ -107,7 +110,8 @@ marcas:
   deepseek:
     tag1: DeepSeek
     strip: true
-    productos: [V4, V4 Flash, V4 Pro, R1]
+    sitio: https://www.deepseek.com/
+    productos: [V4, V4 Flash, V4.1 Flash, V4 Pro, R1]
   microsoft:
     tag1: Microsoft
     strip: true
@@ -139,6 +143,7 @@ programas:
   devonthink:
     marca: DEVONthink
     maker: Devon Technologies
+    alias: [Devon Think, "DEVONthink 3", DEVONagent]
     # The company is not in the programme's name: it is on the download page.
     sitio: https://www.devontechnologies.com/
     nota: >

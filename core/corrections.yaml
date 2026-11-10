@@ -594,3 +594,48 @@
     already knows is how a catalogue becomes expensive and slow. The batería is
     the cache of what has already been learned.
   control_question: "Does the batería already answer this? Then why is the model being asked?"
+
+- id: two-layers-actors-then-intent
+  taught: 2026-11-10
+  rule: >
+    The title is built in two passes, and they are not interchangeable.
+    PASS ONE, the script: find the ACTORS. Who is named in the session — the
+    product, the programme, the maker — using the batería as a dictionary. This
+    is deterministic, free and repeatable; it never asks a model and never
+    invents a brand. PASS TWO, the model: the INTENTION. Given the actors as
+    settled facts, the one question left is what the user wanted done, answered
+    with a single word from a closed vocabulary. The model is never asked to
+    name anything, because naming is the half that can be looked up.
+  why: >
+    Asking the model for everything produced brands inside Tag1 ("DJI Avata 360"),
+    products swallowed by their maker ("[DJI]" for a controller comparison) and a
+    Tag2 that described a topic instead of an intention ("Electronica" where the
+    user was installing a box he had just received). The names were knowable; the
+    model was being asked to guess what a YAML file already held.
+  examples:
+    - { nnn: 100, actors: "Avata 360 / DJI", intent: "Investigar" }
+    - { nnn: 71,  actors: "DEVONthink / Devon Technologies", intent: "Feature" }
+    - { nnn: 397, actors: "V4.1 Flash / DeepSeek", intent: "Update" }
+    - { nnn: 369, actors: "RC 2 / DJI", intent: "Comparación" }
+    - { nnn: 353, actors: "Hygrometer / GoveeLife", intent: "Instalar" }
+    - { nnn: 462, actors: "iOS (fuera de la batería)", intent: "Update" }
+  layers:
+    script: core/actors.py — find_actors(), subject_candidate(), brand_of_subject()
+    intent: core/intent.py — classify_intent() by keywords, prompt_for_intent() for the rest
+    tests:  tests/test_protocol.py — the five cases above, pinned
+  control_question: >
+    Did the script have this name in the batería? Then the model must not be
+    asked for it. Did the script have no signal for the verb? Then the model
+    must be asked for exactly that, and nothing else.
+
+- id: intent-not-topic
+  taught: 2026-11-10
+  rule: >
+    Tag2 is the verb, never the shelf. "Electronica" is where the object would
+    sit in a shop; "Instalar" is what the user did with it. When a Tag2 could
+    describe a hundred unrelated sessions, it is not a tag — it is a category
+    that escaped.
+  examples:
+    - { nnn: 462, wrong: "(vacío)", right: "Update", why: "'comprobar si ya salió la versión'" }
+    - { nnn: 353, wrong: "Electronica", right: "Instalar" }
+  control_question: "Could this same Tag2 label a session about something completely different?"
