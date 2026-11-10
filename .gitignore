@@ -27,3 +27,9 @@ tools/sim80_pre-redact_*.json
 
 # Correcciones puntuales del dueno
 core/corrections.personal.yaml
+
+# El repositorio es codigo: la data del dueno se queda en su disco.
+reports/
+tools/sim80*.json
+tools/*.csv
+*.csv
