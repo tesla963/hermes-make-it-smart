@@ -265,33 +265,50 @@ table{table-layout:fixed}
 #tb td:nth-child(3) .pill{max-width:100%}
 #btnFiltros{display:none}
 
-/* ── Panel angosto: el aside se aparta ──────────────────────────────────────
-   Con 264 px fijos de filtros no queda ancho para siete columnas. Bajo 1000 px
-   el aside pasa a cajon deslizante y el boton Filtros lo abre. */
+/* ── Panel angosto: el aside sigue a la vista, solo mas delgado ─────────────
+   Con table-layout:fixed las cifras ya no empujan nada fuera del panel, asi
+   que no hay que esconder los filtros: se estrechan. El boton Filtros los
+   pliega solo cuando se pide; el aside nunca desaparece por su cuenta. */
 @media (max-width:1000px){
   html{overflow-x:hidden}
-  aside{position:fixed;left:0;top:0;bottom:0;z-index:80;transform:translateX(-100%);
-    transition:transform .18s;box-shadow:20px 0 40px #0009;overflow-y:auto;
-    width:min(300px,86vw);flex:none}
-  body.filtros aside{transform:none}
-  body.filtros{overflow:hidden}
-  .vbadge{display:none}
+  /* la ultima columna no toca el borde: respira como la primera */
+  main{padding-right:10px}
+  aside{width:200px;flex:0 0 200px}
+  .vbadge{width:200px}
+  .kbar{left:200px}
   #btnFiltros{display:inline-block}
-  .kbar{left:0}
   .grip{display:none}
-  #tb th:nth-child(1){width:42px}
-  #tb th:nth-child(2){width:70px}
-  #tb th:nth-child(4){width:48px}
-  #tb th:nth-child(5){width:44px}
-  #tb th:nth-child(6){width:54px}
-  #tb th:nth-child(7){width:42px}
+  #tb th:nth-child(1){width:40px}
+  #tb th:nth-child(2){width:68px}
+  #tb th:nth-child(4){width:46px}
+  #tb th:nth-child(5){width:42px}
+  #tb th:nth-child(6){width:52px}
+  #tb th:nth-child(7){width:40px}
   #tb th:nth-child(1),#tb td.ncol{padding:6px 0}
   .t td.ncol.t{padding:6px 0}
   #tb td.ttitle{padding-left:0}
   #tb td:nth-child(3){padding-left:6px}
-  #tb td.num{padding-left:2px;padding-right:6px}
-  /* en angosto manda la cifra: las etiquetas de la fila viven en la ficha */
+  #tb td.num{padding-left:2px;padding-right:4px}
   .r .pill.tag1,.r .pill.tag2{display:none}
+  /* plegado a pedido, nunca por defecto */
+  body.sinFiltros aside{display:none}
+  body.sinFiltros .vbadge{display:none}
+  body.sinFiltros .kbar{left:0}
+}
+@media (max-width:620px){
+  aside{width:168px;flex:0 0 168px}
+  .vbadge{width:168px}
+  .kbar{left:168px}
+  #tb th:nth-child(1){width:36px}
+  #tb th:nth-child(2){width:62px}
+  #tb th:nth-child(4){width:42px}
+  #tb th:nth-child(5){width:38px}
+  #tb th:nth-child(6){width:46px}
+  #tb th:nth-child(7){width:36px}
+  #tb td.num{padding-left:1px;padding-right:3px}
+}
+@media (max-width:500px){
+  main{overflow-x:auto}
 }
 </style>
 </head>
@@ -1264,17 +1281,11 @@ build();full();stickyTop();updBar();updBar();
   setTimeout(function(){ try{ if(typeof full==='function') full(); }catch(e){} }, 0);
 })();
 
-// El aside es un cajon deslizante en panel angosto: un boton lo abre y un clic
-// fuera lo cierra. En escritorio el boton esta oculto por CSS.
+// El aside no se esconde solo: el boton Filtros lo pliega a pedido cuando hace
+// falta mas ancho, y lo devuelve al segundo clic.
 (function(){
   const bf=document.getElementById('btnFiltros');
-  if(bf) bf.onclick=function(e){ e.stopPropagation(); document.body.classList.toggle('filtros'); };
-  document.addEventListener('click',function(e){
-    if(!document.body.classList.contains('filtros')) return;
-    if(e.target.closest('aside')||e.target.closest('#btnFiltros')) return;
-    document.body.classList.remove('filtros');
-  },true);
-  window.addEventListener('keydown',function(e){ if(e.key==='Escape') document.body.classList.remove('filtros'); });
+  if(bf) bf.onclick=function(){ document.body.classList.toggle('sinFiltros'); };
 })();
 </script>
 </body>
