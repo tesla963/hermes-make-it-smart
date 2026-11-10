@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Hermes, Make All My Work Smart! — Simulador</title>
+<title>Hermes, Make My Work Smart — Simulador</title>
 <style>
 :root{--kbar-h:33px;--bg:#0d0b0e;--bg2:#141117;--card:#17131a;--line:#2a2330;--line2:#3a3040;--tx:#eae4ee;--tx2:#b9aec4;--tx3:#857a92;--wine:#a3234a;--wine2:#d94f78;--gold:#c9a227;--ok:#3f9e6a}
 *{box-sizing:border-box}
@@ -246,7 +246,7 @@ aside .chips,aside .chip{max-width:100%}
 <body>
 <header class="top">
   <div class="brandrow">
-    <h1>Hermes, make all my work Smart!</h1>
+    <h1>Hermes, Make My Work Smart</h1>
     <span class="sub">884 sesiones · NNN [Sujeto] MMM [Tag1] [Tag2] Descripción · Verbo</span>
     <button class="ghost langsw" id="btnLang" title="Idioma de la interfaz · Interface language"><span data-l="es">ES</span><span data-l="en">EN</span></button>
   </div>
@@ -528,7 +528,7 @@ function sin(t){
 function numSel(t){
   const s=String(t||'').replace(/\s+/g,'');
   if(!s||!/^\d+(-\d+)?(,\d+(-\d+)?)*$/.test(s)) return null;
-  const OPN=new Set();
+  const out=new Set();
 
   for(const part of s.split(',')){
     const m=part.match(/^(\d+)-(\d+)$/);
@@ -724,6 +724,7 @@ function buildTags(){
     + (todas2.length>10 ? `<div class="more" data-more="tag2">${abierto2?'\u2212 menos':'+ '+(todas2.length-10)+' m\u00e1s'}</div>` : '');
   document.getElementById('fTag2').innerHTML=h2||'<div class="opt empty">sin valores</div>';
   document.querySelectorAll('#fTag2 .more').forEach(b=>b.onclick=()=>{EXP.has('tag2')?EXP.delete('tag2'):EXP.add('tag2');full();});
+  document.querySelectorAll('#fTag3 .more').forEach(b=>b.onclick=()=>{EXP.has('tag4')?EXP.delete('tag4'):EXP.add('tag4');full();});
   document.querySelectorAll('#fTag2 input').forEach(i=>i.onchange=()=>{S.tag2=S.tag2===i.dataset.tag2?null:i.dataset.tag2;full();});
 
   const C4=counts(['tag4']);
@@ -815,11 +816,13 @@ function render(){
   arr.forEach(d=>{const i=DATA.indexOf(d);tb.appendChild(TITLES[i]);tb.appendChild(ROWS[i]);});
   const posts=arr.reduce((a,d)=>a+(d.posts||0),0);
   const toks=arr.reduce((a,d)=>a+(d.tok_tot||0),0);
-  document.getElementById('kVis').textContent=vis;
-  document.getElementById('kCosto').textContent='$'+costo.toFixed(2);
-  document.getElementById('kHoras').textContent=Math.round(horas/60)+' h';
-  document.getElementById('kPosts').textContent=fmtP(posts);
-  document.getElementById('kTok').textContent=fmtT(toks);
+  // La barra de totales esta DESPUES de este script en el documento: en el primer
+  // render sus nodos aun no existen y un textContent sobre null mataba el render.
+  const _kv=document.getElementById('kVis');   if(_kv) _kv.textContent=vis;
+  const _kc=document.getElementById('kCosto'); if(_kc) _kc.textContent='$'+costo.toFixed(2);
+  const _kh=document.getElementById('kHoras'); if(_kh) _kh.textContent=Math.round(horas/60)+' h';
+  const _kp=document.getElementById('kPosts'); if(_kp) _kp.textContent=fmtP(posts);
+  const _kt=document.getElementById('kTok');   if(_kt) _kt.textContent=fmtT(toks);
   let extra='';
   if(!vis && S.q){
     const qh=DATA.filter(d=>norm(d.desc+' '+d.tema+' '+d.sujeto+' '+d.tag1+' '+d.tag2+' '+d.cat3+' '+d.n).includes(S.q)).length;
