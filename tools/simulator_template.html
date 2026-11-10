@@ -502,6 +502,14 @@ let orden={k:'fecha',asc:false},current=null,verElim=false,verCron=false;
 // A scheduled run has a cron-shaped id; it is the only reliable signature that
 // it was not started by hand.
 const esCron = d => /^cron[_-]/i.test(d.id||'') || /^cron[_-]/i.test(d.prof||'');
+// Una sesion borrada NO se reconoce por el sujeto: tras re-clasificar, el sujeto
+// puede venir vacio o ser otra cosa y el filtro dejaba de verlas. El tema y el
+// titulo si lo dicen siempre. Ojo con la palabra suelta: "y su borrado" en una
+// descripcion normal no convierte la sesion en borrada.
+const esBorrada = d =>
+  /^\s*borrada/i.test(d.tema||'') ||
+  /^\s*sesi[oó]n borrada/i.test(d.sujeto||'') ||
+  /^\s*sesi[oó]n( de cron)? eliminad/i.test(d.desc||'');
 
 const tb=document.querySelector('#tb tbody'); let ROWS=[], DESCS=[], TITLES=[];
 function build(){
@@ -613,7 +621,7 @@ function numSel(t){
   return out.size?out:null;
 }
 function pass(d,...skips){
-  if(!verElim && !skips.includes('elim') && /borrad/i.test(d.sujeto||'')) return false;
+  if(!verElim && !skips.includes('elim') && esBorrada(d)) return false;
   if(!verCron && !skips.includes('cron') && esCron(d)) return false;
   if(!skips.includes('cat')&&S.cat1&&(d.dom||'Varios')!==S.cat1)return false;
   if(!skips.includes('cat')&&S.cat2&&(d.tag2||'Sin familia')!==S.cat2)return false;
@@ -984,7 +992,7 @@ if(_bl) _bl.onclick=()=>{
 };
 function full(){
   pintarIdioma();   // la barra KPI vive fuera del <script>: hay que repintarla aquí
-  const nElim=DATA.filter(d=>/borrad/i.test(d.sujeto||'')).length;
+  const nElim=DATA.filter(esBorrada).length;
   const b=document.getElementById('btnElim');
   b.textContent=(verElim?t('hideDel'):t('showDel'))+' · '+nElim;
   b.classList.toggle('on',verElim);
