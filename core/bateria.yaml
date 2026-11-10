@@ -55,6 +55,43 @@ marcas:
     tag1: NVIDIA
     strip: false
     productos: [RTX 5090, RTX 4090, Quadro, A5000, A3000, Spark]
+  primatelabs:
+    tag1: Primate Labs
+    sitio: https://www.geekbench.com/
+    productos: [Geekbench]
+    nota: Geekbench es el producto; la compania es Primate Labs (Toronto).
+  gardengnome:
+    tag1: Garden Gnome
+    sitio: https://ggnome.com/
+    productos: [Pano2VR, Object2VR]
+    nota: Pano2VR es de Garden Gnome GmbH (Viena).
+  rtools:
+    tag1: R-Tools
+    sitio: https://www.r-studio.com/
+    productos: [R-Studio]
+    nota: R-Studio es de R-Tools Technology, Inc.
+  nous:
+    tag1: Nous Research
+    sitio: https://nousresearch.com/
+    productos: [Hermes Agent, Hermes Desktop, Hermes Terminal, Ornith]
+    nota: >
+      Hermes y Ornith son de Nous Research. Pero "Hermes Agent" NUNCA es tag1
+      cuando el sujeto es otra cosa: el asistente es el AUTOR de la sesion.
+      Solo va como marca cuando el sujeto ES un producto de Nous.
+  samsung:
+    tag1: Samsung
+    sitio: https://www.samsung.com/
+    productos: [Galaxy A55, Galaxy S, A55]
+  google:
+    tag1: Google
+    sitio: https://www.google.com/
+    productos: [Chrome, Chromium, Gemini, Gemini Desktop]
+  iterm2:
+    tag1: ""
+    nota: >
+      iTerm2 es software libre de George Nachman, sin compania detras. La
+      regla del dueno: cuando el software libre no tiene empresa, el nombre ES
+      la marca y no se repite en tag1. Se deja vacio.
   goveelife:
     tag1: GoveeLife
     sitio: https://www.govee.com/
