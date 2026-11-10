@@ -17,3 +17,6 @@ tools/*.local.html
 
 # The personal batería is the owner's own experience: it never leaves the machine.
 core/bateria.personal.yaml
+
+# Written by tests/test_plugin.mjs on every run
+.plugin-under-test.mjs

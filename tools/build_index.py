@@ -28,11 +28,26 @@ sys.path.insert(0, str(ROOT))
 from adapters.hermes import attach_messages, discover_databases, read_sessions  # noqa: E402
 from core.paths import data_dir  # noqa: E402
 
+# The ordinal sits OUTSIDE the subject bracket: 001 [Chat en Telegram] 001 [Tag] …
 TITLE_RE = re.compile(
+    r"^(?P<nnn>\d{3,4})\s+\[(?P<subject>.+?)\]\s+(?P<mmm>\d{3,4})\s*"
+    r"(?:\[(?P<tag1>[^\]]*)\])?\s*(?:\[(?P<tag2>[^\]]*)\])?\s*"
+    r"(?P<desc>.*?)(?:\s*·\s*(?P<verb>[^·]+))?\s*$"
+)
+
+# Titles written before that move still read 001 [Chat en Telegram 001] [Tag] …,
+# and a subject may legitimately end in a number ("Inspiron 5570"), so the legacy
+# shape is tried only when the new one fails.
+TITLE_RE_LEGACY = re.compile(
     r"^(?P<nnn>\d{3,4})\s+\[(?P<subject>.+?)\s+(?P<mmm>\d{3,4})\]\s*"
     r"(?:\[(?P<tag1>[^\]]*)\])?\s*(?:\[(?P<tag2>[^\]]*)\])?\s*"
     r"(?P<desc>.*?)(?:\s*·\s*(?P<verb>[^·]+))?\s*$"
 )
+
+
+def parse_title(title: str):
+    """Match either shape; the new one wins when both could apply."""
+    return TITLE_RE.match(title) or TITLE_RE_LEGACY.match(title)
 
 # Machine preamble, skill dumps and cron boilerplate are not something the owner said.
 NOISE = ("[important", "## script output", "you are running as a scheduled cron job",
@@ -74,7 +89,7 @@ def build(with_messages: bool = True) -> dict:
     for profile, path in discover_databases():
         for rec in read_sessions(profile, path):
             title = (rec.title or "").strip()
-            m = TITLE_RE.match(title)
+            m = parse_title(title)
             if not m:
                 continue
             g = m.groupdict()

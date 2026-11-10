@@ -184,7 +184,9 @@ def render(
     cut, then dropped. The verb is the first thing to go.
     """
     subject = core_subject(facets.subject) or facets.subject or "Sin Sujeto"
-    head = f"{nnn:03d} [{subject} {facets.subject_ordinal:03d}]"
+    # The ordinal sits OUTSIDE the subject bracket. Inside, a reader takes
+    # "Chat en Telegram 001" for the subject's name instead of its counter.
+    head = f"{nnn:03d} [{subject}] {facets.subject_ordinal:03d}"
     if facets.tag1:
         head += f" [{facets.tag1}]"
     if facets.tag2:
