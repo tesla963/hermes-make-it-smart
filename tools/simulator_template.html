@@ -97,8 +97,8 @@ tr.r>td{padding-top:4px}
 .pill.s{color:#d3e3f3;background:#121d28;border-color:#24404f;max-width:118px;overflow:hidden;text-overflow:ellipsis;vertical-align:bottom}
 /* Paleta de los nueve tags: mismos valores de luminosidad y saturación, un tono
    distinto cada uno. Se leen juntos sin que ninguno grite. */
-.pill.tag1{color:#8fd0f5;background:#0f2431;border-color:#1f4a63}
-.pill.tag2{color:#f0d48a;background:#2a2210;border-color:#55461f}
+.pill.tag1{color:#f0d48a;background:#2a2210;border-color:#55461f}
+.pill.tag2{color:#8fd0f5;background:#0f2431;border-color:#1f4a63}
 .pill.tag3{color:#c9a8f0;background:#221634;border-color:#453063}
 .pill.tag4{color:#96e0b0;background:#0f2618;border-color:#1f4a30}
 .pill.tag5{color:#f2a8c4;background:#2b1220;border-color:#55233d}
@@ -106,7 +106,7 @@ tr.r>td{padding-top:4px}
 .pill.tag7{color:#8fe6e0;background:#0d2725;border-color:#1f4a46}
 .pill.tag8{color:#b8b8f5;background:#1a1a33;border-color:#33335f}
 .pill.tag9{color:#d8ec8f;background:#222b0f;border-color:#44551f}
-.pill.t{color:#8fd0f5;background:#0f2431;border-color:#1f4a63}
+.pill.t{color:#f0d48a;background:#2a2210;border-color:#55461f}
 .pill.t2{color:#d9e8f5;background:#12202b;border-color:#23394a}
 .pill.void{color:#4a4254;background:transparent;border-color:#2a2330}
 th.tags,td.tags{width:186px;min-width:186px;max-width:186px}
@@ -371,7 +371,6 @@ function build(){
       '<td class="tags"><span class="tcell">'+
         (d.tag1?'<span class="pill tag1 t1p pick" data-pick="t1" title="tag1 · plataforma">'+d.tag1+'</span>':'<span class="pill void">—</span>')+
         (d.tag2?'<span class="pill tag2 t2p pick" data-pick="t2" title="tag2 · familia">'+d.tag2+'</span>':'')+
-        (d.pilar?'<span class="pill tag3 p3p" title="tag3 · pilar">'+d.pilar+'</span>':'')+
       '</span></td>'+
       '<td class="num tight cen">'+fmtC(d.costo)+'</td><td class="num tight cen">'+fmtH(d.horas)+'</td>'+
       '<td class="num tight cen" style="color:var(--tx3)">'+fmtT(d.tok_tot)+'</td>'+
