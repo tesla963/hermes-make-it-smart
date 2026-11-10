@@ -522,3 +522,75 @@
     - { nnn: 667, tag1: "FedEx", subject: "Envío" }
   control_question: "If I remove the brand from the name, does the product still name itself?"
   bateria: core/bateria.yaml → logistica
+
+# ---------------------------------------------------------------------------
+# EL PROTOCOLO DE ANÁLISIS
+# ---------------------------------------------------------------------------
+# Cuatro reglas que nacieron de una sola revisión (00100, 071, 397, 369, 353) y
+# que ordenan el trabajo en capas: el script decide lo que sabe, el LLM
+# investiga lo que no, y nadie adivina lo que se puede comprobar.
+# ---------------------------------------------------------------------------
+
+- id: subject-is-the-nearest-item
+  taught: 2026-11-10
+  rule: >
+    When the turn asks whether A works with B, the subject is the item CLOSEST TO
+    THE USER — the one he already owns or is about to use — never the accessory
+    under evaluation. Asking "do these RayNeo glasses work with my DJI RC 2"
+    is a session about the RC 2: the controller is the thing he flies, the
+    glasses are the candidate. Tag1 is the maker of the subject (DJI), and the
+    candidate goes in the description with its brand intact.
+  why: >
+    The old rule keyed on brand and turned every DJI-adjacent session into
+    "[DJI]" with the wrong subject. The brand is an attribute of the subject,
+    not a magnet that pulls all of its products into one pile.
+  examples:
+    - { nnn: 369, wrong: "control y gafas", right: "RC 2", tag1: "DJI",
+        tag2: "Compatibilidad", description: "Comparar gafas RayNeo para volar dron" }
+  control_question: "Which of the two does the user already hold in his hand?"
+
+- id: brand-of-a-program-comes-from-its-site
+  taught: 2026-11-10
+  rule: >
+    For a programme or app, the brand is the COMPANY behind it, and that is
+    found at the programme's official site — not in the programme's own name.
+    DEVONthink is the programme; devontechnologies.com says the company is
+    Devon Technologies, so Tag1 is "Devon Technologies" and the subject stays
+    "DEVONthink". When the script cannot name the company from the batería, it
+    asks the model to look up the official site before it names anything.
+  examples:
+    - { nnn: 71, right: "DEVONthink", tag1: "Devon Technologies",
+        tag2: "Feature", description: "Evaluar si organiza todos los PDFs" }
+  control_question: "Whose site is the download page on?"
+
+- id: tag2-carries-the-intent
+  taught: 2026-11-10
+  rule: >
+    Tag2 names the kind of work the user actually asked for, in the tense of the
+    request: "Instalar" when he is installing something, "Feature" when he asks
+    what a programme can do, "Version" when he asks whether a release exists,
+    "Compatibilidad" when he asks whether two things work together. A generic
+    family ("Electronica", "IA") is what Tag2 says when the intent was never
+    read — not what it says when the intent is obvious.
+  examples:
+    - { nnn: 353, wrong: "Electronica", right: "Instalar" }
+    - { nnn: 71,  wrong: "Productivity", right: "Feature" }
+    - { nnn: 397, wrong: "IA", right: "Version" }
+    - { nnn: 369, wrong: "Electronica", right: "Compatibilidad" }
+  control_question: "What verb would the user put in front of this session if he named it himself?"
+
+- id: python-decides-llm-investigates
+  taught: 2026-11-10
+  rule: >
+    Analysis runs in two layers, and the cheap one goes first. The script reads
+    the title, the tags and the batería and resolves everything it can match —
+    a known brand, a known product, a known intent. Only what is still unknown
+    is handed to the model, and it is handed a QUESTION ("which company owns
+    devonthink.com? is RayNeo one word?") rather than the whole transcript.
+    The model's answer is written back to the batería, so the next session with
+    that name costs no tokens at all.
+  why: >
+    Sending 884 full transcripts to a model to re-derive what a YAML file
+    already knows is how a catalogue becomes expensive and slow. The batería is
+    the cache of what has already been learned.
+  control_question: "Does the batería already answer this? Then why is the model being asked?"
