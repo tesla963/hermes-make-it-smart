@@ -25,7 +25,7 @@ import json
 import os
 from pathlib import Path
 
-PLUGIN = "make-my-work-smart"
+PLUGIN = "make-all-my-work-smart"
 
 
 def hermes_root() -> Path:

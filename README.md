@@ -95,14 +95,14 @@ cd hermes-make-all-my-work-smart
 ~/.hermes/hermes-agent/scripts/run-in-hermes-env python3 tools/build_index.py
 
 # 2. copy the plugin where Hermes Desktop looks for it
-mkdir -p ~/.hermes/desktop-plugins/make-my-work-smart
-cp desktop/plugin.js ~/.hermes/desktop-plugins/make-my-work-smart/
+mkdir -p ~/.hermes/desktop-plugins/make-all-my-work-smart
+cp desktop/plugin.js ~/.hermes/desktop-plugins/make-all-my-work-smart/
 
 # 3. restart Hermes Desktop, then open "Make It Smart" in the sidebar
 ```
 
 The plugin never touches `state.db`: step 1 reads it and writes one JSON file to
-`~/.hermes/plugin-data/make-my-work-smart/index.json`, and the window only paints
+`~/.hermes/plugin-data/make-all-my-work-smart/index.json`, and the window only paints
 that file. Re-run step 1 (or press **Refresh DB**) whenever you want new sessions
 in the catalogue.
 

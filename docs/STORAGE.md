@@ -14,9 +14,9 @@ the host API, never by building the path yourself:
 ```python
 from plugins.plugin_storage import plugin_data_dir, plugin_db
 
-data = plugin_data_dir("make-my-work-smart")   # creates it, follows the active profile
+data = plugin_data_dir("make-all-my-work-smart")   # creates it, follows the active profile
 data / "exports"                                # CSVs handed to the owner
-plugin_db("make-my-work-smart")                 # -> plugin-data/<name>/data.db
+plugin_db("make-all-my-work-smart")                 # -> plugin-data/<name>/data.db
 ```
 
 ## What is forbidden, and why
@@ -33,7 +33,7 @@ the active profile. Do not cache the path across a profile switch.
 ## What the plugin stores, and where
 
 ```
-~/.hermes/plugin-data/make-my-work-smart/
+~/.hermes/plugin-data/make-all-my-work-smart/
 ├── data.db                 the index: sessions, facets, subject counters, export log
 └── exports/
     ├── [0001] 20261109_1744_841sesiones.csv

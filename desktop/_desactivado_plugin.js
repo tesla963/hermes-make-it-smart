@@ -25,7 +25,7 @@ import { host, ROUTES_AREA, SIDEBAR_NAV_AREA } from '@hermes/plugin-sdk'
 import { jsx, jsxs } from 'react/jsx-runtime'
 import { useState, useEffect, useMemo } from 'react'
 
-const ID = 'make-my-work-smart'
+const ID = 'make-all-my-work-smart'
 const NAME = 'Hermes, make all my work Smart!'
 const VERSION = '0.1.0'
 const ROUTE = '/smart'

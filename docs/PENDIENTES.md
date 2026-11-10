@@ -19,29 +19,23 @@ Pasos:
    (`git filter-repo`). Solo si se decide que el repo vaya a publicarse; con la
    clave rotada el riesgo desaparece y el historial no vale el trabajo.
 
-## 2 · Cambiar el identificador interno del plugin
+## 2 · Identificador interno — ✅ HECHO (2026-11-11)
 
-Hoy el nombre visible es **Hermes, Make All my Work Smart!** pero el id interno
-sigue siendo `make-my-work-smart`. Jorge pidió igualarlo.
+El id interno es `make-all-my-work-smart` en todas partes, igual que el nombre
+visible. Verificado: el índice se reconstruye en
+`~/.hermes/plugin-data/make-all-my-work-smart/index.json` con **910 sesiones**,
+460 sujetos, tag3 en 570 y tag4 en 854.
 
-El id aparece en cuatro sitios y manda sobre dónde vive el dato:
+| Archivo | Antes | Ahora |
+|---|---|---|
+| `core/paths.py` | `PLUGIN = "make-my-work-smart"` | `"make-all-my-work-smart"` |
+| `desktop/plugin.js` | `ID = 'make-my-work-smart'` | `'make-all-my-work-smart'` |
+| `README.md`, `docs/STORAGE.md`, `tests/` | id viejo | id nuevo |
 
-| Archivo | Línea | Hoy | Debe ser |
-|---|---|---|---|
-| `core/paths.py` | `PLUGIN` | `make-my-work-smart` | `make-all-my-work-smart` |
-| `desktop/plugin.js` | `ID` | `make-my-work-smart` | `make-all-my-work-smart` |
-| `plugin.yaml` | `name` | ya dice `hermes-make-all-my-work-smart` | — |
-| `~/.hermes/plugin-data/<id>/` | carpeta | `make-my-work-smart` | migrar |
-| `~/.hermes/desktop-plugins/<id>/` | carpeta | `make-my-work-smart` | migrar |
-
-Procedimiento seguro:
-
-1. `cp -R` de los dos directorios al nombre nuevo (nunca mover: si algo falla,
-   el viejo sigue sirviendo).
-2. Cambiar `PLUGIN` y `ID`.
-3. Reiniciar Hermes Desktop.
-4. Verificar que el plugin carga y que lee el índice nuevo (909 sesiones).
-5. Solo entonces, decidir si se borra el directorio viejo.
+Los directorios de datos se **copiaron** (`cp -R`) a
+`~/.hermes/plugin-data/make-all-my-work-smart/` y
+`~/.hermes/desktop-plugins/make-all-my-work-smart/`. El directorio viejo sigue
+en su sitio: solo se borra después de reiniciar Desktop y ver que carga.
 
 ## 3 · Las 15 sesiones con sujeto = marca
 
