@@ -165,6 +165,8 @@ tr.t:hover .ttitle .tfac{color:var(--tx2)}
 /* ---- barra inferior fija (KPIs) ---- */
 .kbar{position:fixed;left:var(--aside-w,264px);right:0;bottom:0;z-index:60;display:flex;align-items:stretch;gap:0;
 background:#0f0c13d9;backdrop-filter:blur(8px);border-top:1px solid var(--line2);padding:0 4px}
+.kbar .ktag{align-self:center;margin:0 6px 0 2px;flex:0 0 auto;font-size:9px;letter-spacing:.1em;
+color:#c9a8f0;border-color:#453063;background:#221634;padding:2px 6px}
 .kbar .kpi{flex:1 1 0;position:relative;display:flex;flex-direction:row;align-items:flex-end;justify-content:flex-start;gap:6px;
 padding:7px 10px 8px;background:none;border-radius:0}
 /* Separators as short rules between modules, not full-height hairlines: easier
@@ -216,7 +218,6 @@ aside .chips,aside .chip{max-width:100%}
 <header class="top">
   <div class="brandrow">
     <h1>Hermes, make all my work Smart!</h1>
-    <span class="tag">Simulador v23</span>
     <span class="sub">884 sesiones · NNN [Sujeto] MMM [Tag1] [Tag2] Descripción · Verbo</span>
     <button class="ghost langsw" id="btnLang" title="Idioma de la interfaz · Interface language"><span data-l="es">ES</span><span data-l="en">EN</span></button>
   </div>
@@ -977,6 +978,7 @@ window.addEventListener('scroll',stickyTop,{passive:true});
 build();full();stickyTop();updBar();updBar();
 </script>
 <div class="kbar">
+  <span class="tag ktag">Simulador v23</span>
   <div class="kpi accent"><b id="kVis">—</b><div class="lb"><i data-i18n="kSes1">Sesiones</i><i data-i18n="kSes2">visibles</i></div></div>
   <div class="kpi good"><b id="kCosto">—</b><div class="lb"><i data-i18n="kCos1">Costo</i><i data-i18n="kCos2">acumulado</i></div></div>
   <div class="kpi gold"><b id="kHoras">—</b><div class="lb"><i data-i18n="kHor1">Horas</i><i data-i18n="kHor2">trabajo</i></div></div>
