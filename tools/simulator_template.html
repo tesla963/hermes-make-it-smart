@@ -337,7 +337,7 @@ const I18N={
   showDel:'Mostrar Borradas',hideDel:'Ocultar Borradas',showCron:'Mostrar Cron',hideCron:'Ocultar Cron',
   buscar:'Buscar sujeto, tema, tag…',pilar:'Pilar',frente:'frente de trabajo',
   tag1:'Plataforma',tag2:'Familia',itTema:'IT · tema',
-  fecha:'Fecha',todoAnio:'Todo',diaExacto:'Día exacto',rango:'Rango',motor:'Motor de IA',autor:'Autor',maquina:'Tag 6 · Máquina',
+  fecha:'Fecha',todoAnio:'Todo',semAbbr:'sem',diaExacto:'Día exacto',rango:'Rango',motor:'Motor de IA',autor:'Autor',maquina:'Tag 6 · Máquina',
   colN:'Nº',colFecha:'Fecha',colSujeto:'Sujeto · #',colTags:'Tags',colCosto:'Costo',colHoras:'Horas',colTokens:'Tokens',colPosts:'Posts',
   mostrando:'Mostrando',de:'de',angosto:'⚠ angosto',
   copiarSesion:'Copiar sesión',abrirSesion:'Abrir sesión',mensajes:'MENSAJES CLAVE DEL USUARIO',
@@ -368,7 +368,7 @@ const I18N={
   showDel:'Show Deleted',hideDel:'Hide Deleted',showCron:'Show Cron',hideCron:'Hide Cron',
   buscar:'Search subject, topic, tag…',pilar:'Pillar',frente:'work front',
   tag1:'Platform',tag2:'Family',itTema:'IT · topic',
-  fecha:'Date',todoAnio:'All',diaExacto:'Exact day',rango:'Range',motor:'AI engine',autor:'Author',maquina:'Tag 6 · Machine',
+  fecha:'Date',todoAnio:'All',semAbbr:'wk',diaExacto:'Exact day',rango:'Range',motor:'AI engine',autor:'Author',maquina:'Tag 6 · Machine',
   colN:'No.',colFecha:'Date',colSujeto:'Subject · #',colTags:'Tags',colCosto:'Cost',colHoras:'Hours',colTokens:'Tokens',colPosts:'Posts',
   mostrando:'Showing',de:'of',angosto:'⚠ narrow',
   copiarSesion:'Copy session',abrirSesion:'Open session',mensajes:'KEY USER MESSAGES',
@@ -711,11 +711,13 @@ function buildFecha(){
     meses.forEach(m=>{
       const k='m:'+m,o=OPN.has(k),n=C.mes[m]||0;
       h+=`<div class="node mnode${o?' open':''}${S.mes===m?' sel':''}${n?'':' zero'}" data-open="${k}"><div class="hd"><span class="caret">${o?'▾':'▸'}</span>${nombreMes(m)}<span class="n">${n}</span></div><div class="bd">`;
-      h+=`<label class="opt${S.mes===m?' sel':''}"><input type="radio" name="mes" ${S.mes===m?'checked':''} data-mes="${m}"><span><b>Todo ${nombreMes(m)}</b></span><span class="n">${n}</span></label>`;
+      h+=`<label class="opt${S.mes===m?' sel':''}"><input type="radio" name="mes" ${S.mes===m?'checked':''} data-mes="${m}"><span><b>${t('todoAnio')} ${nombreMes(m)}</b></span><span class="n">${n}</span></label>`;
       Object.keys(E.meses[m]).sort().forEach(w=>{
         const id=m+'|'+w,mm=C.sem[id]||0,tot=TOTSEM[w]||mm;
-        const extra = (tot>mm) ? `<span class="n" style="opacity:.6">de ${tot}</span>` : '';
-        h+=`<label class="opt${S.sem===id?' sel':''}${mm?'':' zero'}"><input type="radio" name="sem" ${S.sem===id?'checked':''} data-sem="${id}"><span>sem ${w.split('-W')[1]} <span style="color:var(--tx3);font-size:10.5px">${rangoSem(w)}</span></span>${extra}<span class="n">${mm}</span></label>`;
+        // The number first, the unit after: "45 sem" reads as a value, "sem 45"
+        // reads as a label. No "de 73" — the panel is 200 px wide and the
+        // total belongs to the month, not to the week.
+        h+=`<label class="opt${S.sem===id?' sel':''}${mm?'':' zero'}"><input type="radio" name="sem" ${S.sem===id?'checked':''} data-sem="${id}"><span><b style="font-variant-numeric:tabular-nums">${w.split('-W')[1]}</b> <span style="color:var(--tx3);font-size:10px">${t('semAbbr')}</span></span><span class="n">(${mm})</span></label>`;
       });
       h+=`</div></div>`;
     });
@@ -1027,18 +1029,20 @@ document.addEventListener('keydown',e=>{
   document.getElementById('panel').classList.remove('on');
   document.getElementById('modal').classList.remove('on');
 });
-const MESNOM=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+const MESNOM={
+ es:['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'],
+ en:['January','February','March','April','May','June','July','August','September','October','November','December']};
 function rangoSem(iso){
   const [y,w]=iso.split('-W').map(Number);
   const ene=new Date(y,0,1);
   const off=(ene.getDay()<=4?1-ene.getDay():8-ene.getDay());
   const lun=new Date(y,0,1+off+(w-1)*7);
   const dom=new Date(lun); dom.setDate(lun.getDate()+6);
-  const f=d=>d.getDate()+' '+MESNOM[d.getMonth()].slice(0,3);
+  const f=d=>d.getDate()+' '+(MESNOM[LANG]||MESNOM.es)[d.getMonth()].slice(0,3);
   return f(lun)+' – '+f(dom);
 }
 const TOTSEM={}; DATA.forEach(d=>TOTSEM[d.semana]=(TOTSEM[d.semana]||0)+1);
-function nombreMes(m){const [y,mm]=m.split('-');return MESNOM[parseInt(mm)-1]+' '+y;}/* barra de scroll propia (visible siempre, también en macOS) */
+function nombreMes(m){const [y,mm]=m.split('-');return (MESNOM[LANG]||MESNOM.es)[parseInt(mm)-1]+' '+y;}/* barra de scroll propia (visible siempre, también en macOS) */
 const SB=document.getElementById('sbar'), ST=document.getElementById('sthumbb');
 let arrastrando=false;
 function updBar(){
