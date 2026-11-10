@@ -115,13 +115,16 @@ font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px;line-heig
 color:var(--tx3);word-break:break-all;user-select:all}
 .t .ttitle{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10.5px;line-height:1.45;
 padding:6px 8px 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-border-bottom:none !important;color:#f4e6ee}
+border-bottom:none !important;color:#f4e6ee;font-weight:700}
 /* The whole title carries one weight: the session's own name reads as one block. */
 .t .ttitle .tfac{color:#f4e6ee;font-weight:700}
 /* Fecha a la izquierda: centrada caía 24 px a la derecha del título. */
 td.fecha,th.fecha{padding-left:8px !important;text-align:left !important}
 .t td.ncol{width:44px;text-align:center;font-family:ui-monospace,Menlo,monospace;
-font-size:10.5px;color:var(--tx3);padding:6px 0 2px;border-bottom:none !important}
+font-size:10.5px;line-height:1.45;font-weight:700;color:#f4e6ee;
+padding:6px 4px 2px 0;border-bottom:none !important;vertical-align:baseline}
+/* Number and name read as one line: same size, same weight, same baseline. */
+.t td.ncol.t{text-align:right;padding-right:6px}
 /* The description is what the session WAS: it carries the weight and the light. */
 .t .ttitle .tdesc{color:#f4e6ee;font-weight:700;letter-spacing:.005em}
 tr.t:hover .ttitle .tfac{color:var(--tx2)}
@@ -238,8 +241,8 @@ aside .chips,aside .chip{max-width:100%}
       <thead><tr>
         <th data-k="n" class="tight" style="width:44px">Nº</th>
         <th data-k="fecha" class="tight fecha" style="width:88px">Fecha</th>
-        <th data-k="sujeto" class="tight" style="width:156px"></th>
-        <th data-k="tag1" class="tags"></th>
+        <th data-k="sujeto" class="tight" style="width:156px">Sujeto · #</th>
+        <th data-k="tag1" class="tags">Tags</th>
         <th data-k="costo" class="tight" style="width:54px">Costo</th>
         <th data-k="horas" class="tight" style="width:58px">Horas</th>
         <th data-k="tok_tot" class="tight" style="width:66px">Tokens</th>
@@ -300,7 +303,7 @@ function build(){
   const frag=document.createDocumentFragment();
   DATA.forEach((d,i)=>{
     const tr=document.createElement('tr'); tr.className='r'; tr.dataset.i=i;
-    tr.innerHTML='<td class="ncol">'+d.n+'</td>'+
+    tr.innerHTML='<td class="ncol"></td>'+
       '<td class="mono tight fecha" style="color:var(--tx3)">'+d.fecha+'</td>'+
       '<td class="tight"><span class="pill s pick'+(/borrad/i.test(d.sujeto)?' del':'')+'" data-pick="suj" title="Filtrar por este sujeto">'+d.sujeto+'</span> <span class="mono" style="color:var(--tx3)">'+String(d.mmm).padStart(3,'0')+'</span></td>'+
       '<td class="tags"><span class="tcell">'+(d.tag1?'<span class="pill t pick" data-pick="t1" title="Filtrar por Tag 1">'+d.tag1+'</span>':'<span class="pill void">—</span>')+(d.tag2?'<span class="pill t2 pick" data-pick="t2" title="Filtrar por Tag 2">'+d.tag2+'</span>':'<span class="pill void">—</span>')+'</span></td>'+
@@ -321,7 +324,7 @@ function build(){
     // and everything else still lines up under the headers.
     // The number is a column, not part of the name: the line opens with the
     // first bracket, and the stored title still carries its NNN.
-    trt.innerHTML='<td class="ncol"></td>'+
+    trt.innerHTML='<td class="ncol t">'+d.n+'</td>'+
       '<td colspan="7" class="ttitle'+tach+'"><b class="tfac">'+head+'</b>'+
       (tail?' <b class="tdesc">'+tail+'</b>':'')+'</td>';
     trt.addEventListener('click',()=>openPanel(d,tr));
