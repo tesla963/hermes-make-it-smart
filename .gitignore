@@ -20,3 +20,7 @@ core/bateria.personal.yaml
 
 # Written by tests/test_plugin.mjs on every run
 .plugin-under-test.mjs
+
+# Datos de trabajo: backups del dataset (pueden contener texto de sesiones)
+tools/sim80_backup_*.json
+tools/sim80_pre-redact_*.json
