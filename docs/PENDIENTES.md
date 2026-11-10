@@ -84,11 +84,19 @@ ahora lo detecta y lo dice.
 
 - `tools/make_simulator.py` cuenta las sesiones `source=cron` sin ningún mensaje y
   los cron jobs vivos leyendo `~/.hermes/cron/jobs.json`.
-- La plantilla pinta un banner arriba de la tabla, en ES/EN, con un botón que copia
-  el texto listo: «Lisa, bórrame las N sesiones vacías de cron… y dime qué cron
-  jobs tengo activos para pausarlos.»
-- No borra ni pausa nada: solo avisa y prepara el mensaje. Verificado a 46 vacías
-  y 2 jobs activos.
+- La plantilla pinta un banner arriba de la tabla, en ES/EN. **No ordena pausar:**
+  nombra la causa con enlace al [issue #140222](https://github.com/NousResearch/hermes-agent/issues/140222),
+  señala la dirección (pausar y recrear en modo `no_agent`) y aclara que el panel no
+  toca los cron jobs: eso se le pide al agente de Hermes.
+- Botón para copiar el texto listo: «Lisa, tengo N sesiones vacías de cron…».
+- **Filtro «Vacío»/«Empty»**, el tercero de la fila de estado y **activado por
+  defecto**: las sesiones sin mensajes no aparecen en el listado. Se desactiva con
+  un clic.
+- El toolbar de filtros y comandos ahora arranca en el borde izquierdo, igual que la
+  fila del nombre, y el panel de filtros empieza debajo (`--toolbar-h` medido en JS).
+
+**Regla del proyecto:** el panel solo pinta e informa. Pausar jobs, borrar sesiones o
+escribir en la base es del dueño o de su agente. «No estamos invitados a ese velorio.»
 
 **Pendiente (cuando exista `desktop/plugin.js`):**
 
