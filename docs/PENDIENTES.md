@@ -74,11 +74,40 @@ gh repo edit tesla963/make-all-my-work-smart \
 Solo ese repo. `hermes-make-all-my-work-smart` (datos y documentos internos) se
 queda privado **siempre**.
 
+## 7 · Aviso de higiene de cron — ✅ en el simulador, pendiente en el plugin
+
+Un cron job con monitor deja sesiones vacías (bug #140222 de Hermes: la sesión se
+crea antes de que el gate decida que no hay nada que reportar). El simulador
+ahora lo detecta y lo dice.
+
+**Hecho (2026-11-11, MVP del simulador):**
+
+- `tools/make_simulator.py` cuenta las sesiones `source=cron` sin ningún mensaje y
+  los cron jobs vivos leyendo `~/.hermes/cron/jobs.json`.
+- La plantilla pinta un banner arriba de la tabla, en ES/EN, con un botón que copia
+  el texto listo: «Lisa, bórrame las N sesiones vacías de cron… y dime qué cron
+  jobs tengo activos para pausarlos.»
+- No borra ni pausa nada: solo avisa y prepara el mensaje. Verificado a 46 vacías
+  y 2 jobs activos.
+
+**Pendiente (cuando exista `desktop/plugin.js`):**
+
+| Pieza | Estado |
+|---|---|
+| El mismo aviso en el panel del plugin, al importar | no empezado |
+| Botón para pausar el job desde la UI | no empezado — el panel solo pinta por diseño |
+| Enlace al issue #140222 mientras no haya fix upstream | no empezado |
+
+**Por qué entra en el MVP:** detectarlo es una consulta y una lectura de JSON; el
+generador ya abre las 12 bases. Sin el aviso, el usuario culpa al plugin de una
+basura que generó el cron.
+
 ## Estado al cerrar
 
 ```
-base de Hermes     848 títulos escritos por la API oficial
-simulador          909 sesiones · 762 visibles · 42 borradas · 105 cron
-plugin instalado   909 sesiones · 460 sujetos · tag3 en 570 · tag4 en 854
-repos              trabajo y entrega, ambos privados, ambos renombrados
+base de Hermes     848 títulos escritos por la API oficial · 809 sesiones
+                   46 sesiones vacías de cron borradas el 2026-11-11
+simulador          864 sesiones · 851 con sujeto · 570 con intención
+cron jobs          0 — los 4 borrados; definiciones en el registro del 11-nov
+repos              trabajo: código, 0 data · entrega: solo el simulador
 ```

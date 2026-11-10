@@ -14,6 +14,7 @@ Last verified: 2026-11-10, on the author's machine (12 profiles, 909 sessions).
 | Classification | **10 of 10 sessions classified by the model, 0 fallbacks**, ~1,480 prompt tokens |
 | Title write API | `SessionDB.set_session_title`, atomic, provenance-safe, batch receipt |
 | Invariants | **11/11** unit tests pass, including "`core/` never imports the host" |
+| Hygiene notice | Cron sessions with zero messages (and live cron jobs) surface as a banner above the table, with a copy-to-clipboard request for the assistant. Verified 2026-11-11: appears at 46 empties / 2 jobs, translates ES/EN, copies |
 
 ## Real output from the last run
 
