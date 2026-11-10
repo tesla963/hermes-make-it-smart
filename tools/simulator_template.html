@@ -95,7 +95,18 @@ tr.r>td{padding-top:4px}
 .pill.pick:hover{filter:brightness(1.35);outline:1px solid var(--wine2);outline-offset:1px}
 .pill{display:inline-block;font-size:10.5px;padding:1px 6px;border-radius:999px;border:1px solid var(--line2);color:var(--tx2);background:#1c1721;white-space:nowrap}
 .pill.s{color:#d3e3f3;background:#121d28;border-color:#24404f;max-width:118px;overflow:hidden;text-overflow:ellipsis;vertical-align:bottom}
-.pill.t{color:#efe6c4;background:#241f10;border-color:#463c1c}
+/* Paleta de los nueve tags: mismos valores de luminosidad y saturación, un tono
+   distinto cada uno. Se leen juntos sin que ninguno grite. */
+.pill.tag1{color:#8fd0f5;background:#0f2431;border-color:#1f4a63}
+.pill.tag2{color:#f0d48a;background:#2a2210;border-color:#55461f}
+.pill.tag3{color:#c9a8f0;background:#221634;border-color:#453063}
+.pill.tag4{color:#96e0b0;background:#0f2618;border-color:#1f4a30}
+.pill.tag5{color:#f2a8c4;background:#2b1220;border-color:#55233d}
+.pill.tag6{color:#f5b98f;background:#2b1a0f;border-color:#553620}
+.pill.tag7{color:#8fe6e0;background:#0d2725;border-color:#1f4a46}
+.pill.tag8{color:#b8b8f5;background:#1a1a33;border-color:#33335f}
+.pill.tag9{color:#d8ec8f;background:#222b0f;border-color:#44551f}
+.pill.t{color:#8fd0f5;background:#0f2431;border-color:#1f4a63}
 .pill.t2{color:#d9e8f5;background:#12202b;border-color:#23394a}
 .pill.void{color:#4a4254;background:transparent;border-color:#2a2330}
 th.tags,td.tags{width:186px;min-width:186px;max-width:186px}
@@ -135,7 +146,7 @@ tr.t:hover .ttitle .tfac{color:var(--tx2)}
 .t .ttitle.borrada .tdesc{text-decoration:line-through;text-decoration-color:rgba(217,79,120,.65);text-decoration-thickness:1px}
 /* Switch de idioma: dos pastillas, la activa en vino. El idioma de la interfaz
    no cambia lo que el plugin entiende. */
-.langsw{margin-left:10px;display:inline-flex;gap:2px;padding:2px;align-items:center;border-radius:7px}
+.langsw{margin-left:auto;display:inline-flex;gap:2px;padding:2px;align-items:center;border-radius:7px}
 .langsw span{padding:1px 6px;border-radius:4px;font-size:10px;letter-spacing:.06em;color:var(--tx3);font-weight:700}
 .langsw span.on{background:var(--wine);color:#fff}
 .pidfoot span{text-transform:uppercase;letter-spacing:.06em;font-size:9px;opacity:.7;margin-right:4px}
@@ -207,17 +218,18 @@ aside .chips,aside .chip{max-width:100%}
     <h1>Hermes, make all my work Smart!</h1>
     <span class="tag">Simulador v23</span>
     <span class="sub">884 sesiones · NNN [Sujeto] MMM [Tag1] [Tag2] Descripción · Verbo</span>
+    <button class="ghost langsw" id="btnLang" title="Idioma de la interfaz · Interface language"><span data-l="es">ES</span><span data-l="en">EN</span></button>
   </div>
 </header>
 
 <div class="layout">
   <aside>
     <input type="text" id="q" data-i18n-ph="buscar" placeholder="Buscar sujeto, tema, tag…" style="width:100%;background:#100d13;border:1px solid var(--line2);color:var(--tx);border-radius:6px;padding:5px 8px;font-size:12.5px">
-    <h4><span data-i18n="pilar">Pilar</span> <span data-i18n="frente">frente de trabajo</span></h4>
+    <h4><span>tag3 · </span><span data-i18n="pilar">Pilar</span> <span data-i18n="frente">frente de trabajo</span></h4>
     <div id="fTag3"></div>
-    <h4 data-i18n="tag1">Tag 1 · Plataforma</h4>
+    <h4><span>tag1 · </span><span data-i18n="tag1">Plataforma</span></h4>
     <div id="fTag1"></div>
-    <h4><span data-i18n="tag2">Tag 2 · Familia</span> <span data-i18n="itTema">IT · tema</span></h4>
+    <h4><span>tag2 · </span><span data-i18n="tag2">Familia</span> <span data-i18n="itTema">IT · tema</span></h4>
     <div id="fTag2"></div>
     <h4 data-i18n="fecha">Fecha</h4>
     <div id="fFecha"></div>
@@ -303,7 +315,7 @@ const I18N={
  es:{ordenar:'Ordenar:',limpiar:'Limpiar',copiar:'Copiar',exportar:'Exportar',actualizar:'Actualizar BD',
   showDel:'Mostrar Borradas',hideDel:'Ocultar Borradas',showCron:'Mostrar Cron',hideCron:'Ocultar Cron',
   buscar:'Buscar sujeto, tema, tag…',pilar:'Pilar',frente:'frente de trabajo',
-  tag1:'Tag 1 · Plataforma',tag2:'Tag 2 · Familia',itTema:'IT · tema',
+  tag1:'Plataforma',tag2:'Familia',itTema:'IT · tema',
   fecha:'Fecha',diaExacto:'Día exacto',rango:'Rango',motor:'Motor de IA',autor:'Autor',maquina:'Tag 6 · Máquina',
   colN:'Nº',colFecha:'Fecha',colSujeto:'Sujeto · #',colTags:'Tags',colCosto:'Costo',colHoras:'Horas',colTokens:'Tokens',colPosts:'Posts',
   mostrando:'Mostrando',de:'de',angosto:'⚠ angosto',
@@ -311,11 +323,14 @@ const I18N={
   sinMensajes:'(sin mensajes de usuario útiles en esta sesión)',elegir:'Elige una sesión para ver su ficha.',
   sujeto:'Sujeto',costo:'Costo',horas:'Horas',tokens:'Tokens',perfil:'Perfil',pais:'País',anio:'Año',
   motores:'motores',autores:'autores',de1:'1 de ',
+  kSes1:'Sesiones',kSes2:'visibles',kCos1:'Costo',kCos2:'acumulado',
+  lblPlataforma:'plataforma',lblFamilia:'familia',lblPilar:'pilar',lblPais:'país',lblAnio:'año',lblMaquina:'máquina',lblLibre:'libre',
+  kHor1:'Horas',kHor2:'trabajo',kPost1:'Total',kPost2:'posts',kTok1:'Total',kTok2:'tokens',
   sinMsgs:'(sin mensajes de usuario en esta sesión)'},
  en:{ordenar:'Sort:',limpiar:'Clear',copiar:'Copy',exportar:'Export',actualizar:'Refresh DB',
   showDel:'Show Deleted',hideDel:'Hide Deleted',showCron:'Show Cron',hideCron:'Hide Cron',
   buscar:'Search subject, topic, tag…',pilar:'Pillar',frente:'work front',
-  tag1:'Tag 1 · Platform',tag2:'Tag 2 · Family',itTema:'IT · topic',
+  tag1:'Platform',tag2:'Family',itTema:'IT · topic',
   fecha:'Date',diaExacto:'Exact day',rango:'Range',motor:'AI engine',autor:'Author',maquina:'Tag 6 · Machine',
   colN:'No.',colFecha:'Date',colSujeto:'Subject · #',colTags:'Tags',colCosto:'Cost',colHoras:'Hours',colTokens:'Tokens',colPosts:'Posts',
   mostrando:'Showing',de:'of',angosto:'⚠ narrow',
@@ -323,6 +338,9 @@ const I18N={
   sinMensajes:'(no useful user messages in this session)',elegir:'Pick a session to see its card.',
   sujeto:'Subject',costo:'Cost',horas:'Hours',tokens:'Tokens',perfil:'Profile',pais:'Country',anio:'Year',
   motores:'engines',autores:'authors',de1:'1 of ',
+  kSes1:'Visible',kSes2:'sessions',kCos1:'Total',kCos2:'cost',
+  lblPlataforma:'platform',lblFamilia:'family',lblPilar:'pillar',lblPais:'country',lblAnio:'year',lblMaquina:'machine',lblLibre:'free',
+  kHor1:'Work',kHor2:'hours',kPost1:'Total',kPost2:'posts',kTok1:'Total',kTok2:'tokens',
   sinMsgs:'(no user messages in this session)'}
 };
 let LANG=(()=>{try{return localStorage.getItem('mmws-lang')==='en'?'en':'es'}catch(e){return 'es'}})();
@@ -350,7 +368,11 @@ function build(){
     tr.innerHTML='<td class="ncol"></td>'+
       '<td class="mono tight fecha" style="color:var(--tx3)">'+d.fecha+'</td>'+
       '<td class="tight"><span class="pill s pick'+(/borrad/i.test(d.sujeto)?' del':'')+'" data-pick="suj" title="Filtrar por este sujeto">'+d.sujeto+'</span> <span class="mono" style="color:var(--tx3)">'+String(d.mmm).padStart(3,'0')+'</span></td>'+
-      '<td class="tags"><span class="tcell">'+(d.tag1?'<span class="pill t pick" data-pick="t1" title="Filtrar por Tag 1">'+d.tag1+'</span>':'<span class="pill void">—</span>')+(d.tag2?'<span class="pill t2 pick" data-pick="t2" title="Filtrar por Tag 2">'+d.tag2+'</span>':'<span class="pill void">—</span>')+'</span></td>'+
+      '<td class="tags"><span class="tcell">'+
+        (d.tag1?'<span class="pill tag1 t1p pick" data-pick="t1" title="tag1 · plataforma">'+d.tag1+'</span>':'<span class="pill void">—</span>')+
+        (d.tag2?'<span class="pill tag2 t2p pick" data-pick="t2" title="tag2 · familia">'+d.tag2+'</span>':'')+
+        (d.pilar?'<span class="pill tag3 p3p" title="tag3 · pilar">'+d.pilar+'</span>':'')+
+      '</span></td>'+
       '<td class="num tight cen">'+fmtC(d.costo)+'</td><td class="num tight cen">'+fmtH(d.horas)+'</td>'+
       '<td class="num tight cen" style="color:var(--tx3)">'+fmtT(d.tok_tot)+'</td>'+
       '<td class="num tight cen" style="color:var(--tx3)">'+fmtP(d.posts)+'</td>';
@@ -689,14 +711,7 @@ function chips(){
     `<button class="ghost" id="copia" title="Copia los ${nVis} títulos al portapapeles para pegarlos en la sesión">${t('copiar')} · ${nVis}</button>`+
     `<button class="ghost" id="expc" title="Descarga las ${nVis} sesiones visibles en CSV: título actual, sujeto, tags y descripción, más columnas vacías para corregir y una para tus observaciones">${t('exportar')} · ${nVis}</button>`+
     `<button class="ghost" id="updb" title="Clasifica solo las sesiones que aún no tienen título canónico y reconstruye el índice">${t('actualizar')}</button>`+
-    `<span class="chipwrap">`+out.map(([k,v])=>`<span class="chip">${v} <b data-k="${k}">✕</b></span>`).join('')+`</span>`+
-    // El idioma de la interfaz es independiente del idioma que entiende el
-    // clasificador: el diccionario bilingüe lee los dos siempre.
-    `<button class="ghost langsw" id="btnLang" title="Idioma de la interfaz · Interface language">`+
-      `<span data-l="es">ES</span><span data-l="en">EN</span></button>`;
-  // El botón acaba de nacer: hay que marcar la pastilla activa aquí, no solo
-  // en el arranque (cuando todavía no existía).
-  pintarIdioma();
+    `<span class="chipwrap">`+out.map(([k,v])=>`<span class="chip">${v} <b data-k="${k}">✕</b></span>`).join('')+`</span>`;
   host.querySelectorAll('b').forEach(b=>b.onclick=()=>{
     const k=b.dataset.k;
     if(k==='motor'){S.motor=null;}
@@ -731,7 +746,14 @@ function buildMotor(){
 }
 
 pintarIdioma();
+const _bl=document.getElementById('btnLang');
+if(_bl) _bl.onclick=()=>{
+  LANG = LANG==='es' ? 'en' : 'es';
+  try{ localStorage.setItem('mmws-lang',LANG); }catch(_){}
+  pintarIdioma(); full();
+};
 function full(){
+  pintarIdioma();   // la barra KPI vive fuera del <script>: hay que repintarla aquí
   const nElim=DATA.filter(d=>/borrad/i.test(d.sujeto||'')).length;
   const b=document.getElementById('btnElim');
   b.textContent=(verElim?t('hideDel'):t('showDel'))+' · '+nElim;
@@ -759,12 +781,19 @@ function openPanel(d,tr){
   document.getElementById('psum').textContent=esRuido(d.resumen)?'':d.resumen;
   document.getElementById('pkv').innerHTML=
     '<div>'+t('sujeto')+'</div><div><b>'+d.sujeto+'</b> · '+String(d.mmm).padStart(3,'0')+'</div>'+
-    '<div>Tag 1</div><div>'+(d.tag1||'—')+'</div><div>Tag 2</div><div>'+(d.tag2||'—')+'</div>'+
     '<div style="grid-column:1/-1;border-top:1px solid var(--line);margin:6px 0 2px"></div>'+
-    '<div>'+t('pilar')+'</div><div>'+(d.pilar||'—')+'</div>'+
-    '<div>'+t('pais')+'</div><div>'+(d.pais||'—')+'</div>'+
-    '<div>'+t('anio')+'</div><div>'+(d.anio||'—')+'</div>'+
-    '<div>'+t('maquina').replace('Tag 6 · ','')+'</div><div>'+(d.tag6||'—')+'</div>'+
+    // Los nueve tags, con su nombre interno y su descripción: así se ve de un
+    // golpe qué eje es cada uno y cuáles están todavía libres.
+    '<div>tag1 · '+t('lblPlataforma')+'</div><div><span class="pill tag1">'+(d.tag1||'—')+'</span></div>'+
+    '<div>tag2 · '+t('lblFamilia')+'</div><div><span class="pill tag2">'+(d.tag2||'—')+'</span></div>'+
+    '<div>tag3 · '+t('lblPilar')+'</div><div><span class="pill tag3">'+(d.pilar||'—')+'</span></div>'+
+    '<div>tag4 · '+t('lblPais')+'</div><div>'+((d.pais?'<span class="pill tag4">'+d.pais+'</span>':'—'))+'</div>'+
+    '<div>tag5 · '+t('lblAnio')+'</div><div>'+((d.anio?'<span class="pill tag5">'+d.anio+'</span>':'—'))+'</div>'+
+    '<div>tag6 · '+t('lblMaquina')+'</div><div><span class="pill tag6">'+(d.tag6||'—')+'</span></div>'+
+    '<div>tag7 · '+t('lblLibre')+'</div><div>—</div>'+
+    '<div>tag8 · '+t('lblLibre')+'</div><div>—</div>'+
+    '<div>tag9 · '+t('lblLibre')+'</div><div>—</div>'+
+    '<div style="grid-column:1/-1;border-top:1px solid var(--line);margin:6px 0 2px"></div>'+
     '<div>Ruta</div><div>'+d.dom+' › '+d.tag5+' › '+(d.tag1||'—')+'</div>'+
     '<div>Costo</div><div>'+fmtC(d.costo)+'</div><div>Horas</div><div>'+fmtH(d.horas)+'</div>'+
     '<div>Mensajes</div><div>'+d.mc+'</div><div>'+t('fecha')+'</div><div>'+d.fecha+'</div>'+
@@ -950,11 +979,11 @@ window.addEventListener('scroll',stickyTop,{passive:true});
 build();full();stickyTop();updBar();updBar();
 </script>
 <div class="kbar">
-  <div class="kpi accent"><b id="kVis">—</b><div class="lb"><i>Sesiones</i><i>visibles</i></div></div>
-  <div class="kpi good"><b id="kCosto">—</b><div class="lb"><i>Costo</i><i>acumulado</i></div></div>
-  <div class="kpi gold"><b id="kHoras">—</b><div class="lb"><i>Horas</i><i>trabajo</i></div></div>
-  <div class="kpi pst"><b id="kPosts">—</b><div class="lb"><i>Total</i><i>posts</i></div></div>
-  <div class="kpi tok"><b id="kTok">—</b><div class="lb"><i>Total</i><i>tokens</i></div></div>
+  <div class="kpi accent"><b id="kVis">—</b><div class="lb"><i data-i18n="kSes1">Sesiones</i><i data-i18n="kSes2">visibles</i></div></div>
+  <div class="kpi good"><b id="kCosto">—</b><div class="lb"><i data-i18n="kCos1">Costo</i><i data-i18n="kCos2">acumulado</i></div></div>
+  <div class="kpi gold"><b id="kHoras">—</b><div class="lb"><i data-i18n="kHor1">Horas</i><i data-i18n="kHor2">trabajo</i></div></div>
+  <div class="kpi pst"><b id="kPosts">—</b><div class="lb"><i data-i18n="kPost1">Total</i><i data-i18n="kPost2">posts</i></div></div>
+  <div class="kpi tok"><b id="kTok">—</b><div class="lb"><i data-i18n="kTok1">Total</i><i data-i18n="kTok2">tokens</i></div></div>
 </div>
 <div id="ptip">264 pt</div>
 <script>
