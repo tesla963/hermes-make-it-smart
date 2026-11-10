@@ -664,13 +664,13 @@ function buildCat(){
 
 function buildTags(){
   const C=counts(['tag1']);
-  const h1=Object.keys(E.tags).filter(k=>k&&((C.tag1[k]||0)>0||S.tag1===k)).sort((a,b)=>(C.tag1[b]||0)-(C.tag1[a]||0)).slice(0,14)
+  const h1=Object.keys(E.tags).filter(k=>k&&((C.tag1[k]||0)>0||S.tag1===k)).sort((a,b)=>(C.tag1[b]||0)-(C.tag1[a]||0))
     .map(k=>{const n=C.tag1[k]||0;return `<label class="opt${S.tag1===k?' sel':''}${n?'':' zero'}"><input type="radio" name="tag1" ${S.tag1===k?'checked':''} data-tag1="${k}"><span>${k}</span><span class="n">${n}</span></label>`;}).join('');
   document.getElementById('fTag1').innerHTML=h1||'<div class="opt empty">—</div>';
   document.querySelectorAll('#fTag1 input').forEach(i=>i.onchange=()=>{S.tag1=S.tag1===i.dataset.tag1?null:i.dataset.tag1;full();});
 
   const C2=counts(['tag2']);
-  const h2=Object.keys(E.t2).filter(k=>k&&((C2.tag2[k]||0)>0||S.tag2===k)).sort((a,b)=>(C2.tag2[b]||0)-(C2.tag2[a]||0)).slice(0,14)
+  const h2=Object.keys(E.t2).filter(k=>k&&((C2.tag2[k]||0)>0||S.tag2===k)).sort((a,b)=>(C2.tag2[b]||0)-(C2.tag2[a]||0))
     .map(k=>{const n=C2.tag2[k]||0;return `<label class="opt${S.tag2===k?' sel':''}${n?'':' zero'}"><input type="radio" name="tag2" ${S.tag2===k?'checked':''} data-tag2="${k}"><span>${k}</span><span class="n">${n}</span></label>`;}).join('');
   document.getElementById('fTag2').innerHTML=h2||'<div class="opt empty">sin valores</div>';
   document.querySelectorAll('#fTag2 input').forEach(i=>i.onchange=()=>{S.tag2=S.tag2===i.dataset.tag2?null:i.dataset.tag2;full();});

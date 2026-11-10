@@ -87,7 +87,12 @@ PLATFORMS: Final[tuple[str, ...]] = (
     "Ebay",
 )
 
-DEFAULT_PLATFORM: Final[str] = "Hermes Agent"
+# No default platform. "Hermes Agent" used to fill this slot, which meant every
+# session the classifier could not place became a session "about Hermes Agent" —
+# 303 of 884, spread across all eleven pillars. The assistant does the work in
+# every session; that makes it the AUTHOR, never the platform. An empty Tag1 is
+# honest: it says nobody knew, and it leaves the slot free for the maker.
+DEFAULT_PLATFORM: Final[str] = ""
 
 # --------------------------------------------------------------------------- #
 # Tag 2 — work families
