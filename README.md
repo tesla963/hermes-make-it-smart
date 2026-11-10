@@ -73,6 +73,10 @@ The full rules live in [`docs/ALGORITHM.md`](docs/ALGORITHM.md).
 
 ## Install
 
+[`docs/GUIA-DE-USO.md`](docs/GUIA-DE-USO.md) — el orden que importa: respaldar,
+definir los pilares, alimentar la batería, mirar en el simulador, corregir,
+aplicar. El plugin vale lo que valen los nombres que le hayas enseñado.
+
 ```bash
 git clone https://github.com/tesla963/hermes-make-my-work-smart
 cd hermes-make-my-work-smart
