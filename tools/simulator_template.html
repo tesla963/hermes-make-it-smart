@@ -59,6 +59,14 @@ button.bok:hover{background:#38234f;border-color:#8f6bc4}
 .opt .n{margin-left:5px;flex:0 0 auto;font-size:11px;color:var(--tx3);font-variant-numeric:tabular-nums}
 .opt.sel{background:#251521;color:#fff}
 .opt.zero{display:none !important}
+.more{padding:3px 6px;font-size:10.5px;color:#8fd0f5;cursor:pointer;user-select:none}
+/* Cada bloque de filtro se pliega desde su encabezado. Con cuatro bloques y
+   44 opciones, el panel no cabe de otra forma sin scrollear a ciegas. */
+aside h4.fold{cursor:pointer;user-select:none;justify-content:flex-start;gap:5px}
+aside h4.fold .caret{font-size:9px;color:#6f6579;flex:0 0 auto}
+aside h4.fold.off{color:#6f6579}
+aside h4.fold.off+div{display:none}
+.more:hover{color:#b9e6ff;background:#1d1822;border-radius:5px}
 .opt.zero.sel{display:flex !important}
 .opt.empty{display:block;opacity:.45;font-style:italic}
 .qhint{color:#f0b529;cursor:help}
@@ -247,13 +255,13 @@ aside .chips,aside .chip{max-width:100%}
 <div class="layout">
   <aside>
     <input type="text" id="q" data-i18n-ph="buscar" placeholder="Buscar sujeto, tema, tag…" style="width:100%;background:#100d13;border:1px solid var(--line2);color:var(--tx);border-radius:6px;padding:5px 8px;font-size:12.5px">
-    <h4><span>tag1 · </span><span data-i18n="tag1">Marca</span></h4>
+    <h4 class="fold" data-b="tag1"><span class="caret">▾</span><span>tag1 · </span><span data-i18n="tag1">Marca</span></h4>
     <div id="fTag1"></div>
-    <h4><span>tag2 · </span><span data-i18n="tag2">Contexto</span></h4>
+    <h4 class="fold" data-b="tag2"><span class="caret">▾</span><span>tag2 · </span><span data-i18n="tag2">Contexto</span></h4>
     <div id="fTag2"></div>
-    <h4><span>tag3 · </span><span data-i18n="tag3">Intención</span></h4>
+    <h4 class="fold" data-b="tag3"><span class="caret">▾</span><span>tag3 · </span><span data-i18n="tag3">Intención</span></h4>
     <div id="fTag3i"></div>
-    <h4><span>tag4 · </span><span data-i18n="tema">Tema</span></h4>
+    <h4 class="fold" data-b="tag4"><span class="caret">▾</span><span>tag4 · </span><span data-i18n="tema">Tema</span></h4>
     <div id="fTag3"></div>
     <h4 data-i18n="fecha">Fecha</h4>
     <div id="fFecha"></div>
@@ -411,6 +419,11 @@ function pintarIdioma(){
 const norm=s=>(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
 const S={numSel:null,qs:'',tag3:null,cat1:null,cat2:null,cat3:null,tag1:null,tag2:null,tag4:null,tag5:null,tag6:null,autor:null,anio:null,mes:null,sem:null,q:'',dia:'',d1:'',d2:''};
 const OPN=new Set(['c1:Software']);
+const EXP=new Set();   // filtros desplegados del todo (+10 opciones)
+// Por defecto: marca y tema abiertos, contexto e intención plegados. Con los
+// cuatro abiertos el panel medía 2.899 px en una ventana de 873.
+const FOLD=new Set();  // bloques plegados por el usuario
+const FOLD_DEFAULT=new Set(['tag2','tag3']);
 let orden={k:'fecha',asc:false},current=null,verElim=false,verCron=false;
 // A scheduled run has a cron-shaped id; it is the only reliable signature that
 // it was not started by hand.
@@ -515,7 +528,8 @@ function sin(t){
 function numSel(t){
   const s=String(t||'').replace(/\s+/g,'');
   if(!s||!/^\d+(-\d+)?(,\d+(-\d+)?)*$/.test(s)) return null;
-  const out=new Set();
+  const OPN=new Set();
+
   for(const part of s.split(',')){
     const m=part.match(/^(\d+)-(\d+)$/);
     if(m){ let a=+m[1],b=+m[2]; if(a>b)[a,b]=[b,a];
@@ -666,11 +680,33 @@ function buildCat(){
     full();});
 }
 
+function plegar(){
+  document.querySelectorAll('aside h4.fold').forEach(hd=>{
+    // El default se aplica una sola vez; después manda lo que el usuario plegó.
+    if(!window.__foldInit){ FOLD_DEFAULT.forEach(x=>FOLD.add(x)); window.__foldInit=1; }
+    const b=hd.dataset.b, off=FOLD.has(b);
+    hd.classList.toggle('off', off);
+    hd.querySelector('.caret').textContent = off ? '▸' : '▾';
+    hd.onclick=()=>{
+      if(FOLD.has(b)) FOLD.delete(b); else FOLD.add(b);
+      plegar();
+    };
+    const nx=hd.nextElementSibling;
+    if(nx) nx.style.display = off ? 'none' : '';
+  });
+}
+
 function buildTags(){
   const C=counts(['tag1']);
-  const h1=Object.keys(E.tags).filter(k=>k&&((C.tag1[k]||0)>0||S.tag1===k)).sort((a,b)=>(C.tag1[b]||0)-(C.tag1[a]||0))
-    .map(k=>{const n=C.tag1[k]||0;return `<label class="opt${S.tag1===k?' sel':''}${n?'':' zero'}"><input type="radio" name="tag1" ${S.tag1===k?'checked':''} data-tag1="${k}"><span>${k}</span><span class="n">${n}</span></label>`;}).join('');
+  const todas1=Object.keys(E.tags).filter(k=>k&&((C.tag1[k]||0)>0||S.tag1===k)).sort((a,b)=>(C.tag1[b]||0)-(C.tag1[a]||0));
+  // Cuarenta y una marcas empujaban el resto del panel fuera de la vista. Se
+  // muestran diez y un botón; nada se pierde y el panel vuelve a caber.
+  const abierto1=EXP.has('tag1')||todas1.indexOf(S.tag1)>=10;
+  const ver1=abierto1?todas1:todas1.slice(0,10);
+  const h1=ver1.map(k=>{const n=C.tag1[k]||0;return `<label class="opt${S.tag1===k?' sel':''}${n?'':' zero'}"><input type="radio" name="tag1" ${S.tag1===k?'checked':''} data-tag1="${k}"><span>${k}</span><span class="n">${n}</span></label>`;}).join('')
+    + (todas1.length>10 ? `<div class="more" data-more="tag1">${abierto1?'− menos':'+ '+(todas1.length-10)+' más'}</div>` : '');
   document.getElementById('fTag1').innerHTML=h1||'<div class="opt empty">—</div>';
+  document.querySelectorAll('#fTag1 .more').forEach(b=>b.onclick=()=>{EXP.has('tag1')?EXP.delete('tag1'):EXP.add('tag1');full();});
   document.querySelectorAll('#fTag1 input').forEach(i=>i.onchange=()=>{S.tag1=S.tag1===i.dataset.tag1?null:i.dataset.tag1;full();});
 
   const Ci=counts(['tag3']);
@@ -681,14 +717,22 @@ function buildTags(){
     ci.querySelectorAll('input').forEach(i=>i.onchange=()=>{S.tag3=S.tag3===i.dataset.tag3v?null:i.dataset.tag3v;full();}); }
 
   const C2=counts(['tag2']);
-  const h2=Object.keys(E.t2).filter(k=>k&&((C2.tag2[k]||0)>0||S.tag2===k)).sort((a,b)=>(C2.tag2[b]||0)-(C2.tag2[a]||0))
-    .map(k=>{const n=C2.tag2[k]||0;return `<label class="opt${S.tag2===k?' sel':''}${n?'':' zero'}"><input type="radio" name="tag2" ${S.tag2===k?'checked':''} data-tag2="${k}"><span>${k}</span><span class="n">${n}</span></label>`;}).join('');
+  const todas2=Object.keys(E.t2).filter(k=>k&&((C2.tag2[k]||0)>0||S.tag2===k)).sort((a,b)=>(C2.tag2[b]||0)-(C2.tag2[a]||0));
+  const abierto2=EXP.has('tag2')||todas2.indexOf(S.tag2)>=10;
+  const ver2=abierto2?todas2:todas2.slice(0,10);
+  const h2=ver2.map(k=>{const n=C2.tag2[k]||0;return `<label class="opt${S.tag2===k?' sel':''}${n?'':' zero'}"><input type="radio" name="tag2" ${S.tag2===k?'checked':''} data-tag2="${k}"><span>${k}</span><span class="n">${n}</span></label>`;}).join('')
+    + (todas2.length>10 ? `<div class="more" data-more="tag2">${abierto2?'\u2212 menos':'+ '+(todas2.length-10)+' m\u00e1s'}</div>` : '');
   document.getElementById('fTag2').innerHTML=h2||'<div class="opt empty">sin valores</div>';
+  document.querySelectorAll('#fTag2 .more').forEach(b=>b.onclick=()=>{EXP.has('tag2')?EXP.delete('tag2'):EXP.add('tag2');full();});
   document.querySelectorAll('#fTag2 input').forEach(i=>i.onchange=()=>{S.tag2=S.tag2===i.dataset.tag2?null:i.dataset.tag2;full();});
 
   const C4=counts(['tag4']);
-  const h4=Object.keys(E.t4).filter(k=>(C4.tag4[k]||0)>0||S.tag4===k).sort((a,b)=>(C4.tag4[b]||0)-(C4.tag4[a]||0))
-    .map(k=>{const n=C4.tag4[k]||0;return `<label class="opt${S.tag4===k?' sel':''}${n?'':' zero'}"><input type="radio" name="tag4" ${S.tag4===k?'checked':''} data-tag4="${k}"><span>${k}</span><span class="n">${n}</span></label>`;}).join('');
+  const todas4=Object.keys(E.t4).filter(k=>(C4.tag4[k]||0)>0||S.tag4===k).sort((a,b)=>(C4.tag4[b]||0)-(C4.tag4[a]||0));
+  const abierto4=EXP.has('tag4')||todas4.indexOf(S.tag4)>=10;
+  const ver4=abierto4?todas4:todas4.slice(0,10);
+  const h4=ver4
+    .map(k=>{const n=C4.tag4[k]||0;return `<label class="opt${S.tag4===k?' sel':''}${n?'':' zero'}"><input type="radio" name="tag4" ${S.tag4===k?'checked':''} data-tag4="${k}"><span>${k}</span><span class="n">${n}</span></label>`;}).join('')
+    + (todas4.length>10 ? `<div class="more" data-more="tag4">${abierto4?'\u2212 menos':'+ '+(todas4.length-10)+' m\u00e1s'}</div>` : '');
 
   const C6=counts(['tag6']);
   const h6=Object.keys(E.t6).filter(k=>(C6.tag6[k]||0)>0||S.tag6===k).sort((a,b)=>(C6.tag6[b]||0)-(C6.tag6[a]||0))
@@ -757,6 +801,8 @@ function buildFecha(){
   host.querySelectorAll('input[data-mes]').forEach(i=>i.onchange=()=>{S.mes=S.mes===i.dataset.mes?null:i.dataset.mes;S.anio=S.mes?S.mes.slice(0,4):S.anio;full();});
   host.querySelectorAll('input[data-sem]').forEach(i=>i.onchange=()=>{S.sem=S.sem===i.dataset.sem?null:i.dataset.sem;full();});
 }
+
+function buildTagsWrapped(){ buildTags(); plegar(); }
 
 function render(){
   let vis=0,costo=0,horas=0; const arr=[];
@@ -866,7 +912,7 @@ function full(){
   const nCron=DATA.filter(d=>esCron(d)).length;
   const bc=document.getElementById('btnCron');
   if(bc){ bc.textContent=(verCron?t('hideCron'):t('showCron'))+' · '+nCron; bc.classList.toggle('on',verCron); }
-  render();buildMotor();buildAutor();buildCat();buildTags();buildTag3();buildFecha();chips();if(window.stickyTop)stickyTop();fitCheck();
+  render();buildMotor();buildAutor();buildCat();buildTags();plegar();buildTag3();buildFecha();chips();if(window.stickyTop)stickyTop();fitCheck();
 }
 document.getElementById('btnElim').onclick=()=>{verElim=!verElim;full();};
 document.getElementById('btnCron').onclick=()=>{verCron=!verCron;full();};
