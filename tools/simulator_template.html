@@ -823,7 +823,10 @@ document.addEventListener('click',e=>{
   const p=document.getElementById('panel');
   if(!p.classList.contains('on')) return;
   if(p.contains(e.target)) return;
-  if(e.target.closest('tr.r')||e.target.closest('tr.d')) return;   // fila de datos o de descripción: la maneja openPanel
+  // Any row that belongs to a session is openPanel's business, not a click-out.
+  // tr.t was added later and was missing here: the panel opened and this handler
+  // closed it in the same click.
+  if(e.target.closest('tr.t')||e.target.closest('tr.r')||e.target.closest('tr.d')) return;
   p.classList.remove('on');
 });
 document.addEventListener('keydown',e=>{
