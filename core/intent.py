@@ -46,9 +46,14 @@ INTENTS: dict[str, dict[str, Any]] = {
         "means": "quiere identificar qué versión tiene o cuál es la actual",
     },
     "Feature": {
-        "signals": ["puede", "sirve para", "maneja", "soporta", "capacidad",
-                    "función", "funcion", "hace", "permite", "sirve", "feature",
-                    "es capaz", "se puede"],
+        # "puede", "hace", "permite" and "se puede" appear in half the sentences
+        # ever written. They fired on "Preguntar qué tareas quedaron pendientes"
+        # and turned a greeting into a Feature. Only phrases that ask what the
+        # object IS CAPABLE OF count.
+        "signals": ["sirve para", "maneja", "soporta", "capacidad de",
+                    "qué funciones", "que funciones", "es capaz de",
+                    "tiene la función", "tiene la funcion", "qué puede hacer",
+                    "que puede hacer", "maneja pdf", "soporta pdf"],
         "means": "pregunta qué sabe hacer el objeto, no cómo se usa",
     },
     "Compatibilidad": {
@@ -151,14 +156,30 @@ def score_intents(text: str) -> list[tuple[str, float]]:
     return sorted(scores.items(), key=lambda kv: (-kv[1], _PRIORITY_INDEX.get(kv[0], 99)))
 
 
-def classify_intent(text: str, *, min_score: float = 2.0, margin: float = 0.4) -> Intent:
-    """The intention, decided by keywords when they are clear enough.
+def classify_intent(
+    text: str,
+    *,
+    focus: str = "",
+    min_score: float = 2.0,
+    margin: float = 0.4,
+) -> Intent:
+    """`focus` is the description: the sentence the user would use himself.
+
+    A signal that appears only in the transcript is a topic; a signal in the
+    description is the request. When `focus` is given, an intention that does
+    not appear there is not proposed, however loud the rest of the text is.
+
+    The intention, decided by keywords when they are clear enough.
 
     `min_score` is the floor below which a hit is noise. `margin` is how far
     ahead the winner must be: two intentions that both fire once are a tie, and
     a tie goes to the model rather than to the alphabet.
     """
-    ranked = score_intents(text)
+    if focus.strip():
+        in_focus = {k for k, _ in score_intents(focus)}
+        ranked = [kv for kv in score_intents(text) if kv[0] in in_focus]
+    else:
+        ranked = score_intents(text)
     if not ranked:
         return Intent("", "none")
     best, score = ranked[0]

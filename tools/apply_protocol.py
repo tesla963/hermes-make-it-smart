@@ -67,6 +67,8 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--apply", action="store_true", help="write; default is dry")
     ap.add_argument("--limit", type=int, default=0, help="stop after N proposals")
+    ap.add_argument("--tag2-only", action="store_true",
+                    help="touch only Tag2; leave subject and Tag1 for review")
     args = ap.parse_args()
 
     bat = load_bateria()
@@ -116,10 +118,16 @@ def main() -> int:
 
             # --- tag2: the intent, only over a generic label
             if tag2.strip().lower() in GENERIC_TAG2:
-                intent = classify_intent(text)
+                intent = classify_intent(text, focus=(g["desc"] or ""))
                 if intent.name and intent.source == "rules":
                     new_tag2 = intent.name
                     why.append(f"tag2: {tag2 or '(vacío)'} → {intent.name}")
+
+            if args.tag2_only and (new_subject != subject or new_tag1 != tag1):
+                # The subject and Tag1 recuts still need a human eye: "Grok Bot"
+                # is a product, "Windows" is not Apple. Tag2 is the safe half.
+                skipped += 1
+                continue
 
             if new_subject == subject and new_tag1 == tag1 and new_tag2 == tag2:
                 skipped += 1
