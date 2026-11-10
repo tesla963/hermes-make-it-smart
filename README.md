@@ -36,6 +36,13 @@ An agent that forgets the shape of your work is an agent you have to re-brief ev
 5. **Unifies** historical sessions that share a subject, so the `MMM` ordinal tells you
    at a glance that eleven sessions were one continuous piece of work.
 
+## The paper trail
+
+Everything the project produced while the algorithm was being decided — plans,
+reports, evaluation sets and the CSVs the renames came from — is in
+[`reports/`](reports/INDEX.md), with an index that says what each file is and
+whether it still rules or is history.
+
 ## The naming format
 
 ```
