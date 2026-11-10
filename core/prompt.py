@@ -21,6 +21,9 @@ from .taxonomy import (
     NON_IT_FAMILIES,
     PILLARS,
     PLATFORMS,
+    INTENTIONS,
+    IT_SUBCATEGORIES,
+    OTHER_THEMES,
     VERBS,
 )
 
@@ -140,20 +143,32 @@ subject     What the session is ABOUT: the object, the problem, the symptom.
             When the subject is a component or spec of a machine, use the
             concrete spec ("16 GB Ram") and put the machine in `machine`.
 
-tag1        The PROTAGONIST: who or what is really doing the work.
-            Pick ONE from the platform list below. If nothing fits and the
-            session is not about software, use "Hermes Agent".
-            Never the operating system by default: macOS explains almost
-            every session and therefore explains nothing.
-            Never abbreviate: "Hermes Agent", not "Hermes".
-            NEVER guess a brand or product that the messages do not evidence.
-            A plausible brand is worse than no brand: if the messages do not
-            name it, use "Hermes Agent" and put the object in the subject.
+tag1        THE MAKER OF THE SUBJECT — an adjective, not a noun.
+            It answers "whose is it?", never "what is it?".
+            "Air 2S" -> "DJI". "Inspiron 5570" -> "Dell". "DEVONthink" ->
+            "Devon Technologies". It goes ALONE: "DJI", never "DJI Avata 360".
+            NEVER guess a brand the messages do not evidence: a plausible brand
+            is worse than none. When the maker is unknown, leave it "".
+            NEVER "Hermes Agent": the assistant does the work in every session,
+            which makes it the AUTHOR, never the maker of the subject.
 
-tag2        The KIND OF WORK. Pick ONE from the family list below, or "".
-            Use "Troubleshooting" only when the user reports something
-            FAILING, not when the topic is merely mentioned.
-            If the subject already says it, leave tag2 empty.
+tag2        THE CONTEXT that qualifies the subject and its maker. ONE of:
+              - a marketplace or store   "Ebay", "Amazon", "AliExpress"
+              - a country                "Panamá", "Estados Unidos"
+              - a machine                "Mac mini M4", "ThinkPad P53"
+            "Air 2S" + tag1 "DJI" + tag2 "Ebay" reads: a DJI drone available
+            on eBay. Leave "" when there is no qualifying context.
+
+tag3        THE INTENTION: what the user wanted DONE with the subject.
+            Pick ONE from the intention list below, exactly as written, or "".
+            This is a verb, not a topic. "Electronica" is not an intention;
+            "Instalar" is. If the session only asks what a thing IS, use
+            "Investigar"; if it asks what it CAN DO, still "Investigar".
+
+tag4        THE WORK FRONT — one of the themes below, and when the theme has
+            subcategories, the SUBCATEGORY. "IT Manager" is the theme; "VPS",
+            "Data Backup", "IA Bot" are its subcategories. When a session of
+            IT Manager fits no subcategory, write "IT Manager" alone.
 
 pillar      The WORK FRONT. Pick ONE from the pillar list below.
             A quote or a purchase is "Productos" (a thing) or "Servicios"
@@ -177,16 +192,17 @@ description What subject + tags could NOT say. One short telegraphic clause,
 verb        The ACTION taken, from the verb list below, or "".
             This becomes an appendix at the end of the title.
 
-## Platform list (tag1)
-{", ".join(PLATFORMS)}
+## Intention list (tag3) — closed vocabulary, pick exactly one
+{", ".join(INTENTIONS)}
 
-## Work families (tag2)
-IT: {", ".join(IT_FAMILIES)}
-Non-IT: {", ".join(NON_IT_FAMILIES)}
-Marketplace (used with a brand in tag1): {", ".join(MARKET_FAMILIES)}
+## Themes (tag4)
+IT Manager: {", ".join(IT_SUBCATEGORIES)}
+Other themes: {", ".join(OTHER_THEMES)}
 
-## Pillars
-{", ".join(PILLARS)}
+## Context values seen in this catalogue (tag2)
+Stores: {", ".join(MARKET_FAMILIES)}
+Countries: {", ".join(COUNTRIES)}
+Machines: {", ".join(MACHINES)}
 
 ## Verbs
 {", ".join(VERBS)}
@@ -232,9 +248,8 @@ English in the same message; classify by meaning, not by the first word.
 
 Return ONE JSON object, nothing else, with exactly these keys:
 
-{{"subject": str, "tag1": str, "tag2": str, "pillar": str,
- "country": str, "year": str, "machine": str,
- "description": str, "verb": str}}
+{{"subject": str, "tag1": str, "tag2": str, "tag3": str, "tag4": str,
+ "tag5": str, "description": str}}
 
 No markdown, no comments, no explanation. Empty string when a field does not
 apply. If the messages are too thin to tell what the session is about, return

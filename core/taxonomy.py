@@ -281,6 +281,10 @@ def normalize_verb(value: str | None) -> str:
 
 __all__ = [
     "PILLARS",
+    "INTENTIONS",
+    "IT_SUBCATEGORIES",
+    "OTHER_THEMES",
+    "THEMES",
     "PILLAR_LAST",
     "PLATFORMS",
     "DEFAULT_PLATFORM",
@@ -299,3 +303,51 @@ __all__ = [
     "ABBREVIATIONS",
     "KEEP_FULL",
 ]
+
+# --------------------------------------------------------------------------- #
+# The 2026-11-10 schema
+# --------------------------------------------------------------------------- #
+# tag1 = the maker of the subject (adjective)
+# tag2 = the context that qualifies it (store, country or machine)
+# tag3 = the intention (a verb)
+# tag4 = the work front (theme, with subcategories)
+# tag5 = the year
+# --------------------------------------------------------------------------- #
+
+# Closed vocabulary. Seven verbs the owner approved; a word outside this list
+# is not an intention, and an empty tag3 is honest — it says nobody read one.
+INTENTIONS: Final[tuple[str, ...]] = (
+    "Comparar",
+    "Instalar",
+    "Investigar",
+    "Testear",
+    "Cotizar",
+    "Troubleshooting",
+    "Compatibilidad",
+)
+
+# The theme IT Manager and its subcategories. A session that fits none of them
+# stays as "IT Manager" alone until somebody decides.
+IT_SUBCATEGORIES: Final[tuple[str, ...]] = (
+    "IA Bot",
+    "VPS",
+    "Data Backup",
+    "Hardware",
+    "MindMap",
+    "Network",
+    "OS",
+)
+
+# Themes without subcategories yet.
+OTHER_THEMES: Final[tuple[str, ...]] = (
+    "Derecho",
+    "Medicina",
+    "Geopolitica",
+    "Educacion",
+    "Economista",
+    "Compras",
+    "Youtuber",
+    "Temas Varios",
+)
+
+THEMES: Final[tuple[str, ...]] = ("IT Manager", *OTHER_THEMES)
