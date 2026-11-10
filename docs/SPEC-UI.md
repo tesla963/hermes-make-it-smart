@@ -9,22 +9,23 @@ the window is wrong.
 A session row carries the same four things its title does:
 
 ```
-No.   Date        [Sujeto] MMM [tag1] [tag2] Descripción              Cost  Hours  Tokens  Posts
-881   2026-11-07  [Gorgon Halo] 043  AMD  Automation  Tarea cron…      2¢    5m     219k     1
+No.   Date        SUJETO · #
+881   2026-11-07  [Gorgon Halo] 043  AMD  Automation    2¢   5m   219k   1
+      ^ línea 1: [Gorgon Halo] 043 [AMD] [Automation] Tarea cron que monitorea…
 ```
 
-| In the row | Out of the row |
-|---|---|
-| `NNN` in its own Nº column | pillar (tag3) |
-| subject name + `MMM` | country (tag4) |
-| **tag1 and tag2, as pills inside the title line, right after the MMM** | year (tag5) |
-| description, in bold | machine (tag6) |
-| cost · hours · tokens · posts | tags 7-9 |
+The row is two lines, and each line has a job:
 
-**There is no TAGS column.** It was removed: the tags ride inside the title
-line, where they are already part of the name. Anything that does not appear in
-the name —pillar, country, year, machine— lives in the detail card and in the
-filters, never in the list.
+| Line | Carries |
+|---|---|
+| **1 — the name** | the whole title, unadorned: `NNN` · `[Sujeto] MMM` · `[tag1]` · `[tag2]` · description in bold. **No pills here.** |
+| **2 — the data** | date · subject pill with its `MMM` · **tag1 and tag2 as coloured pills right after the MMM** · cost · hours · tokens · posts |
+
+**There is no TAGS column.** The pills live inside the subject cell of the
+second line, after the `MMM`, so the two tags stay readable as colour without
+polluting the name. Anything that does not appear in the name —pillar (tag3),
+country, year, machine, tags 7-9— lives in the detail card and in the filters,
+never in the list.
 
 Sizing: `tr.t` fills 2 cells (number + title/colspan 6), `tr.r` fills 7. The
 `<th>` for Nº stays as scaffolding so the date lines up under the first bracket.
