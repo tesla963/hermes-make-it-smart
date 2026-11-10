@@ -18,12 +18,15 @@ h4 span{font-weight:400;text-transform:none;letter-spacing:0;color:var(--tx3);fo
 header.top{position:sticky;top:0;z-index:40;background:linear-gradient(180deg,#100d12,#0d0b0e);border-bottom:1px solid var(--line);padding:10px 18px}
 .brandrow{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
 .tag{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);border:1px solid #4a3a15;background:#221a09;padding:2px 7px;border-radius:999px}
-.layout{display:flex;align-items:flex-start}
-aside{width:var(--aside-w,264px);flex:0 0 var(--aside-w,264px);position:sticky;top:var(--hhead,44px);
+:root{--aside-ef:var(--aside-w,264px)}
+/* El aside es fixed a proposito: con sticky se soltaba al llegar al fondo del
+   scroll y el panel se movia. Fixed no depende de la altura del contenedor. */
+.layout{display:flex;align-items:flex-start;padding-left:var(--aside-ef)}
+aside{width:var(--aside-ef);flex:none;position:fixed;left:0;top:var(--hhead,44px);bottom:var(--kbar-h);z-index:6;
 /* Stop above the fixed KPI bar, not above a phantom 50 px: the old bottom
    padding left a dead strip that read as a stuck panel. */
 /* el panel muere exactamente donde nace la barra */
-max-height:calc(100vh - var(--hhead,44px) - var(--kbar-h));overflow-y:auto;overflow-x:hidden;
+overflow-y:auto;overflow-x:hidden;
 scrollbar-width:none;-ms-overflow-style:none;overscroll-behavior:contain;
 border-right:1px solid var(--line);background:var(--bg2);padding:9px 10px 14px}
 main{flex:1 1 auto;min-width:0;padding:0 0 60px}
@@ -181,14 +184,14 @@ tr.t:hover .ttitle .tfac{color:var(--tx2)}
 .klist li:before{content:"▸";position:absolute;left:0;color:var(--wine2)}
 .why{font-size:11.5px;color:var(--tx3);background:#151119;border:1px dashed var(--line2);border-radius:7px;padding:8px 10px;margin:10px 0}
 /* ---- barra inferior fija (KPIs) ---- */
-.kbar{position:fixed;left:var(--aside-w,264px);right:0;bottom:0;z-index:60;display:flex;align-items:stretch;gap:0;
+.kbar{position:fixed;left:var(--aside-ef);right:0;bottom:0;z-index:60;display:flex;align-items:stretch;gap:0;
 background:#0f0c13d9;backdrop-filter:blur(8px);border-top:1px solid var(--line2);padding:0 4px}
 /* El badge no es un dato: tiene su propio pie dentro del panel, no en la barra. */
 /* La franja bajo el panel izquierdo: la barra de estadísticas arranca en
    left:var(--aside-w), así que ese hueco es del badge y de nadie más. */
 /* Mismo cristal que la barra, alineado a la izquierda: se lee como el
    arranque de la franja, no como un sticker pegado encima. */
-.vbadge{position:fixed;left:0;bottom:0;width:var(--aside-w,264px);height:var(--kbar-h);
+.vbadge{position:fixed;left:0;bottom:0;width:var(--aside-ef);height:var(--kbar-h);
 display:flex;align-items:center;justify-content:flex-start;gap:7px;cursor:pointer;
 background:#0f0c13d9;backdrop-filter:blur(8px);border-top:1px solid var(--line2);
 border-right:1px solid var(--line2);padding:0 10px;
@@ -210,10 +213,13 @@ letter-spacing:-.02em;font-weight:650;margin:0 0 -1px 0}
    block instead of a big digit next to small print. */
 .kbar .kpi .lb{display:flex;flex-direction:column;line-height:1.06}
 .kbar .kpi .lb i{font-style:normal;font-size:8px;text-transform:uppercase;letter-spacing:.05em;color:var(--tx3)}
-body{padding-bottom:42px}
+/* El aire del final vive DENTRO del layout, no debajo del body: con un
+   padding-bottom en body el aside queda fuera de su propio contenedor sticky
+   y el panel de filtros se suelta en cuanto el scroll llega al fondo. */
 .kbar .kpi.accent b{color:var(--wine2)} .kbar .kpi.good b{color:var(--ok)}
 .kbar .kpi.gold b{color:var(--gold)} .kbar .kpi.tok b{color:#4bb8d8} .kbar .kpi.pst b{color:#c9c2d6}
-body{padding-bottom:74px}
+body{padding-bottom:0}
+.layout{padding-bottom:74px}
 /* ---- redimensionador de paneles ---- */
 .grip{position:absolute;top:0;bottom:0;width:7px;cursor:col-resize;z-index:45;background:transparent}
 .grip:hover,.grip.on{background:var(--wine2);opacity:.5}
@@ -270,12 +276,11 @@ table{table-layout:fixed}
    que no hay que esconder los filtros: se estrechan. El boton Filtros los
    pliega solo cuando se pide; el aside nunca desaparece por su cuenta. */
 @media (max-width:1000px){
-  html{overflow-x:hidden}
+  /* Sin overflow-x en html: un ancestro con overflow distinto de visible
+     anula position:sticky y el panel de filtros se iria con la pagina. */
   /* la ultima columna no toca el borde: respira como la primera */
   main{padding-right:10px}
-  aside{width:200px;flex:0 0 200px}
-  .vbadge{width:200px}
-  .kbar{left:200px}
+  :root{--aside-ef:200px}
   #btnFiltros{display:inline-block}
   .grip{display:none}
   #tb th:nth-child(1){width:40px}
@@ -292,13 +297,10 @@ table{table-layout:fixed}
   .r .pill.tag1,.r .pill.tag2{display:none}
   /* plegado a pedido, nunca por defecto */
   body.sinFiltros aside{display:none}
-  body.sinFiltros .vbadge{display:none}
-  body.sinFiltros .kbar{left:0}
+  body.sinFiltros{--aside-ef:0px}
 }
 @media (max-width:620px){
-  aside{width:168px;flex:0 0 168px}
-  .vbadge{width:168px}
-  .kbar{left:168px}
+  :root{--aside-ef:168px}
   #tb th:nth-child(1){width:36px}
   #tb th:nth-child(2){width:62px}
   #tb th:nth-child(4){width:42px}
