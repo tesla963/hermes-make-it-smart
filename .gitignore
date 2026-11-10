@@ -33,3 +33,6 @@ reports/
 tools/sim80*.json
 tools/*.csv
 *.csv
+
+# artefactos de herramientas (Antigravity .ts)
+docs/.ts/
