@@ -154,7 +154,7 @@ Theming uses `var(--ui-*)` variables so it follows the app, not a hardcoded pale
 ## The backend
 
 `dashboard/manifest.json` + `dashboard/plugin_api.py`, mounted under
-`/api/plugins/hermes-make-my-work-smart/`.
+`/api/plugins/hermes-make-all-my-work-smart/`.
 
 | Route | Purpose |
 |---|---|

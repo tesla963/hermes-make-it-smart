@@ -1,4 +1,4 @@
-# Hermes, Make My Work Smart
+# Hermes, Make All my Work Smart!
 
 **Session categorization, tagging and renaming to access all your sessions — faster than it takes to press 3 clicks.**
 
@@ -88,8 +88,8 @@ definir los pilares, alimentar la batería, mirar en el simulador, corregir,
 aplicar. El plugin vale lo que valen los nombres que le hayas enseñado.
 
 ```bash
-git clone https://github.com/tesla963/hermes-make-my-work-smart
-cd hermes-make-my-work-smart
+git clone https://github.com/tesla963/hermes-make-all-my-work-smart
+cd hermes-make-all-my-work-smart
 
 # 1. build the index the window reads (Python, reads state.db read-only)
 ~/.hermes/hermes-agent/scripts/run-in-hermes-env python3 tools/build_index.py
@@ -187,7 +187,7 @@ None of that is expressible as a prompt.
 ## Installation
 
 ```bash
-hermes plugins install https://github.com/tesla963/hermes-make-my-work-smart --enable
+hermes plugins install https://github.com/tesla963/hermes-make-all-my-work-smart --enable
 ```
 
 Requires Hermes Agent with plugin support. Python 3.11+.
@@ -208,7 +208,7 @@ Requires Hermes Agent with plugin support. Python 3.11+.
 
 This plugin is designed to sit alongside
 [hermes-auto-titler](https://github.com/Vocllum/hermes-auto-titler). AutoTitler keeps a
-title *current*; Make My Work Smart turns the whole archive into a *catalog*. They write
+title *current*; Make All my Work Smart turns the whole archive into a *catalog*. They write
 through the same host API and respect the same provenance ladder, so they compose rather
 than collide.
 
