@@ -430,9 +430,11 @@ function build(){
     // Split on the last "]" so the description can carry the weight.
     const cut=d.raw.lastIndexOf(']');
     // Drop the leading NNN: it is shown in the Nº column, not inside the name.
-    const head=(cut>0?d.raw.slice(0,cut+1):d.raw).replace(/^\d+\s+/,'')
-      // The ordinal is not part of the subject's name: "[Gorgon Halo] 043".
-      .replace(/^\[([^\]]+?)\s+(\d{3,4})\]/, '[$1] $2'),
+    const head=(cut>0?d.raw.slice(0,cut+1):d.raw).replace(/^\d+\s+/,''),
+      // The ordinal already sits outside the bracket in the stored title. An
+      // earlier version rewrote "[Subject NNN]" here, which silently ate the
+      // ordinal of every subject that ends in a number: "[Avata 360] 003"
+      // became "[Avata] 360 003". The rewrite is gone; the title is the truth.
           tail=cut>0?d.raw.slice(cut+1).trim():'';
     const tach=/borrad/i.test(d.sujeto)?' borrada':'';
     // The N column is gone, but its width is kept: the number sits in the title
