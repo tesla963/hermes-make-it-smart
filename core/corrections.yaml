@@ -482,15 +482,19 @@
     DESCRIPTION. A domain says *which one*, not *what it is*. The series is
     "DNS + Correo"; "DNS + Correo example.com" splits one series into as many
     chips as domains the owner has.
-  exception: >
-    If the detail IS the subject — a bare domain with no word in front, like
-    "importadoralosangeles.net" — it stays: there is nothing to qualify.
+  never_a_subject: >
+    A domain is NEVER the subject, not even alone. If the session is only about a
+    domain, the subject is the PROBLEM the domain has — "Sitio Web", "DNS + Correo",
+    "Certificado", "Disponibilidad" — and the domain goes in the description.
+    Putting a domain in the subject breaks the same rule it was meant to follow:
+    a domain says *which one*, never *what is wrong*.
   examples:
     - { nnn: 556, wrong: "DNS + Correo example.com", right: "DNS + Correo", description: "example.com — Revisar a las 8 am el DNS" }
     - { nnn: 467, wrong: "Correos example.com", right: "DNS + Correo" }
     - { nnn: 474, wrong: "Certificados example.com", right: "Certificados" }
     - { nnn: 379, wrong: "Dominio example.org", right: "Dominio" }
-    - { nnn: 452, right: "importadoralosangeles.net", why: "el dominio ES el sujeto" }
+    - { nnn: 452, wrong: "importadoralosangeles.net", right: "Sitio Web", description: "importadoralosangeles.net — Comprobar que el sitio funciona" }
+    - { nnn: 744, wrong: "USPS Ground Advantage", right: "Ground Advantage", tag1: "USPS", why: "marca y producto se separan" }
   control_question: "Is the part after the space naming the subject, or narrowing it?"
   applies_to: [domain, ip, email, file path, hostname]
 
@@ -504,3 +508,17 @@
   examples:
     - { variants: ["DNS y Correo", "DNS + Correo", "Correos", "Correo"], canonical: "DNS + Correo" }
   control_question: "Would a reader click these two chips expecting different things?"
+
+- id: brand-and-product-are-two-things
+  taught: 2026-11-09
+  rule: >
+    When a brand owns a product with its own name, they are two things:
+    Tag1 is the brand, the subject is the product. "USPS Ground Advantage" is
+    Tag1 "USPS" with subject "Ground Advantage". The same holds for "FedEx
+    Ground", "UPS Ground", "DHL Express", "Adobe Acrobat", "Microsoft 365".
+    A brand never stays inside a subject when the product can stand alone.
+  examples:
+    - { nnn: 744, tag1: "USPS", subject: "Ground Advantage", tag2: "Logistica" }
+    - { nnn: 667, tag1: "FedEx", subject: "Envío" }
+  control_question: "If I remove the brand from the name, does the product still name itself?"
+  bateria: core/bateria.yaml → logistica

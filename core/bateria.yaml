@@ -280,6 +280,63 @@ conceptos:
 # SIN MARCA — no corporate owner: the product's own name is the brand.
 # This is the default for software.
 # ---------------------------------------------------------------------------
+logistica:
+  # Carriers y sus productos. La marca va al Tag 1; el producto es el sujeto.
+  usps:
+    tag1: USPS
+    pais: Estados Unidos
+    productos:
+      "Ground Advantage":
+        es: >
+          Servicio terrestre de USPS, 2–5 días dentro de EE. UU., con tracking
+          incluido y sin recargo por combustible. Es la opción para paquetes
+          ligeros (menos de 1 lb) y para direcciones que los carriers privados
+          no alcanzan.
+        sujeto: Ground Advantage
+      "Priority Mail":
+        es: 1–3 días, tracking incluido, sin garantía de fecha.
+        sujeto: Priority Mail
+      "Priority Mail Express":
+        es: 1–2 días con garantía de entrega o reembolso.
+        sujeto: Priority Mail Express
+    nota: >
+      "USPS Ground Advantage" se parte: Tag 1 = USPS, sujeto = "Ground Advantage".
+      La marca nunca se queda dentro del sujeto cuando el producto tiene nombre.
+  fedex:
+    tag1: FedEx
+    pais: Estados Unidos
+    productos:
+      "Ground":
+        es: Servicio terrestre doméstico, 1–5 días según distancia.
+        sujeto: FedEx Ground
+      "Ground Delivery":
+        es: La misma red terrestre para entregas residenciales.
+        sujeto: Ground Delivery
+      "Home Delivery":
+        es: Entrega residencial dentro de la red Ground.
+        sujeto: Home Delivery
+  ups:
+    tag1: UPS
+    pais: Estados Unidos
+    productos:
+      "Ground":
+        es: Red terrestre doméstica, 1–5 días. El estándar de confiabilidad.
+        sujeto: UPS Ground
+  dhl:
+    tag1: DHL
+    pais: Internacional
+    productos:
+      "Express":
+        es: Courier internacional puerta a puerta con aduana incluida.
+        sujeto: DHL Express
+  confiabilidad:
+    # Dato objetivo, medido sobre Q4 2025. El algoritmo no lo usa para decidir,
+    # pero la descripción de una sesión de compras puede apoyarse en él.
+    puntualidad_q4_2025: { UPS: 97.6, FedEx: 96.1, USPS: 94.2 }
+    nota: >
+      UPS lidera en terrestre doméstico; USPS gana en paquetería menor de 1 lb
+      y en direcciones rurales o apartados postales.
+
 sin_marca:
   regla: >
     Si un producto o programa no tiene empresa detrás, su propio nombre es la
