@@ -137,7 +137,9 @@ families.
 | Tag 4 · Theme | which work front | IT Manager and its subcategories |
 | Tag 5 · Year | which edition | 2026, … |
 
-**There is no Tag 6.** The machine belongs in Tag2, next to the store and the country.
+**Tag 6 no longer means the machine** — the machine belongs in Tag2, next to the
+store and the country. Slots 6 to 9 are reserved: present in the model, empty in
+the data, waiting for an axis that earns its place.
 
 None of these is written into the title except Tag1 and Tag2. Measured: adding the
 theme leaves 877 of 884 titles with no description at all.

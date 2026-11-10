@@ -2,29 +2,33 @@
 
 Decisions taken on 2026-11-09, recorded so they are not re-argued later.
 
-## 1 · Five tags, and the numbering was settled on 2026-11-10
+## 1 · Nine tags, and the numbering was settled on 2026-11-10
 
-The 2026-11-09 design carried nine tags with tag2 as *family* and tag6 as
-*machine*. The owner reorganised it on 2026-11-10 and the code follows the new
-layout; the old one is recorded here only so it is not reintroduced by accident.
+The session title shows two tags, but the **data model carries nine**. The owner
+reorganised what each slot means on 2026-11-10; the 2026-11-09 meanings are dead.
 
 ```
-tag1  maker — adjective for the subject      tag4  theme
-tag2  context — store, country or machine    tag5  year
-tag3  intention — seven, closed              tag6  does not exist
+tag1  maker — adjective for the subject      tag6  reserved
+tag2  context — store, country or machine    tag7  reserved
+tag3  intention — seven, closed              tag8  reserved
+tag4  theme                                  tag9  reserved
+tag5  year
 ```
 
 Only `tag1` and `tag2` reach the name. `tag3`, `tag4` and `tag5` are filters.
 
-Why the change: tag2 had become a sack. It held work families, themes and
-intentions in one column, so no filter built on it could be trusted — the same
-value meant "WebHosting" in one session and "Comparar" in another. Splitting it
-cost one re-classification and bought three filters that mean exactly one thing
-each. The machine moved into tag2 because a machine is context, exactly like a
-store: reading `ThinkPad P53 · Lenovo · Mac mini M4` is one idea.
+Why nine and not five: gaining intelligence later must not cost a schema
+migration. A new axis is a column already present, not a rewrite of 909 titles
+and every query. An unused tag is not waste; it is a socket.
 
-Reserved sockets are gone. An unused tag is not a socket any more; with five
-fields that each mean one thing, it is an empty promise.
+Why the meanings changed: tag2 had become a sack — it held work families, themes
+and intentions in one column, so no filter built on it could be trusted, and the
+same value meant "WebHosting" in one session and "Comparar" in another. Splitting
+it cost one re-classification and bought three filters that mean exactly one
+thing each. The machine moved into tag2 because a machine is context, exactly
+like a store: `ThinkPad P53 · Lenovo · Mac mini M4` reads as one idea.
+
+**Tag6 is no longer the machine** — it is reserved, like 7, 8 and 9.
 
 ## 2 · The renaming engine is not the plugin
 

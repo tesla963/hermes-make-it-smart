@@ -654,8 +654,8 @@
     country ("Panamá") or a machine ("Mac mini M4"). tag3 is the INTENTION and
     nothing else, one of exactly seven: Comparar, Instalar, Investigar, Testear,
     Cotizar, Troubleshooting, Compatibilidad. tag4 is the THEME, with the
-    subcategories of IT Manager. tag5 is the year. There is no tag6: the machine
-    belongs in tag2. An intention ("Comparar"), a family ("WebHosting") or a
+    subcategories of IT Manager. tag5 is the year. The model carries nine slots and
+    slots 6 to 9 are reserved; the machine belongs in tag2, not in tag6. An intention ("Comparar"), a family ("WebHosting") or a
     theme ("Hardware") in tag2 is an error, not a judgement call. When a field
     has nothing honest to say, leave it empty: an empty field is data, a filled
     one that lies is not.
