@@ -247,12 +247,14 @@ aside .chips,aside .chip{max-width:100%}
 <div class="layout">
   <aside>
     <input type="text" id="q" data-i18n-ph="buscar" placeholder="Buscar sujeto, tema, tag…" style="width:100%;background:#100d13;border:1px solid var(--line2);color:var(--tx);border-radius:6px;padding:5px 8px;font-size:12.5px">
-    <h4><span>tag3 · </span><span data-i18n="pilar">Pilar</span> <span data-i18n="frente">frente de trabajo</span></h4>
-    <div id="fTag3"></div>
-    <h4><span>tag1 · </span><span data-i18n="tag1">Plataforma</span></h4>
+    <h4><span>tag1 · </span><span data-i18n="tag1">Marca</span></h4>
     <div id="fTag1"></div>
-    <h4><span>tag2 · </span><span data-i18n="tag2">Familia</span> <span data-i18n="itTema">IT · tema</span></h4>
+    <h4><span>tag2 · </span><span data-i18n="tag2">Contexto</span></h4>
     <div id="fTag2"></div>
+    <h4><span>tag3 · </span><span data-i18n="tag3">Intención</span></h4>
+    <div id="fTag3i"></div>
+    <h4><span>tag4 · </span><span data-i18n="tema">Tema</span></h4>
+    <div id="fTag3"></div>
     <h4 data-i18n="fecha">Fecha</h4>
     <div id="fFecha"></div>
     <h4 data-i18n="diaExacto">Día exacto</h4>
@@ -336,7 +338,7 @@ const I18N={
  es:{ordenar:'Ordenar:',limpiar:'Limpiar',copiar:'Copiar',exportar:'Exportar',actualizar:'Actualizar BD',
   showDel:'Mostrar Borradas',hideDel:'Ocultar Borradas',showCron:'Mostrar Cron',hideCron:'Ocultar Cron',
   buscar:'Buscar sujeto, tema, tag…',pilar:'Pilar',frente:'frente de trabajo',
-  tag1:'Plataforma',tag2:'Familia',itTema:'IT · tema',
+  tag1:'Marca',tag2:'Contexto',tag3:'Intención',tema:'Tema',itTema:'IT · tema',
   fecha:'Fecha',todoAnio:'Todo',semAbbr:'sem',diaExacto:'Día exacto',rango:'Rango',motor:'Motor de IA',autor:'Autor',maquina:'Tag 6 · Máquina',
   colN:'Nº',colFecha:'Fecha',colSujeto:'Sujeto · #',colTags:'Tags',colCosto:'Costo',colHoras:'Horas',colTokens:'Tokens',colPosts:'Posts',
   mostrando:'Mostrando',de:'de',angosto:'⚠ angosto',
@@ -367,7 +369,7 @@ const I18N={
  en:{ordenar:'Sort:',limpiar:'Clear',copiar:'Copy',exportar:'Export',actualizar:'Refresh DB',
   showDel:'Show Deleted',hideDel:'Hide Deleted',showCron:'Show Cron',hideCron:'Hide Cron',
   buscar:'Search subject, topic, tag…',pilar:'Pillar',frente:'work front',
-  tag1:'Platform',tag2:'Family',itTema:'IT · topic',
+  tag1:'Maker',tag2:'Context',tag3:'Intention',tema:'Theme',itTema:'IT · topic',
   fecha:'Date',todoAnio:'All',semAbbr:'wk',diaExacto:'Exact day',rango:'Range',motor:'AI engine',autor:'Author',maquina:'Tag 6 · Machine',
   colN:'No.',colFecha:'Date',colSujeto:'Subject · #',colTags:'Tags',colCosto:'Cost',colHoras:'Hours',colTokens:'Tokens',colPosts:'Posts',
   mostrando:'Showing',de:'of',angosto:'⚠ narrow',
@@ -553,9 +555,11 @@ function pass(d,...skips){
 /* estructura: cat1 > cat2 > cat3 */
 const E=(()=>{const cat={},tags={},t2={},t3={},t4={},t5={},t6={},meses={},pil={};
  DATA.forEach(d=>{
-   const A=d.dom||'Varios', B=d.tag2||'Sin familia', Cc=d.tag1||'Sin plataforma';
+   // Un campo vacío no es una categoría: 510 sesiones sin marca llenaban el
+   // bloque de arriba con una opción que nadie querría pulsar.
+   const A=d.dom||'Varios', B=d.tag2||'', Cc=d.tag1||'';
    cat[A]=cat[A]||{}; cat[A][B]=cat[A][B]||{}; cat[A][B][Cc]=(cat[A][B][Cc]||0)+1;
-   tags[Cc]=(tags[Cc]||0)+1; if(d.pilar) pil[d.pilar]=1; if(d.pais) t4[d.pais]=1; if(d.anio) t5[d.anio]=1; if(d.tag3) t3[d.tag3]=1;
+   if(Cc) tags[Cc]=(tags[Cc]||0)+1; if(d.pilar) pil[d.pilar]=1; if(d.pais) t4[d.pais]=1; if(d.anio) t5[d.anio]=1; if(d.tag3) t3[d.tag3]=1;
    if(d.tag2) t2[d.tag2]=(t2[d.tag2]||0)+1; t4[d.tag4]=(t4[d.tag4]||0)+1; t5[d.tag5]=(t5[d.tag5]||0)+1; t6[d.tag6]=(t6[d.tag6]||0)+1;
    meses[d.mes]=meses[d.mes]||{}; meses[d.mes][d.semana]=(meses[d.mes][d.semana]||0)+1;
  });
@@ -668,6 +672,13 @@ function buildTags(){
     .map(k=>{const n=C.tag1[k]||0;return `<label class="opt${S.tag1===k?' sel':''}${n?'':' zero'}"><input type="radio" name="tag1" ${S.tag1===k?'checked':''} data-tag1="${k}"><span>${k}</span><span class="n">${n}</span></label>`;}).join('');
   document.getElementById('fTag1').innerHTML=h1||'<div class="opt empty">—</div>';
   document.querySelectorAll('#fTag1 input').forEach(i=>i.onchange=()=>{S.tag1=S.tag1===i.dataset.tag1?null:i.dataset.tag1;full();});
+
+  const Ci=counts(['tag3']);
+  const hi=Object.keys(E.t3).filter(k=>k&&((Ci.tag3[k]||0)>0||S.tag3===k)).sort((a,b)=>(Ci.tag3[b]||0)-(Ci.tag3[a]||0))
+    .map(k=>{const n=Ci.tag3[k]||0;return `<label class="opt${S.tag3===k?' sel':''}${n?'':' zero'}"><input type="radio" name="tag3" ${S.tag3===k?'checked':''} data-tag3v="${k}"><span>${k}</span><span class="n">${n}</span></label>`;}).join('');
+  const ci=document.getElementById('fTag3i');
+  if(ci){ ci.innerHTML=hi||'<div class="opt empty">—</div>';
+    ci.querySelectorAll('input').forEach(i=>i.onchange=()=>{S.tag3=S.tag3===i.dataset.tag3v?null:i.dataset.tag3v;full();}); }
 
   const C2=counts(['tag2']);
   const h2=Object.keys(E.t2).filter(k=>k&&((C2.tag2[k]||0)>0||S.tag2===k)).sort((a,b)=>(C2.tag2[b]||0)-(C2.tag2[a]||0))

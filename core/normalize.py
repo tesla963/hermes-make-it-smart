@@ -29,8 +29,12 @@ _FILLER = frozenset(
 class Facets:
     subject: str
     subject_ordinal: int
-    tag1: str
-    tag2: str = ""
+    tag1: str                      # the maker — an adjective of the subject
+    tag2: str = ""                 # the context: store, country or machine
+    tag3: str = ""                 # the intention — a verb
+    tag4: str = ""                 # the work front (theme, with subcategory)
+    tag5: str = ""                 # the year
+    # Kept so older call sites keep working; they now mirror the new fields.
     pillar: str = ""
     country: str = ""
     year: str = ""

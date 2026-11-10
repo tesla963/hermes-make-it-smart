@@ -29,6 +29,9 @@ from .taxonomy import (
     apply_abbreviation,
     is_redundant_tag,
     normalize_family,
+    normalize_intention,
+    normalize_context,
+    normalize_theme,
     normalize_pillar,
     normalize_platform,
     normalize_verb,
@@ -141,8 +144,15 @@ def to_facets(obj: dict[str, Any], ordinal: int = 1) -> Facets:
     subject, spec = strip_spec(subject)
     raw_tag1 = str(obj.get("tag1") or "").strip()
     tag1 = apply_abbreviation(normalize_platform(raw_tag1))
-    tag2 = normalize_family(str(obj.get("tag2") or "").strip())
-    pillar = normalize_pillar(str(obj.get("pillar") or "").strip())
+    tag2 = normalize_context(str(obj.get("tag2") or "").strip())
+    # The 2026-11-10 schema. tag3 is the verb, tag4 the theme, tag5 the year;
+    # the old `pillar` key is still read so an older reply does not break.
+    tag3 = normalize_intention(str(obj.get("tag3") or obj.get("verb") or "").strip())
+    tag4 = normalize_theme(
+        str(obj.get("tag4") or obj.get("pillar") or "").strip()
+    )
+    tag5 = str(obj.get("tag5") or obj.get("year") or "").strip()
+    pillar = normalize_pillar(str(obj.get("pillar") or obj.get("tag4") or "").strip())
     verb = normalize_verb(str(obj.get("verb") or "").strip())
     desc = re.sub(r"\s+", " ", str(obj.get("description") or "")).strip()
     if spec and not desc:
@@ -156,6 +166,17 @@ def to_facets(obj: dict[str, Any], ordinal: int = 1) -> Facets:
     if pillar in ("Productos", "Servicios") and raw_tag1 and tag1 == DEFAULT_PLATFORM:
         if raw_tag1.lower() not in ("hermes", "hermes agent", ""):
             tag1 = raw_tag1.title() if raw_tag1.islower() else raw_tag1
+
+    # "Hermes Agent" is the AUTHOR of every session, never the maker of its
+    # subject. The model still reaches for it because 50 rules mention it; here
+    # it is turned into an honest empty field.
+    if tag1.strip().lower().startswith("hermes") or tag1.strip().lower() in ("", "varios"):
+        tag1 = ""
+
+    # The same word cannot fill two fields: if the context repeats the verb or
+    # the theme, it says nothing and belongs nowhere.
+    if tag2 and tag2.lower() in {tag3.lower(), tag4.lower()}:
+        tag2 = ""
 
     if subject and tag1 and subject.strip().lower() == tag1.strip().lower():
         subject = ""
@@ -178,6 +199,9 @@ def to_facets(obj: dict[str, Any], ordinal: int = 1) -> Facets:
         subject_ordinal=ordinal,
         tag1=tag1 or DEFAULT_PLATFORM,
         tag2=tag2,
+        tag3=tag3,
+        tag4=tag4 or pillar,
+        tag5=tag5 or year,
         pillar=pillar,
         country=country,
         year=year,

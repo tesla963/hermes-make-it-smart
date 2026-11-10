@@ -152,18 +152,24 @@ tag1        THE MAKER OF THE SUBJECT — an adjective, not a noun.
             NEVER "Hermes Agent": the assistant does the work in every session,
             which makes it the AUTHOR, never the maker of the subject.
 
-tag2        THE CONTEXT that qualifies the subject and its maker. ONE of:
+tag2        THE CONTEXT that qualifies the subject. ONLY one of these kinds:
               - a marketplace or store   "Ebay", "Amazon", "AliExpress"
               - a country                "Panamá", "Estados Unidos"
               - a machine                "Mac mini M4", "ThinkPad P53"
             "Air 2S" + tag1 "DJI" + tag2 "Ebay" reads: a DJI drone available
-            on eBay. Leave "" when there is no qualifying context.
+            on eBay. Leave "" in EVERY other case. Never put an intention
+            ("Comparación"), a family ("WebHosting") or a theme in tag2:
+            those belong in tag3 and tag4, and a context the list does not
+            recognise is an empty context.
 
 tag3        THE INTENTION: what the user wanted DONE with the subject.
-            Pick ONE from the intention list below, exactly as written, or "".
-            This is a verb, not a topic. "Electronica" is not an intention;
-            "Instalar" is. If the session only asks what a thing IS, use
-            "Investigar"; if it asks what it CAN DO, still "Investigar".
+            Pick ONE from the intention list below, exactly as written.
+            This is a verb, not a topic. "Electronica" is not an intention.
+            MOST SESSIONS HAVE NO CLEAR VERB — leave it "" when the turn is a
+            plain question, a greeting, a scheduled report or an open chat.
+            "Investigar" is NOT a default: use it only when the user says
+            "averigua", "busca información" or "investiga" in so many words.
+            A field of 338 "Investigar" is a field nobody can filter by.
 
 tag4        THE WORK FRONT — one of the themes below, and when the theme has
             subcategories, the SUBCATEGORY. "IT Manager" is the theme; "VPS",

@@ -285,6 +285,9 @@ __all__ = [
     "IT_SUBCATEGORIES",
     "OTHER_THEMES",
     "THEMES",
+    "normalize_intention",
+    "normalize_context",
+    "normalize_theme",
     "PILLAR_LAST",
     "PLATFORMS",
     "DEFAULT_PLATFORM",
@@ -340,6 +343,10 @@ IT_SUBCATEGORIES: Final[tuple[str, ...]] = (
 
 # Themes without subcategories yet.
 OTHER_THEMES: Final[tuple[str, ...]] = (
+    # Data Mining and Data Security were Tag2 values; the owner moved them here,
+    # to a theme, because they name a front and not a verb.
+    "Data Mining",
+    "Data Security",
     "Derecho",
     "Medicina",
     "Geopolitica",
@@ -351,3 +358,111 @@ OTHER_THEMES: Final[tuple[str, ...]] = (
 )
 
 THEMES: Final[tuple[str, ...]] = ("IT Manager", *OTHER_THEMES)
+
+
+# --------------------------------------------------------------------------- #
+# Normalisers for the 2026-11-10 schema
+# --------------------------------------------------------------------------- #
+
+_INTENT_ALIASES: Final[dict[str, str]] = {
+    "comparacion": "Comparar", "comparación": "Comparar", "comparar": "Comparar",
+    "comparativo": "Comparar", "vs": "Comparar",
+    "instalar": "Instalar", "instalacion": "Instalar", "instalación": "Instalar",
+    "configurar": "Instalar", "setup": "Instalar",
+    "investigar": "Investigar", "investigacion": "Investigar",
+    "investigación": "Investigar", "consultar": "Investigar",
+    "buscar": "Investigar",
+    "testear": "Testear", "testing": "Testear", "test": "Testear",
+    "verificar": "Testear", "comprobar": "Testear", "probar": "Testear",
+    "cotizar": "Cotizar", "cotizacion": "Cotizar", "cotización": "Cotizar",
+    "precio": "Cotizar", "precios": "Cotizar",
+    "troubleshooting": "Troubleshooting", "diagnosticar": "Troubleshooting",
+    "diagnostico": "Troubleshooting", "diagnóstico": "Troubleshooting",
+    "compatibilidad": "Compatibilidad", "compatible": "Compatibilidad",
+}
+
+
+def normalize_intention(raw: str) -> str:
+    """Fold any spelling of a verb onto the closed list, or return "".
+
+    "Administrar" is deliberately absent: the owner was unsure and left it out.
+    An intention the list does not know is not an intention — it is silence,
+    and silence is better than a field nobody can filter by twice.
+    """
+    key = (raw or "").strip().lower()
+    if not key:
+        return ""
+    if key in _INTENT_ALIASES:
+        return _INTENT_ALIASES[key]
+    for name in INTENTIONS:
+        if name.lower() == key:
+            return name
+    return ""
+
+
+_THEME_ALIASES: Final[dict[str, str]] = {
+    "it manager": "IT Manager", "it": "IT Manager", "sistemas": "IT Manager",
+    "derecho constitucional": "Derecho", "derecho civil": "Derecho",
+    "derecho": "Derecho",
+    "medicina": "Medicina", "masoterapia": "Medicina", "salud": "Medicina",
+    "geopolitica": "Geopolitica", "geopolítica": "Geopolitica",
+    "educacion": "Educacion", "educación": "Educacion",
+    "economista": "Economista", "economia": "Economista", "finanzas": "Economista",
+    "compras": "Compras", "youtuber": "Youtuber", "youtube": "Youtuber",
+    "temas varios": "Temas Varios",
+    "data mining": "Data Mining", "mineria de datos": "Data Mining",
+    "minería de datos": "Data Mining",
+    "data security": "Data Security", "seguridad": "Data Security",
+}
+
+
+def normalize_theme(raw: str) -> str:
+    """Fold a theme or a subcategory onto the closed list, or return ""."""
+    key = (raw or "").strip().lower()
+    if not key:
+        return ""
+    for name in IT_SUBCATEGORIES:          # subcategories win over the theme
+        if name.lower() == key:
+            return name
+    if key in _THEME_ALIASES:
+        return _THEME_ALIASES[key]
+    for name in THEMES:
+        if name.lower() == key:
+            return name
+    return ""
+
+
+_KNOWN_STORES: Final[tuple[str, ...]] = (
+    "Ebay", "Amazon", "AliExpress", "Alibaba", "Walmart", "Newegg",
+    "MercadoLibre", "Aliexpress", "Banggood", "Temu", "Best Buy", "eBay",
+)
+_KNOWN_COUNTRIES: Final[tuple[str, ...]] = (
+    "Panamá", "Panama", "Estados Unidos", "USA", "United States", "China",
+    "Japón", "Japon", "España", "Mexico", "México", "Colombia", "Costa Rica",
+)
+_KNOWN_MACHINES: Final[tuple[str, ...]] = (
+    "Mac mini M4", "Mac mini M6", "Mac Studio", "MacBook Air", "MacBook Pro",
+    "ThinkPad P53", "ThinkPad E580", "ThinkPad T480s", "ThinkPad P15",
+    "Precision 7760", "Inspiron 5570", "VPS", "Teléfono", "iPhone",
+    "iPad", "Android", "Gorgon Halo", "Sofía", "Sofia",
+)
+
+
+def normalize_context(raw: str) -> str:
+    """tag2 accepts a store, a country or a machine — nothing else.
+
+    Left open, the model filled it with whatever it had at hand: "Comparación"
+    91 times, "Automation" 76, "WebHosting" 25. Those are intentions and
+    families, and they already have their own field. A context the list does not
+    recognise is an empty context: the session simply had none.
+    """
+    key = (raw or "").strip()
+    if not key:
+        return ""
+    low = key.lower()
+    for group in (_KNOWN_STORES, _KNOWN_COUNTRIES, _KNOWN_MACHINES):
+        for name in group:
+            if name.lower() == low:
+                return name
+    return ""
+
