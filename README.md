@@ -23,9 +23,12 @@ An agent that forgets the shape of your work is an agent you have to re-brief ev
 
 ## What it does
 
-1. **Indexes** every session from every Hermes profile into its own read-only index.
-2. **Classifies** each one — subject, platform, work family, pillar, country, machine —
-   using a host-agnostic pure module plus a language model.
+1. **Indexes** every session from every Hermes profile into its own read-only index —
+   **all of them**, titled or not. A session with no canonical title is not skipped: it
+   gets a number after the last one in use. Importing is not a filter.
+2. **Classifies** each one — subject, maker, context, intention, theme, year — using a
+   host-agnostic pure module plus a language model. Empty fields are allowed and are
+   never filled with the previous schema's leftovers.
 3. **Renames** them into one canonical, sortable, telegraphic format (below), writing
    through the host's public title API.
 4. **Presents** them as a facet catalog: filters with live counts, a synonym-aware

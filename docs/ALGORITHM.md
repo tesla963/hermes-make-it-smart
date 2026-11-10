@@ -24,6 +24,13 @@ mode) before it is cut. The verb is the first thing dropped.
   bug, not a feature.
 - Width `max(3, len(str(total+1)))`; grows to four digits at 1000.
 - Stable once assigned. Never renumbered.
+- **Every session gets a number, titled or not.** The first importer only read
+  titles that already had the `NNN [Subject] MMM` shape, so 25 sessions — six
+  without a title and nineteen with a free-form one — were silently left out of
+  the catalogue. They are now read like any other and numbered after the last
+  number in use, oldest first. *A catalogue that skips what does not fit its
+  format is not a catalogue of the archive; it is a catalogue of the archive's
+  good examples.*
 
 ## 3. Subject — what the session is about
 
@@ -61,7 +68,9 @@ merged or deleted; the ordinal simply says *these belong together, and in this o
 
 - A platform, a brand, a product, a real actor. `Hermes Agent`, `CyberPanel`, `DJI`,
   `Brave`, `Logseq`.
-- If the session is not about software, or nothing else fits → `Hermes Agent`.
+- If nothing fits, **leave it empty**. `Hermes Agent` as a fallback is banned: the
+  assistant does the work in every session, which makes it the author, never the maker.
+  An empty Tag1 is honest — it says nobody knew, and it leaves the slot free.
 - **Never** the operating system by default. "macOS" explains almost every session and
   therefore explains nothing.
 - Use the full product name, never an abbreviation: `Hermes Agent`, `Hermes Desktop`,
@@ -79,43 +88,59 @@ Tag1 = the brand        Tag2 = the marketplace
 |---|---|---|---|
 | Used drone listing | `Air 2S` | `DJI` | `Ebay` |
 | Supplement research | `Trace Minerals` | `Dr. Berg` | `Amazon` |
-| USB-C enclosure | `Case USB` | `ORICO` | `Comparación` |
+| USB-C enclosure | `Case USB` | `ORICO` | — (the comparison is Tag3) |
 
 Read in one breath: **what** it is, **who** makes it, **where** we looked.
 
 This is the strongest expression of the algorithm: three fields, a complete idea,
 telegraphic, in under 40 characters.
 
-## 6. Tag2 — the work family
+## 6. Tag2 — context, and only context
 
-**What kind of work this was.**
+Tag2 is what sits *around* the subject and changes how you read it. Three things,
+nothing else:
 
-- **IT families:** IA, Data Mining, Automation, WebHosting, Troubleshooting, VPS,
-  Data Security, Multimedia, Productivity, MCP/CLI, File System, IT Manager, Data Backup,
-  Programming, Networking, Data Recovery, Repository.
-- **Non-IT families:** Derecho Constitucional / Penal / Civil, Educación, Medicina,
-  Nutrición, Compras, Geopolítica.
-- **Troubleshooting** only when you *report something failing* — not when it is merely
-  mentioned.
-- **Marketplace** when the work was evaluating a listing.
+| Kind | Values | Example |
+|---|---|---|
+| **Store** | Amazon, Ebay, … | `Air 2S` · DJI · **Ebay** |
+| **Country** | Panamá, … | `Fletes` · — · **Panamá** |
+| **Machine** | Mac mini M4, VPS, P53, … | `16 GB Ram` · — · **Mac mini M4** |
 
-**The control question:** *does this tag add anything about what the session is?*
-If the subject already says it, remove it.
+A work family (`WebHosting`), an intention (`Comparar`) or a theme (`Hardware`) in
+Tag2 is an **error, not a judgement call**. Those used to live here and the field
+became a sack: it mixed families, topics and intentions in one column, so no filter
+built on it could be trusted.
+
+**The control question:** *would this value still make sense printed next to the
+subject on a shelf label?*
+
+## 6b. Tag3 — the intention (seven, closed)
+
+Comparar · Instalar · Investigar · Testear · Cotizar · Troubleshooting ·
+Compatibilidad.
+
+- Closed on purpose: a vocabulary that grows on every session stops being a filter.
+- **Empty is a valid answer.** It says nobody read an intention here, which is true.
+- `Administrar` was retired; `Feature` and `Version` do not exist.
+
+## 6c. Tag4 — the theme
+
+The work front, with the subcategories of IT Manager: IA Bot, VPS, Data Backup,
+Hardware, MindMap, Network, OS. `Data Mining` and `Data Security` are themes, not
+families.
 
 ## 7. The internal tags (filters only, never in the title)
 
 | Tag | Question | Values |
 |---|---|---|
-| Tag 3 · Pillar | which work front | 10 pillars |
-| Tag 4 · Country | where | Panama, … |
+| Tag 3 · Intention | what was asked | the seven above |
+| Tag 4 · Theme | which work front | IT Manager and its subcategories |
 | Tag 5 · Year | which edition | 2026, … |
-| Tag 6 · Machine | which computer | Mac mini M4, VPS, Teléfono, P53, E580, T480s, Varios |
 
-The pillar is **never** written into the title. Measured: adding it leaves 877 of 884
-titles with no description at all.
+**There is no Tag 6.** The machine belongs in Tag2, next to the store and the country.
 
-**The ten pillars:** Asistente IA · VPS · Compras · Data Backup · Derecho · Youtuber ·
-MindMap · Geopolítica · Masoterapia · Temas Varios (always last, even when it is largest).
+None of these is written into the title except Tag1 and Tag2. Measured: adding the
+theme leaves 877 of 884 titles with no description at all.
 
 ## 8. The date
 
