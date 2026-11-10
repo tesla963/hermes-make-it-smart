@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 def _on_session_end(**_kwargs: Any) -> None:
     """Refresh the global session index when a session turn ends."""
     try:
-        data = build()
+        data = build(with_messages=False)
         out = data_dir() / "index.json"
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(
