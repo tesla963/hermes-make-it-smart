@@ -69,6 +69,13 @@ button.bok:hover{background:#38234f;border-color:#8f6bc4}
 .node{border:1px solid var(--line);border-radius:6px;margin-bottom:4px;overflow:hidden}
 .node>.hd{display:flex;align-items:center;gap:4px;padding:4px 7px;background:#1a1520;cursor:pointer;font-size:12.5px;font-weight:600;user-select:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .node>.hd .n{margin-left:5px;flex:0 0 auto;color:var(--tx3);font-weight:400;font-size:11px}
+/* El año es el nivel de arriba: manda sobre el mes y pesa más en la lectura. */
+.ynode>.hd{font-weight:700;color:var(--tx);font-size:12.5px;background:#221a2b}
+.ynode.sel>.hd{background:#2a1f38;color:#f4e6ee}
+.ynode.sel>.hd .n{color:#c9a8f0}
+.ynode>.hd .n{font-weight:700;color:var(--tx2)}
+.ynode>.bd{border-left:2px solid #453063;margin-left:7px;padding-left:4px}
+.mnode>.hd{font-size:11.5px;font-weight:600}
 .node>.hd .caret{color:var(--tx3);font-size:9px;width:9px;text-align:center}
 .node>.bd{display:none;padding:2px 5px 5px}
 .node.open>.bd{display:block}
@@ -330,7 +337,7 @@ const I18N={
   showDel:'Mostrar Borradas',hideDel:'Ocultar Borradas',showCron:'Mostrar Cron',hideCron:'Ocultar Cron',
   buscar:'Buscar sujeto, tema, tag…',pilar:'Pilar',frente:'frente de trabajo',
   tag1:'Plataforma',tag2:'Familia',itTema:'IT · tema',
-  fecha:'Fecha',diaExacto:'Día exacto',rango:'Rango',motor:'Motor de IA',autor:'Autor',maquina:'Tag 6 · Máquina',
+  fecha:'Fecha',todoAnio:'Todo',diaExacto:'Día exacto',rango:'Rango',motor:'Motor de IA',autor:'Autor',maquina:'Tag 6 · Máquina',
   colN:'Nº',colFecha:'Fecha',colSujeto:'Sujeto · #',colTags:'Tags',colCosto:'Costo',colHoras:'Horas',colTokens:'Tokens',colPosts:'Posts',
   mostrando:'Mostrando',de:'de',angosto:'⚠ angosto',
   copiarSesion:'Copiar sesión',abrirSesion:'Abrir sesión',mensajes:'MENSAJES CLAVE DEL USUARIO',
@@ -361,7 +368,7 @@ const I18N={
   showDel:'Show Deleted',hideDel:'Hide Deleted',showCron:'Show Cron',hideCron:'Hide Cron',
   buscar:'Search subject, topic, tag…',pilar:'Pillar',frente:'work front',
   tag1:'Platform',tag2:'Family',itTema:'IT · topic',
-  fecha:'Date',diaExacto:'Exact day',rango:'Range',motor:'AI engine',autor:'Author',maquina:'Tag 6 · Machine',
+  fecha:'Date',todoAnio:'All',diaExacto:'Exact day',rango:'Range',motor:'AI engine',autor:'Author',maquina:'Tag 6 · Machine',
   colN:'No.',colFecha:'Date',colSujeto:'Subject · #',colTags:'Tags',colCosto:'Cost',colHoras:'Hours',colTokens:'Tokens',colPosts:'Posts',
   mostrando:'Showing',de:'of',angosto:'⚠ narrow',
   copiarSesion:'Copy session',abrirSesion:'Open session',mensajes:'KEY USER MESSAGES',
@@ -400,7 +407,7 @@ function pintarIdioma(){
   document.documentElement.lang=LANG;
 }
 const norm=s=>(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
-const S={numSel:null,qs:'',tag3:null,cat1:null,cat2:null,cat3:null,tag1:null,tag2:null,tag4:null,tag5:null,tag6:null,autor:null,mes:null,sem:null,q:'',dia:'',d1:'',d2:''};
+const S={numSel:null,qs:'',tag3:null,cat1:null,cat2:null,cat3:null,tag1:null,tag2:null,tag4:null,tag5:null,tag6:null,autor:null,anio:null,mes:null,sem:null,q:'',dia:'',d1:'',d2:''};
 const OPN=new Set(['c1:Software']);
 let orden={k:'fecha',asc:false},current=null,verElim=false,verCron=false;
 // A scheduled run has a cron-shaped id; it is the only reliable signature that
@@ -531,6 +538,7 @@ function pass(d,...skips){
   if(!skips.includes('tag6')&&S.tag6&&d.tag6!==S.tag6)return false;
   if(!skips.includes('motor')&&S.motor&&(d.motor||'')!==S.motor)return false;
   if(!skips.includes('autor')&&S.autor&&d.autor!==S.autor)return false;
+  if(!skips.includes('anio')&&S.anio&&(d.fecha||'').slice(0,4)!==S.anio)return false;
   if(!skips.includes('mes')&&S.mes&&d.mes!==S.mes)return false;
   if(!skips.includes('sem')&&S.sem&&d.mes+'|'+d.semana!==S.sem)return false;
   // A bare list of numbers is a selector, not a search: "126,305" or "50-75".
@@ -684,16 +692,32 @@ function buildTags(){
 }
 
 function buildFecha(){
-  const C=counts(['mes','sem']); let h='';
-  Object.keys(E.meses).sort().reverse().forEach(m=>{
-    const k='m:'+m,o=OPN.has(k),n=C.mes[m]||0;
-    h+=`<div class="node${o?' open':''}${S.mes===m?' sel':''}${n?'':' zero'}" data-open="${k}"><div class="hd"><span class="caret">${o?'▾':'▸'}</span>${nombreMes(m)}<span class="n">${n}</span></div><div class="bd">`;
-    h+=`<label class="opt${S.mes===m?' sel':''}"><input type="radio" name="mes" ${S.mes===m?'checked':''} data-mes="${m}"><span><b>Todo ${nombreMes(m)}</b></span><span class="n">${n}</span></label>`;
-    Object.keys(E.meses[m]).sort().forEach(w=>{
-      const id=m+'|'+w,mm=C.sem[id]||0,tot=TOTSEM[w]||mm;
-      // avisa si la semana cruza el mes: 39 de 45
-      const extra = (tot>mm) ? `<span class="n" style="opacity:.6">de ${tot}</span>` : '';
-      h+=`<label class="opt${S.sem===id?' sel':''}${mm?'':' zero'}"><input type="radio" name="sem" ${S.sem===id?'checked':''} data-sem="${id}"><span>sem ${w.split('-W')[1]} <span style="color:var(--tx3);font-size:10.5px">${rangoSem(w)}</span></span>${extra}<span class="n">${mm}</span></label>`;
+  // Three levels, not two: year → month → week. The year is the top because a
+  // catalogue that imports old Gemini, Claude and ChatGPT sessions will span
+  // a decade, and "2026-11" alone forces the reader to think in ISO strings.
+  const C=counts(['mes','sem']);
+  const porAnio={};
+  Object.keys(E.meses).forEach(m=>{ const y=m.slice(0,4); (porAnio[y]=porAnio[y]||[]).push(m); });
+  let h='';
+  Object.keys(porAnio).sort().reverse().forEach(y=>{
+    const meses=porAnio[y].sort().reverse();
+    const totY=meses.reduce((s,m)=>s+(C.mes[m]||0),0);
+    // The newest year opens by itself: its months are what the eye is looking for.
+  const ky='y:'+y;
+  if(y===Object.keys(porAnio).sort().reverse()[0] && !OPN.has(ky) && !OPN.has('init:'+y)) { OPN.add(ky); OPN.add('init:'+y); }
+  const oy=OPN.has(ky);
+    h+=`<div class="node ynode${oy?' open':''}${S.anio===y?' sel':''}${totY?'':' zero'}" data-open="${ky}"><div class="hd"><span class="caret">${oy?'▾':'▸'}</span>${y}<span class="n">${totY}</span></div><div class="bd">`;
+    h+=`<label class="opt${S.anio===y?' sel':''}"><input type="radio" name="anio" ${S.anio===y?'checked':''} data-anio="${y}"><span><b>${t('todoAnio')} ${y}</b></span><span class="n">${totY}</span></label>`;
+    meses.forEach(m=>{
+      const k='m:'+m,o=OPN.has(k),n=C.mes[m]||0;
+      h+=`<div class="node mnode${o?' open':''}${S.mes===m?' sel':''}${n?'':' zero'}" data-open="${k}"><div class="hd"><span class="caret">${o?'▾':'▸'}</span>${nombreMes(m)}<span class="n">${n}</span></div><div class="bd">`;
+      h+=`<label class="opt${S.mes===m?' sel':''}"><input type="radio" name="mes" ${S.mes===m?'checked':''} data-mes="${m}"><span><b>Todo ${nombreMes(m)}</b></span><span class="n">${n}</span></label>`;
+      Object.keys(E.meses[m]).sort().forEach(w=>{
+        const id=m+'|'+w,mm=C.sem[id]||0,tot=TOTSEM[w]||mm;
+        const extra = (tot>mm) ? `<span class="n" style="opacity:.6">de ${tot}</span>` : '';
+        h+=`<label class="opt${S.sem===id?' sel':''}${mm?'':' zero'}"><input type="radio" name="sem" ${S.sem===id?'checked':''} data-sem="${id}"><span>sem ${w.split('-W')[1]} <span style="color:var(--tx3);font-size:10.5px">${rangoSem(w)}</span></span>${extra}<span class="n">${mm}</span></label>`;
+      });
+      h+=`</div></div>`;
     });
     h+=`</div></div>`;
   });
@@ -701,13 +725,23 @@ function buildFecha(){
   host.querySelectorAll('.hd').forEach(hd=>hd.onclick=e=>{
     const n=hd.parentElement, k=n.dataset.open||'';
     if(e.target.classList.contains('caret')){n.classList.toggle('open');n.classList.contains('open')?OPN.add(k):OPN.delete(k);return;}
+    if(k.startsWith('y:')){
+      const y=k.slice(2); S.anio=(S.anio===y)?null:y;
+      if(!S.anio){S.mes=null;S.sem=null;}
+      if(S.anio){n.classList.add('open');OPN.add(k);}
+    }
     if(k.startsWith('m:')){
       const m=k.slice(2); S.mes=(S.mes===m)?null:m; S.sem=null;
-      if(S.mes){n.classList.add('open');OPN.add(k);}
+      if(S.mes){S.anio=m.slice(0,4);n.classList.add('open');OPN.add(k);}
     }
     full();
   });
-  host.querySelectorAll('input[data-mes]').forEach(i=>i.onchange=()=>{S.mes=S.mes===i.dataset.mes?null:i.dataset.mes;full();});
+  host.querySelectorAll('input[data-anio]').forEach(i=>i.onchange=()=>{
+    S.anio=S.anio===i.dataset.anio?null:i.dataset.anio;
+    if(!S.anio){S.mes=null;S.sem=null;}
+    else { OPN.add('y:'+S.anio); }   // picking a year should show its months
+    full();});
+  host.querySelectorAll('input[data-mes]').forEach(i=>i.onchange=()=>{S.mes=S.mes===i.dataset.mes?null:i.dataset.mes;S.anio=S.mes?S.mes.slice(0,4):S.anio;full();});
   host.querySelectorAll('input[data-sem]').forEach(i=>i.onchange=()=>{S.sem=S.sem===i.dataset.sem?null:i.dataset.sem;full();});
 }
 
@@ -734,7 +768,7 @@ function render(){
   }
   document.getElementById('counter').innerHTML=t('mostrando')+' <b>'+vis+'</b> '+t('de')+' <b>'+DATA.length+'</b>'+extra;
   const qs=document.getElementById('qshow');
-  if(qs) qs.onclick=()=>{S.cat1=S.cat2=S.cat3=null;S.tag1=S.tag2=S.tag4=S.tag5=S.tag6=null;S.autor=null;S.mes=S.sem=null;S.dia='';S.d1='';S.d2='';full();};
+  if(qs) qs.onclick=()=>{S.cat1=S.cat2=S.cat3=null;S.tag1=S.tag2=S.tag4=S.tag5=S.tag6=null;S.autor=null;S.anio=S.mes=S.sem=null;S.dia='';S.d1='';S.d2='';full();};
 }
 
 function chips(){
@@ -748,6 +782,7 @@ function chips(){
   if(S.tag6)out.push(['tag6',S.tag6]);
   if(S.motor)out.push(['motor',S.motor]);
   if(S.autor)out.push(['autor',S.autor]);
+  if(S.anio)out.push(['anio',S.anio]);
   if(S.mes)out.push(['mes',nombreMes(S.mes)]);
   if(S.sem)out.push(['sem','sem '+S.sem.split('|')[1].split('-W')[1]+' · '+nombreMes(S.sem.split('|')[0])]);
   if(S.q)out.push(['q','“'+S.q+'”']);
