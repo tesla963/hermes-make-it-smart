@@ -49,6 +49,9 @@ button.primary.ghost:hover,button.primary:disabled:hover{border-color:var(--line
 .chip{background:#251521;border:1px solid #4a2033;color:#f6dbe4;border-radius:999px;padding:2px 4px 2px 9px;font-size:11.5px;display:inline-flex;align-items:center;gap:6px}
 .chip b{cursor:pointer;color:var(--wine2);font-weight:700}
 button.primary{margin-left:auto;background:var(--wine);border-color:var(--wine);color:#fff}
+/* Cerrar no es una acción destructiva: el vino se guarda para borrar. */
+button.bok{margin-left:auto;background:#2a1a3d;border-color:#6b4a9e;color:#e8dde4}
+button.bok:hover{background:#38234f;border-color:#8f6bc4}
 .opt{display:flex;align-items:center;gap:4px;padding:2.5px 5px;border-radius:5px;cursor:pointer;font-size:12px;white-space:nowrap;overflow:hidden}
 .opt>span:first-of-type{overflow:hidden;text-overflow:ellipsis}
 .opt:hover{background:#1e1923}
@@ -166,11 +169,18 @@ tr.t:hover .ttitle .tfac{color:var(--tx2)}
 .kbar{position:fixed;left:var(--aside-w,264px);right:0;bottom:0;z-index:60;display:flex;align-items:stretch;gap:0;
 background:#0f0c13d9;backdrop-filter:blur(8px);border-top:1px solid var(--line2);padding:0 4px}
 /* El badge no es un dato: tiene su propio pie dentro del panel, no en la barra. */
-/* Pegado al fondo del panel: visible sin scrollear, con su propio espacio. */
-aside .pie-panel{position:sticky;bottom:0;margin-top:14px;padding:10px 0 2px;
-border-top:1px solid var(--line);background:var(--bg2)}
-aside .pie-panel .tag{font-size:9px;letter-spacing:.1em;color:#c9a8f0;
-border-color:#453063;background:#221634;padding:2px 6px}
+/* La franja bajo el panel izquierdo: la barra de estadísticas arranca en
+   left:var(--aside-w), así que ese hueco es del badge y de nadie más. */
+/* Mismo cristal que la barra, alineado a la izquierda: se lee como el
+   arranque de la franja, no como un sticker pegado encima. */
+.vbadge{position:fixed;left:0;bottom:0;width:var(--aside-w,264px);height:var(--kbar-h);
+display:flex;align-items:center;justify-content:flex-start;gap:7px;cursor:pointer;
+background:#0f0c13d9;backdrop-filter:blur(8px);border-top:1px solid var(--line2);
+border-right:1px solid var(--line2);padding:0 10px;
+font:600 9.5px/1 ui-monospace,Menlo,monospace;letter-spacing:.11em;color:#c9a8f0;z-index:61}
+.vbadge:hover{background:#171320;color:#e6d3f2}
+.vbadge b{font-weight:700;color:#eee6f3}
+.vbadge i{width:5px;height:5px;border-radius:50%;background:#8fd0f5;box-shadow:0 0 6px #8fd0f5aa;font-style:normal}
 .kbar .kpi{flex:1 1 0;position:relative;display:flex;flex-direction:row;align-items:flex-end;justify-content:flex-start;gap:6px;
 padding:7px 10px 8px;background:none;border-radius:0}
 /* Separators as short rules between modules, not full-height hairlines: easier
@@ -247,7 +257,6 @@ aside .chips,aside .chip{max-width:100%}
     <h4><span data-i18n="autor">Autor</span> <span id="nAut"></span></h4>
     <div id="fAutor"></div>
     <p class="hint">Selección única. El sujeto no es faceta: usa el buscador.</p>
-    <div class="pie-panel"><span class="tag">Simulador v23</span></div>
   </aside>
 
   <main>
@@ -750,6 +759,14 @@ function buildMotor(){
 }
 
 pintarIdioma();
+// El badge y su modal viven FUERA del <script>, así que no existen cuando este
+// bloque corre: se enganchan por delegación, que no depende del orden.
+document.addEventListener('click',e=>{
+  if(e.target.closest('#vbadge')){ e.stopPropagation(); document.getElementById('vmodal').classList.add('on'); return; }
+  if(e.target.closest('#vclose')){ document.getElementById('vmodal').classList.remove('on'); return; }
+  const vm=document.getElementById('vmodal');
+  if(vm && e.target===vm) vm.classList.remove('on');
+});
 const _bl=document.getElementById('btnLang');
 if(_bl) _bl.onclick=()=>{
   LANG = LANG==='es' ? 'en' : 'es';
@@ -989,6 +1006,42 @@ build();full();stickyTop();updBar();updBar();
   <div class="kpi pst"><b id="kPosts">—</b><div class="lb"><i data-i18n="kPost1">Total</i><i data-i18n="kPost2">posts</i></div></div>
   <div class="kpi tok"><b id="kTok">—</b><div class="lb"><i data-i18n="kTok1">Total</i><i data-i18n="kTok2">tokens</i></div></div>
 </div>
+<div id="vbadge" class="vbadge" title="Ficha del plugin"><i></i>V <b>0.23</b></div>
+<div class="modal" id="vmodal"><div class="box" style="max-width:520px">
+  <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:12px">
+    <h4 style="font-size:13px;margin:0">Hermes, make all my work Smart!</h4>
+    <span class="mono" style="font-size:11px;color:#c9a8f0">v0.23 · simulador</span>
+  </div>
+  <p style="font-size:12px;color:var(--tx2);margin:0 0 12px;line-height:1.55">
+    Catálogo navegable de tus sesiones: las indexa de las 12 bases, les pone nombre
+    canónico y las deja filtrar por plataforma, familia y pilar. La ventana del plugin
+    solo pinta — el clasificador es Python puro y no sabe que existe Hermes.
+  </p>
+  <div style="border-top:1px solid var(--line);padding-top:10px">
+    <div class="mono" style="font-size:9.5px;letter-spacing:.1em;color:var(--tx3);margin-bottom:6px">ESTA VERSIÓN</div>
+    <ul style="font-size:11.5px;line-height:1.65;margin:0 0 12px;padding-left:18px;color:var(--tx2)">
+      <li>884 sesiones · 625 sujetos · 44 reglas aprendidas</li>
+      <li>Nueve tags declarados; tag1 y tag2 en el nombre, el resto filtros</li>
+      <li>El ordinal <b>MMM</b> fuera del corchete del sujeto</li>
+      <li>Sin fecha en el título; la fecha es columna y filtro</li>
+      <li>Buscador numérico: <span class="mono">126,305</span> y <span class="mono">50-75</span></li>
+      <li>Copiar títulos con su id, copiar ficha, exportar CSV con contador <span class="mono">[CCCC]</span></li>
+      <li>Mostrar/ocultar borradas y sesiones de cron</li>
+      <li>Switch ES/EN — no cambia lo que el clasificador entiende</li>
+      <li>La serie se unifica: <span class="mono">DNS + Correo</span> son 50 sesiones, no 24 chips</li>
+    </ul>
+    <div class="mono" style="font-size:9.5px;letter-spacing:.1em;color:var(--tx3);margin-bottom:6px">REGLAS QUE APRENDIÓ</div>
+    <ul style="font-size:11.5px;line-height:1.65;margin:0;padding-left:18px;color:var(--tx2)">
+      <li>Un calificador estrecha, no nombra — el dominio va a la descripción</li>
+      <li>La marca y el producto son dos cosas: USPS + Ground Advantage</li>
+      <li>El sujeto es el paciente, no quien sostiene la ficha</li>
+      <li>Una serie, un pilar: si hay 40 hermanos, el que no encaja está mal</li>
+    </ul>
+  </div>
+  <div style="display:flex;justify-content:flex-end;margin-top:16px">
+    <button id="vclose" class="bok">Cerrar</button>
+  </div>
+</div></div>
 <div id="ptip">264 pt</div>
 <script>
 (function(){
