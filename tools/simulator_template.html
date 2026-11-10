@@ -94,11 +94,11 @@ tr.r>td{padding-top:4px}
 .pill.pick{cursor:pointer;transition:filter .12s,outline-color .12s}
 .pill.pick:hover{filter:brightness(1.35);outline:1px solid var(--wine2);outline-offset:1px}
 .pill{display:inline-block;font-size:10.5px;padding:1px 6px;border-radius:999px;border:1px solid var(--line2);color:var(--tx2);background:#1c1721;white-space:nowrap}
-.pill.s{color:#d3e3f3;background:#121d28;border-color:#24404f;max-width:118px;overflow:hidden;text-overflow:ellipsis;vertical-align:bottom}
+.pill.s{color:#8fd0f5;background:#0f2431;border-color:#1f4a63;max-width:118px;overflow:hidden;text-overflow:ellipsis;vertical-align:bottom}
 /* Paleta de los nueve tags: mismos valores de luminosidad y saturación, un tono
    distinto cada uno. Se leen juntos sin que ninguno grite. */
 .pill.tag1{color:#f0d48a;background:#2a2210;border-color:#55461f}
-.pill.tag2{color:#8fd0f5;background:#0f2431;border-color:#1f4a63}
+.pill.tag2{color:#d3e3f3;background:#121d28;border-color:#24404f}
 .pill.tag3{color:#c9a8f0;background:#221634;border-color:#453063}
 .pill.tag4{color:#96e0b0;background:#0f2618;border-color:#1f4a30}
 .pill.tag5{color:#f2a8c4;background:#2b1220;border-color:#55233d}
@@ -107,7 +107,7 @@ tr.r>td{padding-top:4px}
 .pill.tag8{color:#b8b8f5;background:#1a1a33;border-color:#33335f}
 .pill.tag9{color:#d8ec8f;background:#222b0f;border-color:#44551f}
 .pill.t{color:#f0d48a;background:#2a2210;border-color:#55461f}
-.pill.t2{color:#d9e8f5;background:#12202b;border-color:#23394a}
+.pill.t2{color:#d3e3f3;background:#121d28;border-color:#24404f}
 .pill.void{color:#4a4254;background:transparent;border-color:#2a2330}
 th.tags,td.tags{width:186px;min-width:186px;max-width:186px}
 .tcell{display:inline-flex;gap:3px;align-items:center;flex-wrap:nowrap;overflow:hidden}
@@ -262,7 +262,6 @@ aside .chips,aside .chip{max-width:100%}
         <th data-k="n" class="tight" style="width:44px" data-i18n="colN">Nº</th>
         <th data-k="fecha" class="tight fecha" style="width:88px" data-i18n="colFecha">Fecha</th>
         <th data-k="sujeto" class="tight" style="width:156px" data-i18n="colSujeto">Sujeto · #</th>
-        <th data-k="tag1" class="tags" data-i18n="colTags">Tags</th>
         <th data-k="costo" class="tight" style="width:54px" data-i18n="colCosto">Costo</th>
         <th data-k="horas" class="tight" style="width:58px" data-i18n="colHoras">Horas</th>
         <th data-k="tok_tot" class="tight" style="width:66px" data-i18n="colTokens">Tokens</th>
@@ -368,10 +367,7 @@ function build(){
     tr.innerHTML='<td class="ncol"></td>'+
       '<td class="mono tight fecha" style="color:var(--tx3)">'+d.fecha+'</td>'+
       '<td class="tight"><span class="pill s pick'+(/borrad/i.test(d.sujeto)?' del':'')+'" data-pick="suj" title="Filtrar por este sujeto">'+d.sujeto+'</span> <span class="mono" style="color:var(--tx3)">'+String(d.mmm).padStart(3,'0')+'</span></td>'+
-      '<td class="tags"><span class="tcell">'+
-        (d.tag1?'<span class="pill tag1 t1p pick" data-pick="t1" title="tag1 · plataforma">'+d.tag1+'</span>':'<span class="pill void">—</span>')+
-        (d.tag2?'<span class="pill tag2 t2p pick" data-pick="t2" title="tag2 · familia">'+d.tag2+'</span>':'')+
-      '</span></td>'+
+
       '<td class="num tight cen">'+fmtC(d.costo)+'</td><td class="num tight cen">'+fmtH(d.horas)+'</td>'+
       '<td class="num tight cen" style="color:var(--tx3)">'+fmtT(d.tok_tot)+'</td>'+
       '<td class="num tight cen" style="color:var(--tx3)">'+fmtP(d.posts)+'</td>';
@@ -392,7 +388,9 @@ function build(){
     // The number is a column, not part of the name: the line opens with the
     // first bracket, and the stored title still carries its NNN.
     trt.innerHTML='<td class="ncol t">'+d.n+'</td>'+
-      '<td colspan="7" class="ttitle'+tach+'"><b class="tfac">'+head+'</b>'+
+      '<td colspan="6" class="ttitle'+tach+'"><b class="tfac">'+head+'</b>'+
+      (d.tag1?' <span class="pill tag1 pick" data-pick="t1" title="Filtrar por tag1">'+d.tag1+'</span>':'')+
+      (d.tag2?' <span class="pill tag2 pick" data-pick="t2" title="Filtrar por tag2">'+d.tag2+'</span>':'')+
       (tail?' <b class="tdesc">'+tail+'</b>':'')+'</td>';
     trt.addEventListener('click',()=>openPanel(d,tr));
     // The description now lives inside the title line as bold text, so this
