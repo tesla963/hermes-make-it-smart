@@ -49,6 +49,22 @@ const fmtH = (m) =>
     ? Math.floor(m / 60) + 'h' + String(Math.round(m % 60)).padStart(2, '0')
     : Math.round(m || 0) + 'm'
 
+/** Simulator 2026-11-11 duration formatter: supports '—' for <=0 and days ('Xd Yh') for >=1440 min. */
+const fmtHoras = (v) => {
+  const m = Math.round(Number(v) || 0)
+  if (m <= 0) return '—'
+  if (m >= 1440) {
+    const d = Math.floor(m / 1440)
+    const h = Math.floor((m % 1440) / 60)
+    return h ? d + 'd ' + h + 'h' : d + 'd'
+  }
+  return m < 60
+    ? m + 'm'
+    : m % 60 < 5
+      ? Math.floor(m / 60) + 'h'
+      : Math.floor(m / 60) + 'h' + String(m % 60).padStart(2, '0') + 'm'
+}
+
 const fmtN = (n) =>
   n >= 1e9
     ? (n / 1e9).toFixed(1) + 'B'
@@ -278,26 +294,33 @@ const MESNOM = {
 
 function nombreMes(m, lang) {
   if (!m || !m.includes('-')) return m || ''
-  const [y, mm] = m.split('-')
+  const [, mm] = m.split('-')
   const arr = MESNOM[lang] || MESNOM.es
-  return (arr[parseInt(mm, 10) - 1] || mm) + ' ' + y
+  return arr[parseInt(mm, 10) - 1] || mm
 }
 
 /* ------------------------------------------------------------------ */
-/* I18N dictionary (1:1 with simulator_template.html)                 */
+/* I18N dictionary (1:1 with 2026-11-11_simulador-solo-codigo.html)   */
 /* ------------------------------------------------------------------ */
 
 const I18N = {
   es: {
+    navPrev: 'Sesión anterior',
+    navNext: 'Sesión siguiente',
+    tabInfo: 'Info sesión',
+    tabInfoTitle: 'Abrir la ficha de la primera sesión de la lista',
+    mostrarLbl: 'Mostrar:',
     ordenar: 'Ordenar:',
     limpiar: 'Limpiar',
     copiar: 'Copiar',
     exportar: 'Exportar',
     actualizar: 'Actualizar BD',
-    showDel: 'Mostrar Borradas',
-    hideDel: 'Ocultar Borradas',
-    showCron: 'Mostrar Cron',
-    hideCron: 'Ocultar Cron',
+    showDel: 'Borradas',
+    hideDel: 'Borradas',
+    showCron: 'Cron',
+    hideCron: 'Cron',
+    showVacio: 'Vacío',
+    hideVacio: 'Vacío',
     buscar: 'Buscar sujeto, tema, tag…',
     pilar: 'Pilar',
     frente: 'frente de trabajo',
@@ -324,10 +347,10 @@ const I18N = {
     colPosts: 'Posts',
     mostrando: 'Mostrando',
     de: 'de',
-    angosto: '⚠ angosto',
     copiarSesion: 'Copiar sesión',
     abrirSesion: 'Abrir sesión',
     mensajes: 'MENSAJES CLAVE DEL USUARIO',
+    mensajesLbl: 'Mensajes',
     sinMensajes: '(sin mensajes de usuario útiles en esta sesión)',
     elegir: 'Elige una sesión para ver su ficha.',
     sujeto: 'Sujeto',
@@ -337,6 +360,10 @@ const I18N = {
     perfil: 'Perfil',
     pais: 'País',
     anio: 'Año',
+    ruta: 'Ruta',
+    descripcion: 'descripción',
+    adn: 'ADN de la sesión:',
+    adnNota: 'Solo tag1 y tag2 aparecen en el nombre; el resto son filtros.',
     motores: 'motores',
     autores: 'autores',
     de1: '1 de ',
@@ -369,8 +396,20 @@ const I18N = {
     Mas: 'más',
     Menos: '− menos',
     cargando: 'Cargando sesiones de Hermes Desktop…',
+    vacio: 'Vacío',
+    vacioTitle: 'Ocultar las sesiones sin ningún mensaje (las muestra al desactivarlo)',
+    avTit: 'Sesiones vacías de cron:',
+    avCuerpo:
+      '{n} sesiones creadas por cron jobs no tienen ni un mensaje. No es un fallo tuyo: es un bug conocido de Hermes, <a href="https://github.com/NousResearch/hermes-agent/issues/140222" target="_blank" rel="noopener">issue #140222</a>.',
+    avActivos: '{n} cron jobs activos',
+    avConsejo:
+      'Dirección de la solución: pausar esos cron jobs y volver a crearlos en modo no_agent (sin LLM, sin sesión). Este panel no toca tus cron jobs: pídeselo a tu agente de Hermes.',
+    avCopiar: 'Copiar mensaje para Lisa',
+    avCopiado: 'Copiado',
+    avTexto:
+      'Lisa, tengo {n} sesiones vacías de cron (source=cron sin ningún mensaje). Bórralas y dime qué cron jobs tengo activos para pausarlos o pasarlos a modo no_agent.',
     vIntro:
-      'Catálogo navegable de tus sesiones: las consulta en vivo desde las bases de Hermes Desktop vía JSON-RPC, les pone nombre canónico y las deja filtrar por marca, contexto, intención y tema.',
+      'Catálogo navegable de tus sesiones: las indexa de las 12 bases, les pone nombre canónico y las deja filtrar por plataforma, familia y pilar. La ventana del plugin solo pinta — el clasificador es Python puro y no sabe que existe Hermes.',
     vSub: 'v0.23 · plugin nativo',
     vVer: 'ESTA VERSIÓN',
     vReg: 'REGLAS QUE APRENDIÓ',
@@ -390,15 +429,22 @@ const I18N = {
     r4: 'Una serie, un pilar: si hay 40 hermanos, el que no encaja está mal',
   },
   en: {
+    navPrev: 'Previous session',
+    navNext: 'Next session',
+    tabInfo: 'Session Info',
+    tabInfoTitle: 'Open the card of the first session in the list',
+    mostrarLbl: 'Show:',
     ordenar: 'Sort:',
     limpiar: 'Clear',
     copiar: 'Copy',
     exportar: 'Export',
     actualizar: 'Refresh DB',
-    showDel: 'Show Deleted',
-    hideDel: 'Hide Deleted',
-    showCron: 'Show Cron',
-    hideCron: 'Hide Cron',
+    showDel: 'Deleted',
+    hideDel: 'Deleted',
+    showCron: 'Cron',
+    hideCron: 'Cron',
+    showVacio: 'Empty',
+    hideVacio: 'Empty',
     buscar: 'Search subject, topic, tag…',
     pilar: 'Pillar',
     frente: 'work front',
@@ -425,10 +471,10 @@ const I18N = {
     colPosts: 'Posts',
     mostrando: 'Showing',
     de: 'of',
-    angosto: '⚠ narrow',
     copiarSesion: 'Copy session',
     abrirSesion: 'Open session',
     mensajes: 'KEY USER MESSAGES',
+    mensajesLbl: 'Messages',
     sinMensajes: '(no useful user messages in this session)',
     elegir: 'Pick a session to see its card.',
     sujeto: 'Subject',
@@ -438,6 +484,10 @@ const I18N = {
     perfil: 'Profile',
     pais: 'Country',
     anio: 'Year',
+    ruta: 'Path',
+    descripcion: 'description',
+    adn: 'Session DNA:',
+    adnNota: 'Only tag1 and tag2 appear in the name; the rest are filters.',
     motores: 'engines',
     autores: 'authors',
     de1: '1 of ',
@@ -470,11 +520,23 @@ const I18N = {
     Mas: 'more',
     Menos: '− less',
     cargando: 'Loading Hermes Desktop sessions…',
+    vacio: 'Empty',
+    vacioTitle: 'Hide sessions with no messages (turn it off to show them)',
+    avTit: 'Cron sessions with no messages:',
+    avCuerpo:
+      '{n} sessions created by cron jobs have no messages at all. Not your fault: it is a known Hermes bug, <a href="https://github.com/NousResearch/hermes-agent/issues/140222" target="_blank" rel="noopener">issue #140222</a>.',
+    avActivos: '{n} active cron jobs',
+    avConsejo:
+      'Where the fix goes: pause those cron jobs and recreate them in no_agent mode (no LLM, no session). This panel does not touch your cron jobs — ask your Hermes agent to do it.',
+    avCopiar: 'Copy message for Lisa',
+    avCopiado: 'Copied',
+    avTexto:
+      'Lisa, I have {n} empty cron sessions (source=cron with no messages). Delete them and tell me which cron jobs are active so I can pause them or move them to no_agent mode.',
     vIntro:
-      'A browsable catalogue of your sessions: queries them live from Hermes Desktop databases over JSON-RPC, gives each a canonical name and lets you filter by maker, context, intention and theme.',
+      'A browsable catalogue of your sessions: it indexes them from the 12 databases, gives each a canonical name and lets you filter by platform, family and pillar. The plugin window only paints — the classifier is pure Python and does not know Hermes exists.',
     vSub: 'v0.23 · native plugin',
     vVer: 'THIS VERSION',
-    vReg: 'RULES IT LEARNED',
+    vReg: 'REGLAS QUE APRENDIÓ',
     vCerrar: 'Close',
     v1: 'Session catalogue · NNN [Subject] MMM [Tag1] [Tag2] Description · Verb',
     v2: 'Nine tags declared; tag1 and tag2 in the name, the rest are filters',
@@ -493,11 +555,11 @@ const I18N = {
 }
 
 /* ------------------------------------------------------------------ */
-/* Scoped CSS (1:1 from tools/simulator_template.html & SPEC-UI.md)   */
+/* Scoped CSS (1:1 from 2026-11-11_simulador-solo-codigo.html)        */
 /* ------------------------------------------------------------------ */
 
 const CSS = `
-.mmws{--kbar-h:33px;--aside-ef:264px;--bg:#0d0b0e;--bg2:#141117;--card:#17131a;--line:#2a2330;--line2:#3a3040;--tx:#eae4ee;--tx2:#b9aec4;--tx3:#857a92;--wine:#a3234a;--wine2:#d94f78;--gold:#c9a227;--ok:#3f9e6a;
+.mmws{--tabw:62px;--tabx:16px;--kbar-h:33px;--aside-ef:264px;--bg:#0d0b0e;--bg2:#141117;--card:#17131a;--line:#2a2330;--line2:#3a3040;--tx:#eae4ee;--tx2:#b9aec4;--tx3:#857a92;--wine:#a3234a;--wine2:#d94f78;--gold:#c9a227;--ok:#3f9e6a;
 position:relative;display:flex;flex-direction:column;width:100%;height:100%;min-height:0;overflow:hidden;background:var(--bg);color:var(--tx);font:14px/1.55 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",sans-serif}
 .mmws *{box-sizing:border-box}
 .mmws h1{font-size:12.5px;margin:0;letter-spacing:.01em;font-weight:800;color:var(--tx)}
@@ -508,21 +570,29 @@ position:relative;display:flex;flex-direction:column;width:100%;height:100%;min-
 .mmws header.top{flex:0 0 auto;z-index:40;background:linear-gradient(180deg,#100d12,#0d0b0e);border-bottom:1px solid var(--line);padding:10px 18px}
 .mmws .brandrow{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
 .mmws .bodywrap{flex:1 1 auto;min-height:0;display:flex;align-items:stretch;position:relative;overflow:hidden}
-.mmws aside{width:var(--aside-ef);flex:0 0 var(--aside-ef);height:100%;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;-ms-overflow-style:none;overscroll-behavior:contain;border-right:1px solid var(--line);background:var(--bg2);padding:9px 10px 14px}
+.mmws .abarra{flex:none;padding:9px 0 8px;background:var(--bg2);border-bottom:1px solid var(--line);z-index:2}
+.mmws .ascroll{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;padding:8px 0 14px;scrollbar-width:none;-ms-overflow-style:none;overscroll-behavior:contain}
+.mmws .ascroll::-webkit-scrollbar{display:none;width:0;height:0}
+.mmws aside{width:var(--aside-ef);flex:0 0 var(--aside-ef);height:100%;display:flex;flex-direction:column;overflow:hidden;border-right:1px solid var(--line);background:var(--bg2);padding:0 10px}
 .mmws aside::-webkit-scrollbar{display:none;width:0;height:0}
-.mmws.sinFiltros aside{display:none}
 .mmws main{flex:1 1 auto;min-width:0;height:100%;overflow-y:auto;overflow-x:hidden;padding:0 0 40px}
-.mmws .toolbar{position:sticky;top:0;z-index:30;background:rgba(13,11,14,.98);backdrop-filter:blur(6px);border-bottom:1px solid var(--line);padding:8px 16px 7px;display:flex;gap:8px; row-gap:6px;align-items:center;flex-wrap:wrap}
+.mmws #tabInfo{position:absolute;right:0;top:0;bottom:0;width:46px;display:flex;align-items:center;justify-content:center;writing-mode:vertical-rl;text-orientation:mixed;background:#191420;border:0;border-left:1px solid var(--line);border-bottom:1px solid var(--line);border-radius:0 0 0 6px;color:var(--tx3);font-size:10.5px;font-weight:600;letter-spacing:.10em;text-transform:uppercase;cursor:pointer;padding:10px 8px;z-index:45}
+.mmws #tabInfo:hover{background:#241c2e;color:#fff}
+.mmws #tabInfo:active{background:#2d2338}
+.mmws .toolbar{position:sticky;top:0;z-index:30;background:rgba(13,11,14,.98);backdrop-filter:blur(6px);border-bottom:1px solid var(--line);padding:8px 54px 7px 16px;display:flex;gap:8px;row-gap:6px;align-items:center;flex-wrap:wrap}
 .mmws .counter{font-size:12.5px;color:var(--tx2);flex:0 0 auto;white-space:nowrap}
 .mmws .counter b{color:#fff}
 .mmws .trow{display:flex;flex-wrap:nowrap;align-items:center;gap:6px;width:100%;min-width:0;overflow:hidden}
 .mmws .trow>button{flex:0 0 auto;white-space:nowrap}
+.mmws #acciones{display:flex;gap:6px;align-items:center;flex:0 0 auto;min-width:0}
+.mmws #acciones>button{flex:0 0 auto;white-space:nowrap}
 .mmws button{font:inherit;font-size:12px;cursor:pointer;border-radius:6px;border:1px solid var(--line2);background:#1d1822;color:var(--tx2);padding:3px 8px;white-space:nowrap}
 .mmws button:hover{border-color:var(--wine);color:#fff}
 .mmws button.on{background:var(--wine);border-color:var(--wine);color:#fff}
-.mmws .chips{display:flex;gap:6px;flex-wrap:wrap;align-items:center;flex:1 0 100%;width:100%;margin-top:2px;min-height:28px;justify-content:flex-start}
-.mmws .chipwrap{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-left:auto}
-.mmws .chips>button.clrbtn{margin-left:0;flex:0 0 auto}
+.mmws .chipsrow{display:flex;align-items:center;gap:10px;margin-top:2px;flex:1 0 100%;width:100%}
+.mmws .chips{display:flex;gap:6px;flex-wrap:wrap;align-items:center;flex:1 1 auto;min-height:28px;justify-content:flex-start}
+.mmws .chipsrow .counter{margin-left:auto;flex:0 0 auto}
+.mmws .chipwrap{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-left:0}
 .mmws .chip{flex:0 0 auto;background:#251521;border:1px solid #4a2033;color:#f6dbe4;border-radius:999px;padding:2px 4px 2px 9px;font-size:11.5px;display:inline-flex;align-items:center;gap:6px}
 .mmws .chip b{cursor:pointer;color:var(--wine2);font-weight:700}
 .mmws button.primary{background:var(--wine);border-color:var(--wine);color:#fff}
@@ -543,8 +613,8 @@ position:relative;display:flex;flex-direction:column;width:100%;height:100%;min-
 .mmws aside h4.fold .caret{font-size:9px;color:#6f6579;flex:0 0 auto}
 .mmws aside h4.fold.off{color:#6f6579}
 .mmws .qhint{color:#f0b529;cursor:help}
-.mmws .qshow{font-size:10.5px;padding:1px 7px;border-radius:5px;background:#2a2110;border:1px solid #4a3a12;color:#f0b529;cursor:pointer;margin-left:4px}
-.mmws .qshow:hover{background:#3a2c14;color:#ffd166}
+.mmws .qshow,#qshow{font-size:10.5px;padding:1px 7px;border-radius:5px;background:#2a2110;border:1px solid #4a3a12;color:#f0b529;cursor:pointer;margin-left:4px}
+.mmws .qshow:hover,#qshow:hover{background:#3a2c14;color:#ffd166}
 .mmws .node{border:1px solid var(--line);border-radius:6px;margin-bottom:4px;overflow:hidden}
 .mmws .node>.hd{display:flex;align-items:center;gap:4px;padding:4px 7px;background:#1a1520;cursor:pointer;font-size:12.5px;font-weight:600;user-select:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mmws .node>.hd .n{margin-left:auto;flex:0 0 auto;color:var(--tx3);font-weight:400;font-size:11px}
@@ -558,6 +628,13 @@ position:relative;display:flex;flex-direction:column;width:100%;height:100%;min-
 .mmws .node>.bd{display:none;padding:2px 5px 5px}
 .mmws .node.open>.bd{display:block}
 .mmws .node.sel>.hd{background:#2a1220;color:#fff}
+.mmws .aviso{display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;margin:8px 16px 10px;padding:9px 12px;border-radius:8px;background:#2a1d0c;border:1px solid #6b4a12;color:#f0d9a8;font-size:12.3px;line-height:1.45}
+.mmws .aviso[hidden]{display:none}
+.mmws .aviso b{color:#ffcf70}
+.mmws .aviso .acc{margin-left:auto;display:flex;gap:6px;align-items:center}
+.mmws .aviso button{background:#3a2a0e;border:1px solid #7a5716;color:#ffe1a0;border-radius:6px;padding:4px 9px;font-size:11.5px;cursor:pointer}
+.mmws .aviso button:hover{background:#4a3612}
+.mmws .aviso a{color:#ffd98a;text-underline-offset:2px}
 .mmws table{width:100%;border-collapse:collapse;font-size:12.5px;table-layout:fixed}
 .mmws th,.mmws td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top;overflow-wrap:anywhere}
 .mmws th{position:sticky;top:0;background:#1a151f;color:var(--tx3);font-size:10px;text-transform:uppercase;letter-spacing:.05em;cursor:pointer;white-space:nowrap;z-index:20;text-align:center}
@@ -576,6 +653,7 @@ position:relative;display:flex;flex-direction:column;width:100%;height:100%;min-
 .mmws td.fecha{padding-left:8px !important;text-align:left !important;color:var(--tx3)}
 .mmws #tb td.ttitle{padding:6px 8px 2px 0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10.5px;line-height:1.45;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-bottom:none !important;color:#f4e6ee;font-weight:700}
 .mmws tr.t{cursor:pointer}
+.mmws tr.t.sele{background:#251521;box-shadow:inset 3px 0 0 var(--wine2)}
 .mmws tr.t td.ncol.t{font-family:ui-monospace,Menlo,monospace;font-size:10.5px;line-height:1.45;font-weight:700;color:#f4e6ee;border-bottom:none !important;vertical-align:baseline}
 .mmws tr.t .ttitle .tfac{color:#f4e6ee;font-weight:700}
 .mmws tr.t .ttitle .tdesc{color:#f4e6ee;font-weight:700;letter-spacing:.005em}
@@ -583,7 +661,7 @@ position:relative;display:flex;flex-direction:column;width:100%;height:100%;min-
 .mmws tr.t .ttitle.borrada .tdesc{text-decoration:line-through;text-decoration-color:rgba(217,79,120,.65);text-decoration-thickness:1px}
 .mmws tr.r{cursor:pointer}
 .mmws tr.r:hover{background:#1b1620}
-.mmws tr.r.sele{background:#251521}
+.mmws tr.r.sele{background:#1b1420}
 .mmws tr.r>td{border-bottom:2px solid #3d3346;padding-top:4px}
 .mmws #tb td:nth-child(3){padding-left:8px;overflow:hidden;text-overflow:ellipsis}
 .mmws .pill{display:inline-block;font-size:10.5px;padding:1px 6px;border-radius:999px;border:1px solid var(--line2);color:var(--tx2);background:#1c1721;white-space:nowrap}
@@ -611,6 +689,12 @@ position:relative;display:flex;flex-direction:column;width:100%;height:100%;min-
 .mmws .pbar .x{margin-left:auto;cursor:pointer;color:var(--tx3);font-size:16px}
 .mmws .openbtn{background:var(--wine);border:1px solid var(--wine);color:#fff;border-radius:6px;padding:3px 8px;font-size:12px;font-weight:600;cursor:pointer}
 .mmws .pname{font-family:ui-monospace,Menlo,monospace;font-size:17px;color:#f0dbe4;background:#1d1420;border:1px solid #3a2030;border-radius:8px;padding:9px 11px;margin:0 0 10px;line-height:1.5;word-break:break-word}
+.mmws .pthead{display:flex;align-items:flex-start;gap:10px;margin:0 0 10px}
+.mmws .pthead .pname{flex:1 1 auto;min-width:0;margin:0;overflow:hidden;text-overflow:ellipsis}
+.mmws .pnaveg{flex:0 0 26px;width:26px;display:flex;flex-direction:column;gap:3px;justify-content:flex-start;padding-top:9px}
+.mmws .navb{width:26px;height:22px;padding:0;font-size:9.5px;line-height:1;border-radius:5px;border:1px solid var(--line2);background:#1c1721;color:var(--tx2);cursor:pointer}
+.mmws .navb:hover:not(:disabled){filter:brightness(1.45);border-color:var(--wine2)}
+.mmws .navb:disabled{opacity:.28;cursor:default}
 .mmws .ptitle{font-size:14.5px;font-weight:650;margin:0 0 6px;line-height:1.35;color:var(--tx)}
 .mmws .psum{font-size:13px;color:var(--tx2);background:#1a1520;border-left:3px solid var(--wine);padding:9px 11px;border-radius:0 7px 7px 0;margin:0 0 12px}
 .mmws .kv{display:grid;grid-template-columns:92px 1fr;gap:4px 10px;font-size:12.5px;margin:0 0 12px}
@@ -623,7 +707,6 @@ position:relative;display:flex;flex-direction:column;width:100%;height:100%;min-
 .mmws .pidfoot span{text-transform:uppercase;letter-spacing:.06em;font-size:9px;opacity:.7;margin-right:4px}
 .mmws .footrow{flex:0 0 var(--kbar-h);height:var(--kbar-h);display:flex;align-items:stretch;z-index:60;background:#0f0c13d9;backdrop-filter:blur(8px);border-top:1px solid var(--line2)}
 .mmws .vbadge{width:var(--aside-ef);flex:0 0 var(--aside-ef);height:100%;display:flex;align-items:center;justify-content:flex-start;gap:7px;cursor:pointer;border-right:1px solid var(--line2);padding:0 10px;font:600 9.5px/1 ui-monospace,Menlo,monospace;letter-spacing:.11em;color:#c9a8f0}
-.mmws.sinFiltros .vbadge{width:auto;flex:0 0 auto}
 .mmws .vbadge:hover{background:#171320;color:#e6d3f2}
 .mmws .vbadge b{font-weight:700;color:#eee6f3}
 .mmws .vbadge i{width:5px;height:5px;border-radius:50%;background:#8fd0f5;box-shadow:0 0 6px #8fd0f5aa;font-style:normal}
@@ -953,6 +1036,7 @@ async function loadCatalogue(ctx) {
       mc,
       claves,
       resumen,
+      vacia: Boolean(idx.vacia != null ? idx.vacia : mc <= 0 && (!claves || claves.length === 0)),
       esCron: Boolean(idx.esCron || /^cron[_-]/i.test(id) || /^cron[_-]/i.test(prof)),
       _canonical: Boolean(g),
     })
@@ -970,8 +1054,11 @@ async function loadCatalogue(ctx) {
 
   // Compute search synonym index per row once
   for (const d of merged) {
-    d._s = sin([d.desc, d.tema, d.sujeto, d.tag1, d.tag2, d.pilar, d.n, d.id].join(' '))
+    d._s = sin([d.raw, d.desc, d.resumen, d.tema, d.sujeto, d.tag1, d.tag2, d.pilar, d.n, d.id].join(' '))
   }
+
+  const vaciasCron = merged.filter((d) => esCron(d) && d.vacia).length
+  const jobsActivos = Number((idxData && idxData.cron_info && idxData.cron_info.jobs_activos) || 0)
 
   const canonicalCount = merged.filter((d) => d._canonical).length
   return {
@@ -980,6 +1067,7 @@ async function loadCatalogue(ctx) {
     canonicalCount,
     newCount: merged.length - canonicalCount,
     fromLiveRpc: liveById.size > 0,
+    cronInfo: { vacias: vaciasCron, jobs_activos: jobsActivos },
     errors,
   }
 }
@@ -992,6 +1080,7 @@ function App({ ctx }) {
   const [sessions, setSessions] = useState([])
   const [loading, setLoading] = useState(true)
   const [rpcErrors, setRpcErrors] = useState([])
+  const [cronInfo, setCronInfo] = useState({ vacias: 0, jobs_activos: 0 })
   const [q, setQ] = useState('')
   const [f, setF] = useState({
     tag1: null,
@@ -1014,14 +1103,14 @@ function App({ ctx }) {
   const [expanded, setExpanded] = useState(() => new Set())
   const [openNodes, setOpenNodes] = useState(() => new Set())
   const [showElim, setShowElim] = useState(false)
+  const [showVacio, setShowVacio] = useState(false)
   const [showCron, setShowCron] = useState(false)
-  const [sinFiltros, setSinFiltros] = useState(false)
   const [orden, setOrden] = useState({ k: 'fecha', asc: false })
   const [sel, setSel] = useState(null)
   const [editModal, setEditModal] = useState(false)
   const [editVal, setEditVal] = useState('')
   const [vModal, setVModal] = useState(false)
-  const [btnMsg, setBtnMsg] = useState({ copia: '', expc: '', updb: '', pcopia: '' })
+  const [btnMsg, setBtnMsg] = useState({ copia: '', expc: '', updb: '', pcopia: '', avcopia: '' })
   const [lang, setLang] = useState(() => {
     try {
       return localStorage.getItem('mmws-lang') === 'en' ? 'en' : 'es'
@@ -1045,6 +1134,7 @@ function App({ ctx }) {
   const refreshData = async (reportBtn = false) => {
     const res = await loadCatalogue(ctx)
     setSessions(res.sessions)
+    setCronInfo(res.cronInfo || { vacias: 0, jobs_activos: 0 })
     setRpcErrors(Array.isArray(res.errors) ? res.errors : [])
     setLoading(false)
     // Open the newest year node in Fecha tree automatically
@@ -1072,6 +1162,7 @@ function App({ ctx }) {
         const res = await loadCatalogue(ctx)
         if (!alive) return
         setSessions(res.sessions)
+        setCronInfo(res.cronInfo || { vacias: 0, jobs_activos: 0 })
         setRpcErrors(Array.isArray(res.errors) ? res.errors : [])
         const years = [...new Set(res.sessions.map((d) => (d.mes || '').slice(0, 4)).filter(Boolean))].sort().reverse()
         if (years.length) {
@@ -1125,8 +1216,8 @@ function App({ ctx }) {
   }, [])
 
   // Lazily hydrate user messages from live session.resume when opening a session with no cached claves
-  const selectSession = async (d) => {
-    if (sel && sel.id === d.id) {
+  const selectSession = async (d, keepOpen = false) => {
+    if (!keepOpen && sel && sel.id === d.id) {
       setSel(null)
       return
     }
@@ -1153,13 +1244,36 @@ function App({ ctx }) {
     }
   }
 
+  // Mutually exclusive state filter: Borradas | Vacío | Cron
+  const setEstado = (cual) => {
+    const yaActivo =
+      (cual === 'elim' && showElim) ||
+      (cual === 'vacio' && showVacio) ||
+      (cual === 'cron' && showCron)
+    setShowElim(!yaActivo && cual === 'elim')
+    setShowVacio(!yaActivo && cual === 'vacio')
+    setShowCron(!yaActivo && cual === 'cron')
+  }
+
   const nums = useMemo(() => numSel(q), [q])
   const qs = useMemo(() => (nums ? '' : sin(q)), [q, nums])
   const qNorm = useMemo(() => norm(q), [q])
 
   const pass = (d, ...skips) => {
-    if (!showElim && !skips.includes('elim') && esBorrada(d)) return false
-    if (!showCron && !skips.includes('cron') && esCron(d)) return false
+    const modo = showElim ? 'elim' : showVacio ? 'vacio' : showCron ? 'cron' : null
+    if (!skips.includes('estado')) {
+      if (modo === 'elim') {
+        if (!esBorrada(d)) return false
+      } else if (modo === 'vacio') {
+        if (!d.vacia) return false
+      } else if (modo === 'cron') {
+        if (!esCron(d)) return false
+      } else {
+        if (!skips.includes('elim') && esBorrada(d)) return false
+        if (!skips.includes('cron') && esCron(d)) return false
+        if (!skips.includes('vacio') && d.vacia) return false
+      }
+    }
     if (!skips.includes('tag3') && f.tag3 && d.pilar !== f.tag3) return false
     if (!skips.includes('tag3i') && f.tag3i && d.tag3 !== f.tag3i) return false
     if (!skips.includes('tag1') && f.tag1 && d.tag1 !== f.tag1) return false
@@ -1185,7 +1299,7 @@ function App({ ctx }) {
 
   const visible = useMemo(
     () => sessions.filter((d) => pass(d)),
-    [sessions, f, q, nums, qs, showElim, showCron]
+    [sessions, f, q, nums, qs, showElim, showVacio, showCron]
   )
 
   const sorted = useMemo(() => {
@@ -1238,6 +1352,7 @@ function App({ ctx }) {
   )
 
   const nElim = useMemo(() => sessions.filter(esBorrada).length, [sessions])
+  const nVacio = useMemo(() => sessions.filter((d) => d.vacia).length, [sessions])
   const nCron = useMemo(() => sessions.filter(esCron).length, [sessions])
 
   // Active chips list
@@ -1255,8 +1370,8 @@ function App({ ctx }) {
     if (f.anio) out.push(['anio', f.anio])
     if (f.mes) out.push(['mes', nombreMes(f.mes, lang)])
     if (f.sem) {
-      const [mPart, wPart] = f.sem.split('|')
-      out.push(['sem', `${t('semAbbr')} ${(wPart || '').split('-W')[1] || ''} · ${nombreMes(mPart, lang)}`])
+      const [, wPart] = f.sem.split('|')
+      out.push(['sem', `${t('semAbbr')} ${(wPart || '').split('-W')[1] || ''}`])
     }
     if (q) out.push(['q', `“${q}”`])
     if (f.dia) out.push(['dia', f.dia])
@@ -1376,25 +1491,256 @@ function App({ ctx }) {
     const k = (v, alt) => (v === undefined || v === null || v === '' ? alt || '—' : v)
     const L = [
       d.raw,
-      'sujeto: ' + d.sujeto + ' · ordinal ' + String(d.mmm).padStart(3, '0'),
-      'tag1: ' + k(d.tag1) + ' | tag2: ' + k(d.tag2),
-      'pilar: ' + k(d.pilar || d.tag3) + ' | país: ' + k(d.pais || d.tag4) + ' | año: ' + k(d.anio || d.tag5),
-      'máquina: ' + k(d.tag6),
-      'descripción: ' + k(d.desc),
-      'fecha: ' + k(d.fecha) + ' · mensajes: ' + k(d.mc) + ' · posts: ' + k(d.posts),
-      'costo: ' + fmtC(d.costo) + ' · horas: ' + fmtH(d.horas) + ' · tokens: ' + (d.tok_tot ? Math.round(d.tok_tot / 1000) + 'k' : '—'),
-      'motor: ' + k(d.motor) + (d.motor_det ? ' (' + d.motor_det + ')' : '') + ' · autor: ' + k(d.autor) + ' · perfil: ' + k(d.prof),
+      t('sujeto').toLowerCase() + ': ' + d.sujeto + ' · ordinal ' + String(d.mmm).padStart(3, '0'),
+      'tag1 (' + t('lblPlataforma').toLowerCase() + '): ' + k(d.tag1) + ' | tag2 (' + t('lblFamilia').toLowerCase() + '): ' + k(d.tag2),
+      'tag3 (' + t('lblPilar').toLowerCase() + '): ' + k(d.pilar || d.tag3) + ' | tag4 (' + t('lblPais').toLowerCase() + '): ' + k(d.pais || d.tag4) + ' | tag5 (' + t('lblAnio').toLowerCase() + '): ' + k(d.anio || d.tag5),
+      'tag6 (' + t('lblMaquina').toLowerCase() + '): ' + k(d.tag6),
+      t('descripcion') + ': ' + k(d.desc),
+      t('fecha').toLowerCase() + ': ' + k(d.fecha) + ' · ' + t('mensajes').toLowerCase() + ': ' + k(d.mc) + ' · posts: ' + k(d.posts),
+      t('costo').toLowerCase() + ': ' + fmtC(d.costo) + ' · ' + t('horas').toLowerCase() + ': ' + fmtHoras(d.horas) + ' · tokens: ' + (d.tok_tot ? Math.round(d.tok_tot / 1000) + 'k' : '—'),
+      t('motor').toLowerCase() + ': ' + k(d.motor) + (d.motor_det ? ' (' + d.motor_det + ')' : '') + ' · ' + t('autor').toLowerCase() + ': ' + k(d.autor) + ' · ' + t('perfil').toLowerCase() + ': ' + k(d.prof),
     ]
     const cl = (d.claves || []).map((x) => String(x).replace(/\s+/g, ' ')).filter((x) => !esRuido(x))
     if (cl.length) {
-      L.push('--- mensajes clave del usuario ---')
+      L.push('--- ' + t('mensajes').toLowerCase() + ' ---')
       cl.slice(0, 6).forEach((x) => L.push('> ' + x.slice(0, 400)))
     } else if (d.resumen && !esRuido(d.resumen)) {
-      L.push('--- resumen ---')
+      L.push('--- ' + (lang === 'en' ? 'summary' : 'resumen') + ' ---')
       L.push('> ' + String(d.resumen).replace(/\s+/g, ' ').slice(0, 600))
     }
     L.push('id: ' + d.id)
     return L.join('\n')
+  }
+
+  // Sequential navigation across visible rows from the detail card
+  const filasVisibles = () => sorted
+
+  const sesionActualIdx = (rows = sorted) => {
+    if (!sel) return -1
+    return rows.findIndex((r) => r.id === sel.id)
+  }
+
+  const updNaveg = () => {
+    const rows = filasVisibles()
+    const i = sesionActualIdx(rows)
+    return {
+      prevDisabled: i <= 0,
+      nextDisabled: i < 0 || i >= rows.length - 1,
+    }
+  }
+
+  const navSesion = (dir) => {
+    const rows = filasVisibles()
+    if (!rows.length) return
+    let i = sesionActualIdx(rows)
+    i = i < 0 ? 0 : Math.max(0, Math.min(rows.length - 1, i + dir))
+    const target = rows[i]
+    if (!target) return
+    try {
+      const tr = typeof document !== 'undefined' && document.querySelector(`#tb tbody tr.r[data-id="${target.id}"]`)
+      if (tr && typeof tr.getBoundingClientRect === 'function') {
+        const rect = tr.getBoundingClientRect()
+        const vh = window.innerHeight || document.documentElement.clientHeight
+        const margenArriba = vh * 0.22
+        const margenAbajo = vh * 0.74
+        if (rect.top < margenArriba || rect.bottom > margenAbajo) {
+          tr.scrollIntoView({ block: 'center', behavior: 'smooth' })
+        }
+      }
+    } catch (_) {
+      /* ignore in headless tests */
+    }
+    selectSession(target, true)
+  }
+
+  // Notice banner for empty cron sessions
+  const pintaAviso = () => {
+    const n = cronInfo.vacias || 0
+    const j = cronInfo.jobs_activos || 0
+    if (n <= 0 && j <= 0) return null
+    const tit = t('avTit').replace('{n}', n)
+    const cuerpo = t('avCuerpo').replace('{j}', j)
+    const act = j > 0 ? t('avActivos').replace('{j}', j) : ''
+    const copyAviso = async () => {
+      const ok = await copyText(ctx, t('avTexto'))
+      setBtnMsg((p) => ({ ...p, avcopia: ok ? t('avCopiado') : '✗' }))
+      setTimeout(() => setBtnMsg((p) => ({ ...p, avcopia: '' })), 2400)
+    }
+    return h(
+      'div',
+      { id: 'avisoCron', className: 'aviso on' },
+      h(
+        'div',
+        { className: 'avhead' },
+        h('b', null, '⚠ ' + tit),
+        act ? h('span', { className: 'avpill' }, act) : null,
+        h(
+          'button',
+          { id: 'avCopiar', onClick: copyAviso },
+          btnMsg.avcopia || t('avCopiar')
+        )
+      ),
+      h(
+        'div',
+        null,
+        h('span', { dangerouslySetInnerHTML: { __html: cuerpo } }),
+        ' ',
+        h('span', { dangerouslySetInnerHTML: { __html: t('avConsejo') } })
+      )
+    )
+  }
+
+  // Detail card body renderer (re-evaluates cleanly when switching ES|EN)
+  const pintaPanel = (d) => {
+    if (!d) return h('div', { className: 'pbody' }, t('elegir'))
+    const { prevDisabled, nextDisabled } = updNaveg()
+    const selClaves = (d.claves || []).map((x) => String(x)).filter((x) => !esRuido(x))
+    return h(
+      'div',
+      { className: 'pbody' },
+      h(
+        'div',
+        { className: 'pthead' },
+        h('div', { className: 'pname', id: 'pname' }, d.raw),
+        h(
+          'div',
+          { className: 'pnaveg' },
+          h(
+            'button',
+            {
+              className: 'navb',
+              id: 'pPrev',
+              title: t('navPrev'),
+              disabled: prevDisabled,
+              onClick: (e) => {
+                e.stopPropagation()
+                navSesion(-1)
+              },
+            },
+            '▲'
+          ),
+          h(
+            'button',
+            {
+              className: 'navb',
+              id: 'pNext',
+              title: t('navNext'),
+              disabled: nextDisabled,
+              onClick: (e) => {
+                e.stopPropagation()
+                navSesion(1)
+              },
+            },
+            '▼'
+          )
+        )
+      ),
+      h('h3', { className: 'ptitle', id: 'ptitle' }, d.desc),
+      d.resumen && !esRuido(d.resumen) ? h('p', { className: 'psum', id: 'psum' }, d.resumen) : null,
+      h(
+        'div',
+        { className: 'kv', id: 'pkv' },
+        h('div', null, t('sujeto')),
+        h(
+          'div',
+          null,
+          h('b', null, d.sujeto),
+          ' · ' + String(d.mmm || 1).padStart(3, '0'),
+          d.vacia
+            ? h(
+                'span',
+                {
+                  className: 'pill',
+                  style: {
+                    marginLeft: '6px',
+                    background: '#2a1d1f',
+                    borderColor: '#5a3a40',
+                    color: '#e6b8c0',
+                  },
+                  title: t('vacioTitle'),
+                },
+                t('vacio')
+              )
+            : null
+        ),
+        h('div', { style: { gridColumn: '1/-1', borderTop: '1px solid var(--line)', margin: '6px 0 2px' } }),
+        h('div', null, 'tag1 · ' + t('lblPlataforma')),
+        h('div', null, h('span', { className: 'pill tag1' }, d.tag1 || '—')),
+        h('div', null, 'tag2 · ' + t('lblFamilia')),
+        h('div', null, h('span', { className: 'pill tag2' }, d.tag2 || '—')),
+        h('div', null, 'tag3 · ' + t('lblPilar')),
+        h('div', null, h('span', { className: 'pill tag3' }, d.pilar || d.tag3 || '—')),
+        h('div', null, 'tag4 · ' + t('lblPais')),
+        h('div', null, d.pais || d.tag4 ? h('span', { className: 'pill tag4' }, d.pais || d.tag4) : '—'),
+        h('div', null, 'tag5 · ' + t('lblAnio')),
+        h('div', null, d.anio || d.tag5 ? h('span', { className: 'pill tag5' }, d.anio || d.tag5) : '—'),
+        h('div', null, 'tag6 · ' + t('lblMaquina')),
+        h('div', null, h('span', { className: 'pill tag6' }, d.tag6 || '—')),
+        h('div', null, 'tag7 · ' + t('lblLibre')),
+        h('div', null, d.tag7 || '—'),
+        h('div', null, 'tag8 · ' + t('lblLibre')),
+        h('div', null, d.tag8 || '—'),
+        h('div', null, 'tag9 · ' + t('lblLibre')),
+        h('div', null, d.tag9 || '—'),
+        h('div', { style: { gridColumn: '1/-1', borderTop: '1px solid var(--line)', margin: '6px 0 2px' } }),
+        h('div', null, t('ruta')),
+        h('div', null, `${d.dom || 'Software'} › ${d.tag5 || '—'} › ${d.tag1 || '—'}`),
+        h('div', null, t('costo')),
+        h('div', null, fmtC(d.costo)),
+        h('div', null, t('horas')),
+        h('div', null, fmtHoras(d.horas)),
+        h('div', null, t('mensajes')),
+        h('div', null, d.mc),
+        h('div', null, t('fecha')),
+        h('div', null, d.fecha),
+        h('div', null, t('motor')),
+        h('div', null, d.motor || '—'),
+        h('div', null, t('autor')),
+        h('div', null, d.autor || '—'),
+        h('div', null, t('perfil')),
+        h('div', null, d.prof)
+      ),
+      h('h4', { style: { marginTop: '14px' } }, t('mensajes')),
+      h(
+        'ul',
+        { className: 'klist', id: 'pklist' },
+        (selClaves.length ? selClaves : [t('sinMensajes')]).map((c, i) => h('li', { key: i }, c))
+      ),
+      h(
+        'div',
+        { className: 'why', id: 'pwhy' },
+        h('b', null, t('adn') + ': '),
+        t('sujeto').toLowerCase() + ' ',
+        h('b', null, d.sujeto),
+        ' · tag1 ',
+        h('b', null, d.tag1 || '—'),
+        ' (' + t('lblPlataforma').toLowerCase() + ') · tag2 ',
+        h('b', null, d.tag2 || '—'),
+        ' (' + t('lblFamilia').toLowerCase() + ') · tag3 ',
+        h('b', null, d.pilar || d.tag3 || '—'),
+        ' · ' + t('lblMaquina').toLowerCase() + ' ',
+        h('b', null, d.tag6 || '—'),
+        '. ' + t('adnNota')
+      ),
+      h(
+        'button',
+        {
+          id: 'pedit',
+          style: { marginTop: '6px' },
+          onClick: () => {
+            setEditVal(d.raw)
+            setEditModal(true)
+          },
+        },
+        t('editarBtn')
+      ),
+      h(
+        'div',
+        { className: 'pidfoot', id: 'pidfoot' },
+        h('span', null, 'id'),
+        (d.prof && d.prof !== 'default' ? `· ${t('perfil').toLowerCase()} ${d.prof} · ` : '') + d.id
+      )
+    )
   }
 
   const copyCard = async () => {
@@ -1471,11 +1817,24 @@ function App({ ctx }) {
     })
   }
 
+  // Only keep one month open at a time when expanding a month node
+  const openSoloUnMes = (km) => {
+    setOpenNodes((prev) => {
+      const next = new Set()
+      for (const k of prev) {
+        if (!k.startsWith('m:') || k === km) next.add(k)
+      }
+      next.add(km)
+      return next
+    })
+  }
+
   // Render a foldable radio facet block (tag1, tag2, tag3i, tag3/pilar)
   const renderFacetBlock = (blockId, labelKey, stateKey, fieldName, sortSpecial) => {
     const isOff = folded.has(blockId)
     const { c, allValues } = facetCounts([stateKey === 'tag3' ? 'tag3' : stateKey === 'tag3i' ? 'tag3i' : stateKey], fieldName)
-    const allKeys = [...allValues]
+    const FIJOS1 = blockId === 'tag1' ? ['Bot'] : []
+    const allKeys = [...new Set([...allValues, ...FIJOS1])]
       .filter((k) => k && ((c[k] || 0) > 0 || f[stateKey] === k))
       .sort((a, b) => {
         if (sortSpecial) {
@@ -1485,7 +1844,12 @@ function App({ ctx }) {
         return (c[b] || 0) - (c[a] || 0)
       })
     const isExp = expanded.has(blockId) || allKeys.indexOf(f[stateKey]) >= 10
-    const shown = isExp ? allKeys : allKeys.slice(0, 10)
+    let shown = isExp ? allKeys : allKeys.slice(0, 10)
+    if (blockId === 'tag1') {
+      FIJOS1.forEach((fk) => {
+        if (allKeys.includes(fk) && !shown.includes(fk)) shown = [...shown, fk]
+      })
+    }
 
     return [
       h(
@@ -1525,7 +1889,7 @@ function App({ ctx }) {
               ? h(
                   'div',
                   { className: 'more', onClick: () => toggleExpand(blockId) },
-                  isExp ? t('Menos') : `+ ${allKeys.length - 10} ${t('Mas')}`
+                  isExp ? t('Menos') : `+ ${allKeys.length - shown.length} ${t('Mas')}`
                 )
               : null
           )
@@ -1614,12 +1978,13 @@ function App({ ctx }) {
                     className: 'hd',
                     onClick: (e) => {
                       if (e.target.classList && e.target.classList.contains('caret')) {
-                        toggleNode(km)
+                        if (om) toggleNode(km)
+                        else openSoloUnMes(km)
                         return
                       }
                       const nextMes = f.mes === m ? null : m
                       setF((p) => ({ ...p, mes: nextMes, anio: nextMes ? m.slice(0, 4) : p.anio, sem: null }))
-                      if (nextMes) setOpenNodes((prev) => new Set([...prev, km]))
+                      if (nextMes) openSoloUnMes(km)
                     },
                   },
                   h('span', { className: 'caret' }, om ? '▾' : '▸'),
@@ -1722,7 +2087,7 @@ function App({ ctx }) {
     setOrden((p) => (p.k === k ? { k, asc: !p.asc } : { k, asc: !isNum }))
   }
 
-  // Build two-line rows matching simulator_template.html
+  // Build two-line rows matching 2026-11-11_simulador-solo-codigo.html
   const tableRows = sorted.flatMap((d) => {
     const cut = d.raw.lastIndexOf(']')
     const head = (cut > 0 ? d.raw.slice(0, cut + 1) : `[${d.sujeto}] ${String(d.mmm).padStart(3, '0')}`).replace(
@@ -1737,7 +2102,7 @@ function App({ ctx }) {
       h(
         'tr',
         {
-          className: 't',
+          className: 't' + (isSel ? ' sele' : ''),
           key: d.id + '-t',
           onClick: () => selectSession(d),
         },
@@ -1753,6 +2118,7 @@ function App({ ctx }) {
         'tr',
         {
           className: 'r' + (isSel ? ' sele' : ''),
+          'data-id': d.id,
           key: d.id + '-r',
           onClick: () => selectSession(d),
         },
@@ -1810,18 +2176,16 @@ function App({ ctx }) {
             : null
         ),
         h('td', { className: 'num tight cen' }, fmtC(d.costo)),
-        h('td', { className: 'num tight cen' }, fmtH(d.horas)),
+        h('td', { className: 'num tight cen' }, fmtHoras(d.horas)),
         h('td', { className: 'num tight cen', style: { color: 'var(--tx3)' } }, fmtT(d.tok_tot)),
         h('td', { className: 'num tight cen', style: { color: 'var(--tx3)' } }, fmtP(d.posts))
       ),
     ]
   })
 
-  const selClaves = sel ? (sel.claves || []).map((x) => String(x)).filter((x) => !esRuido(x)) : []
-
   return h(
     'div',
-    { className: 'mmws' + (sinFiltros ? ' sinFiltros' : '') },
+    { className: 'mmws' },
     h('style', null, CSS),
 
     /* ---------- Header ---------- */
@@ -1842,6 +2206,7 @@ function App({ ctx }) {
           'button',
           {
             className: 'ghost langsw',
+            id: 'btnLang',
             onClick: toggleLang,
             title: 'Idioma de la interfaz · Interface language',
           },
@@ -1898,134 +2263,146 @@ function App({ ctx }) {
       h(
         'aside',
         null,
-        h('input', {
-          type: 'text',
-          placeholder: t('buscar'),
-          value: q,
-          onChange: (e) => setQ(e.target.value),
-          style: {
-            width: '100%',
-            background: '#100d13',
-            border: '1px solid var(--line2)',
-            color: 'var(--tx)',
-            borderRadius: '6px',
-            padding: '5px 8px',
-            fontSize: '12.5px',
-          },
-        }),
-        renderFacetBlock('tag1', 'tag1', 'tag1', 'tag1', false),
-        renderFacetBlock('tag2', 'tag2', 'tag2', 'tag2', false),
-        renderFacetBlock('tag3', 'tag3', 'tag3i', 'tag3', false),
-        renderFacetBlock('tag4', 'tema', 'tag3', 'pilar', true),
-
-        h('h4', null, t('fecha')),
-        h('div', null, renderFechaTree()),
-
-        h('h4', null, t('diaExacto')),
-        h('input', {
-          type: 'date',
-          value: f.dia,
-          onChange: (e) => setF((p) => ({ ...p, dia: e.target.value })),
-          style: {
-            width: '100%',
-            background: '#100d13',
-            border: '1px solid var(--line2)',
-            color: 'var(--tx)',
-            borderRadius: '6px',
-            padding: '5px 8px',
-            fontSize: '12.5px',
-          },
-        }),
-
-        h('h4', null, t('rango')),
         h(
           'div',
-          { style: { display: 'flex', gap: '6px' } },
+          { className: 'abarra' },
           h('input', {
-            type: 'date',
-            value: f.d1,
-            onChange: (e) => setF((p) => ({ ...p, d1: e.target.value })),
+            id: 'q',
+            type: 'text',
+            placeholder: t('buscar'),
+            value: q,
+            onChange: (e) => setQ(e.target.value),
             style: {
-              flex: 1,
+              width: '100%',
               background: '#100d13',
               border: '1px solid var(--line2)',
               color: 'var(--tx)',
               borderRadius: '6px',
-              padding: '4px',
-              fontSize: '11.5px',
-            },
-          }),
-          h('input', {
-            type: 'date',
-            value: f.d2,
-            onChange: (e) => setF((p) => ({ ...p, d2: e.target.value })),
-            style: {
-              flex: 1,
-              background: '#100d13',
-              border: '1px solid var(--line2)',
-              color: 'var(--tx)',
-              borderRadius: '6px',
-              padding: '4px',
-              fontSize: '11.5px',
+              padding: '5px 8px',
+              fontSize: '12.5px',
             },
           })
         ),
-
-        h(
-          'h4',
-          null,
-          h('span', null, t('motor')),
-          h('span', null, (f.motor ? t('de1') : '') + motorStats.keys.length + ' ' + t('motores'))
-        ),
         h(
           'div',
-          null,
-          motorStats.keys.map((k) =>
-            h(
-              'label',
-              {
-                key: k,
-                className: 'opt' + (f.motor === k ? ' sel' : '') + (k === 'Sin dato' ? ' empty' : ''),
-                onClick: (e) => {
-                  e.preventDefault()
-                  setF((p) => ({ ...p, motor: p.motor === k ? null : k }))
-                },
-              },
-              h('input', { type: 'radio', checked: f.motor === k, readOnly: true }),
-              h('span', null, k),
-              h('span', { className: 'n' }, motorStats.cnt[k])
-            )
-          )
-        ),
+          { className: 'ascroll' },
+          renderFacetBlock('tag1', 'tag1', 'tag1', 'tag1', false),
+          renderFacetBlock('tag2', 'tag2', 'tag2', 'tag2', false),
+          renderFacetBlock('tag3', 'tag3', 'tag3i', 'tag3', false),
+          renderFacetBlock('tag4', 'tema', 'tag3', 'pilar', true),
 
-        h(
-          'h4',
-          null,
-          h('span', null, t('autor')),
-          h('span', null, (f.autor ? t('de1') : '') + autorStats.keys.length + ' ' + t('autores'))
-        ),
-        h(
-          'div',
-          null,
-          autorStats.keys.map((k) =>
-            h(
-              'label',
-              {
-                key: k,
-                className: 'opt' + (f.autor === k ? ' sel' : ''),
-                onClick: (e) => {
-                  e.preventDefault()
-                  setF((p) => ({ ...p, autor: p.autor === k ? null : k }))
-                },
-              },
-              h('input', { type: 'radio', checked: f.autor === k, readOnly: true }),
-              h('span', null, k),
-              h('span', { className: 'n' }, autorStats.cnt[k])
-            )
-          )
-        ),
+          h('h4', null, t('fecha')),
+          h('div', null, renderFechaTree()),
 
-        h('p', { className: 'hint' }, t('hintUnica'))
+          h('h4', null, t('diaExacto')),
+          h('input', {
+            id: 'dia',
+            type: 'date',
+            value: f.dia,
+            onChange: (e) => setF((p) => ({ ...p, dia: e.target.value })),
+            style: {
+              width: '100%',
+              background: '#100d13',
+              border: '1px solid var(--line2)',
+              color: 'var(--tx)',
+              borderRadius: '6px',
+              padding: '5px 8px',
+              fontSize: '12.5px',
+            },
+          }),
+
+          h('h4', null, t('rango')),
+          h(
+            'div',
+            { style: { display: 'flex', gap: '6px' } },
+            h('input', {
+              id: 'd1',
+              type: 'date',
+              value: f.d1,
+              onChange: (e) => setF((p) => ({ ...p, d1: e.target.value })),
+              style: {
+                flex: 1,
+                background: '#100d13',
+                border: '1px solid var(--line2)',
+                color: 'var(--tx)',
+                borderRadius: '6px',
+                padding: '4px',
+                fontSize: '11.5px',
+              },
+            }),
+            h('input', {
+              id: 'd2',
+              type: 'date',
+              value: f.d2,
+              onChange: (e) => setF((p) => ({ ...p, d2: e.target.value })),
+              style: {
+                flex: 1,
+                background: '#100d13',
+                border: '1px solid var(--line2)',
+                color: 'var(--tx)',
+                borderRadius: '6px',
+                padding: '4px',
+                fontSize: '11.5px',
+              },
+            })
+          ),
+
+          h(
+            'h4',
+            null,
+            h('span', null, t('motor')),
+            h('span', null, (f.motor ? t('de1') : '') + motorStats.keys.length + ' ' + t('motores'))
+          ),
+          h(
+            'div',
+            null,
+            motorStats.keys.map((k) =>
+              h(
+                'label',
+                {
+                  key: k,
+                  className: 'opt' + (f.motor === k ? ' sel' : '') + (k === 'Sin dato' ? ' empty' : ''),
+                  onClick: (e) => {
+                    e.preventDefault()
+                    setF((p) => ({ ...p, motor: p.motor === k ? null : k }))
+                  },
+                },
+                h('input', { type: 'radio', checked: f.motor === k, readOnly: true }),
+                h('span', null, k),
+                h('span', { className: 'n' }, motorStats.cnt[k])
+              )
+            )
+          ),
+
+          h(
+            'h4',
+            null,
+            h('span', null, t('autor')),
+            h('span', null, (f.autor ? t('de1') : '') + autorStats.keys.length + ' ' + t('autores'))
+          ),
+          h(
+            'div',
+            null,
+            autorStats.keys.map((k) =>
+              h(
+                'label',
+                {
+                  key: k,
+                  className: 'opt' + (f.autor === k ? ' sel' : ''),
+                  onClick: (e) => {
+                    e.preventDefault()
+                    setF((p) => ({ ...p, autor: p.autor === k ? null : k }))
+                  },
+                },
+                h('input', { type: 'radio', checked: f.autor === k, readOnly: true }),
+                h('span', null, k),
+                h('span', { className: 'n' }, autorStats.cnt[k])
+              )
+            )
+          ),
+
+          h('p', { className: 'hint' }, t('hintUnica'))
+        )
       ),
 
       /* Main Session List */
@@ -2033,7 +2410,12 @@ function App({ ctx }) {
         'main',
         {
           onClick: (e) => {
-            if (sel && !e.target.closest('tr.t') && !e.target.closest('tr.r')) {
+            if (
+              sel &&
+              !e.target.closest('tr.t') &&
+              !e.target.closest('tr.r') &&
+              !e.target.closest('#tabInfo')
+            ) {
               setSel(null)
             }
           },
@@ -2045,38 +2427,96 @@ function App({ ctx }) {
             'div',
             { className: 'trow' },
             h(
+              'span',
+              { id: 'acciones' },
+              h(
+                'button',
+                {
+                  id: 'clr',
+                  className: 'clrbtn primary' + (activeChips.length ? '' : ' ghost'),
+                  disabled: !activeChips.length,
+                  onClick: limpiar,
+                  title: 'Limpiar todos los filtros activos',
+                },
+                t('limpiar')
+              ),
+              h(
+                'button',
+                {
+                  id: 'copia',
+                  className: 'ghost',
+                  onClick: copiarResultado,
+                  title: 'Copia los nombres e IDs de las sesiones visibles al portapapeles',
+                },
+                btnMsg.copia || `${t('copiar')} · ${visible.length}`
+              ),
+              h(
+                'button',
+                {
+                  id: 'expc',
+                  className: 'ghost',
+                  onClick: exportarCorrecciones,
+                  title: 'Descarga CSV de las sesiones visibles para anotar correcciones',
+                },
+                btnMsg.expc || `${t('exportar')} · ${visible.length}`
+              )
+            ),
+            h('span', { className: 'sub', style: { fontSize: '11.5px', marginLeft: '14px' } }, t('mostrarLbl')),
+            h(
               'button',
               {
-                onClick: () => setSinFiltros((v) => !v),
-                title: 'Mostrar u ocultar los filtros',
+                id: 'btnElim',
+                className: showElim ? 'on' : '',
+                onClick: () => setEstado('elim'),
+                title: 'Mostrar u ocultar sesiones marcadas como borradas',
               },
-              '☰ Filtros'
-            ),
-            h('span', { className: 'sub', style: { fontSize: '11.5px' } }, t('ordenar')),
-            h(
-              'button',
-              { className: orden.k === 'n' ? 'on' : '', onClick: () => sortCol('n', true) },
-              t('colN')
+              (showElim ? t('hideDel') : t('showDel')) + ' · ' + nElim
             ),
             h(
               'button',
-              { className: orden.k === 'costo' ? 'on' : '', onClick: () => sortCol('costo', true) },
-              t('colCosto')
+              {
+                id: 'btnVacio',
+                className: showVacio ? 'on' : '',
+                onClick: () => setEstado('vacio'),
+                title: t('vacioTitle'),
+              },
+              (showVacio ? t('hideVacio') : t('showVacio')) + ' · ' + nVacio
             ),
             h(
               'button',
-              { className: orden.k === 'horas' ? 'on' : '', onClick: () => sortCol('horas', true) },
-              t('colHoras')
+              {
+                id: 'btnCron',
+                className: showCron ? 'on' : '',
+                onClick: () => setEstado('cron'),
+                title: 'Mostrar u ocultar sesiones automáticas de cron',
+              },
+              (showCron ? t('hideCron') : t('showCron')) + ' · ' + nCron
             ),
+            h('span', { style: { flex: 1, minWidth: 0 } })
+          ),
+          h(
+            'div',
+            { className: 'chipsrow' },
             h(
-              'button',
-              { className: orden.k === 'fecha' ? 'on' : '', onClick: () => sortCol('fecha', true) },
-              t('colFecha')
+              'div',
+              { className: 'chips', id: 'chips' },
+              h(
+                'span',
+                { id: 'chipwrap', className: 'chipwrap' },
+                activeChips.map(([k, val]) =>
+                  h(
+                    'span',
+                    { key: k, className: 'chip' },
+                    val,
+                    ' ',
+                    h('b', { onClick: () => removeChip(k) }, '✕')
+                  )
+                )
+              )
             ),
-            h('span', { style: { flex: 1, minWidth: 0 } }),
             h(
               'span',
-              { className: 'counter' },
+              { className: 'counter', id: 'counter' },
               t('mostrando') + ' ',
               h('b', null, visible.length),
               ' ' + t('de') + ' ',
@@ -2117,66 +2557,25 @@ function App({ ctx }) {
                     ),
                   ]
                 : null
-            ),
-            h(
-              'button',
-              {
-                className: showElim ? 'on' : '',
-                onClick: () => setShowElim((v) => !v),
-              },
-              (showElim ? t('hideDel') : t('showDel')) + ' · ' + nElim
-            ),
-            h(
-              'button',
-              {
-                className: showCron ? 'on' : '',
-                onClick: () => setShowCron((v) => !v),
-              },
-              (showCron ? t('hideCron') : t('showCron')) + ' · ' + nCron
             )
           ),
           h(
-            'div',
-            { className: 'chips' },
-            h(
-              'button',
-              {
-                className: 'clrbtn primary' + (activeChips.length ? '' : ' ghost'),
-                disabled: !activeChips.length,
-                onClick: limpiar,
+            'button',
+            {
+              id: 'tabInfo',
+              title: t('tabInfoTitle'),
+              onClick: (e) => {
+                e.stopPropagation()
+                if (sorted.length > 0) {
+                  selectSession(sorted[0], true)
+                }
               },
-              t('limpiar')
-            ),
-            h(
-              'button',
-              { className: 'ghost', onClick: copiarResultado },
-              btnMsg.copia || `${t('copiar')} · ${visible.length}`
-            ),
-            h(
-              'button',
-              { className: 'ghost', onClick: exportarCorrecciones },
-              btnMsg.expc || `${t('exportar')} · ${visible.length}`
-            ),
-            h(
-              'button',
-              { className: 'ghost', onClick: () => refreshData(true) },
-              btnMsg.updb || t('actualizar')
-            ),
-            h(
-              'span',
-              { className: 'chipwrap' },
-              activeChips.map(([k, val]) =>
-                h(
-                  'span',
-                  { key: k, className: 'chip' },
-                  val,
-                  ' ',
-                  h('b', { onClick: () => removeChip(k) }, '✕')
-                )
-              )
-            )
+            },
+            t('tabInfo')
           )
         ),
+
+        pintaAviso(),
 
         h(
           'table',
@@ -2203,111 +2602,22 @@ function App({ ctx }) {
       /* Slide-over Detail Card Panel */
       h(
         'div',
-        { className: 'panel' + (sel ? ' on' : '') },
+        { className: 'panel' + (sel ? ' on' : ''), id: 'panel' },
         h(
           'div',
           { className: 'pbar' },
           h(
             'span',
-            { className: 'x', onClick: () => setSel(null) },
+            { className: 'x', id: 'px', onClick: () => setSel(null) },
             '✕'
           )
         ),
-        sel
-          ? h(
-              'div',
-              { className: 'pbody' },
-              h('div', { className: 'pname' }, sel.raw),
-              h('h3', { className: 'ptitle' }, sel.desc),
-              sel.resumen && !esRuido(sel.resumen) ? h('p', { className: 'psum' }, sel.resumen) : null,
-              h(
-                'div',
-                { className: 'kv' },
-                h('div', null, t('sujeto')),
-                h('div', null, h('b', null, sel.sujeto), ' · ' + String(sel.mmm || 1).padStart(3, '0')),
-                h('div', { style: { gridColumn: '1/-1', borderTop: '1px solid var(--line)', margin: '6px 0 2px' } }),
-                h('div', null, 'tag1 · ' + t('lblPlataforma')),
-                h('div', null, h('span', { className: 'pill tag1' }, sel.tag1 || '—')),
-                h('div', null, 'tag2 · ' + t('lblFamilia')),
-                h('div', null, h('span', { className: 'pill tag2' }, sel.tag2 || '—')),
-                h('div', null, 'tag3 · ' + t('lblPilar')),
-                h('div', null, h('span', { className: 'pill tag3' }, sel.pilar || sel.tag3 || '—')),
-                h('div', null, 'tag4 · ' + t('lblPais')),
-                h('div', null, sel.pais || sel.tag4 ? h('span', { className: 'pill tag4' }, sel.pais || sel.tag4) : '—'),
-                h('div', null, 'tag5 · ' + t('lblAnio')),
-                h('div', null, sel.anio || sel.tag5 ? h('span', { className: 'pill tag5' }, sel.anio || sel.tag5) : '—'),
-                h('div', null, 'tag6 · ' + t('lblMaquina')),
-                h('div', null, h('span', { className: 'pill tag6' }, sel.tag6 || '—')),
-                h('div', null, 'tag7 · ' + t('lblLibre')),
-                h('div', null, sel.tag7 || '—'),
-                h('div', null, 'tag8 · ' + t('lblLibre')),
-                h('div', null, sel.tag8 || '—'),
-                h('div', null, 'tag9 · ' + t('lblLibre')),
-                h('div', null, sel.tag9 || '—'),
-                h('div', { style: { gridColumn: '1/-1', borderTop: '1px solid var(--line)', margin: '6px 0 2px' } }),
-                h('div', null, 'Ruta'),
-                h('div', null, `${sel.dom || 'Software'} › ${sel.tag5 || '—'} › ${sel.tag1 || '—'}`),
-                h('div', null, t('costo')),
-                h('div', null, fmtC(sel.costo)),
-                h('div', null, t('horas')),
-                h('div', null, fmtH(sel.horas)),
-                h('div', null, 'Mensajes'),
-                h('div', null, sel.mc),
-                h('div', null, t('fecha')),
-                h('div', null, sel.fecha),
-                h('div', null, t('motor')),
-                h('div', null, sel.motor || '—'),
-                h('div', null, t('autor')),
-                h('div', null, sel.autor || '—'),
-                h('div', null, t('perfil')),
-                h('div', null, sel.prof)
-              ),
-              h('h4', { style: { marginTop: '14px' } }, t('mensajes')),
-              h(
-                'ul',
-                { className: 'klist' },
-                (selClaves.length ? selClaves : [t('sinMensajes')]).map((c, i) => h('li', { key: i }, c))
-              ),
-              h(
-                'div',
-                { className: 'why' },
-                h('b', null, 'ADN de la sesión: '),
-                'sujeto ',
-                h('b', null, sel.sujeto),
-                ' · tag1 ',
-                h('b', null, sel.tag1 || '—'),
-                ' (plataforma) · tag2 ',
-                h('b', null, sel.tag2 || '—'),
-                ' (familia de trabajo) · pilar ',
-                h('b', null, sel.pilar || '—'),
-                ' · máquina ',
-                h('b', null, sel.tag6 || '—'),
-                '. Solo tag1 y tag2 aparecen en el nombre; el resto son filtros.'
-              ),
-              h(
-                'button',
-                {
-                  style: { marginTop: '6px' },
-                  onClick: () => {
-                    setEditVal(sel.raw)
-                    setEditModal(true)
-                  },
-                },
-                t('editarBtn')
-              ),
-              h(
-                'div',
-                { className: 'pidfoot' },
-                h('span', null, 'id'),
-                (sel.prof && sel.prof !== 'default' ? `· perfil ${sel.prof} · ` : '') + sel.id
-              )
-            )
-          : h('div', { className: 'pbody' }, t('elegir')),
+        pintaPanel(sel),
         h(
           'div',
           { className: 'pbar bottom' },
-          h('button', { onClick: copyCard }, btnMsg.pcopia || t('copiarSesion')),
-          h('button', { className: 'openbtn', onClick: () => openSession(sel) }, t('abrirSesion'))
+          h('button', { id: 'pcopia', onClick: copyCard }, btnMsg.pcopia || t('copiarSesion')),
+          h('button', { className: 'openbtn', id: 'popen', onClick: () => openSession(sel) }, t('abrirSesion'))
         )
       )
     ),
