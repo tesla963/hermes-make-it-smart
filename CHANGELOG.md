@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.25.0 — 11-nov-2026 · arquitectura de rutas de datos, ejes tag0/tag8/tag9, tabs Actual/Testing, commit/revert y retiro del simulador
+
+### Añadido
+- **Tabs Actual / Testing (§22.2)**: doble pestaña superior `[ Actual Hermes DB Sessions ]` (solo lectura de títulos reales en `state.db` vía RPC) y `[ Testing ]` (simulación en vivo de títulos aplicando la nomenclatura canónica, badge `TESTING` visible en cabecera y persistencia en `localStorage`).
+- **Fila inferior unificada (§22.3, §22.4)**: franja inferior única con botones de acción a la izquierda (`Commit Changes to Hermes DB` en rojo, `Revert` en verde y `New Rules Update` neutro) y estadísticas a la derecha. Eliminado el KPI de horas (`Work hours`) para ganar espacio horizontal.
+- **Sistema de backup y Revert (§22.5)**: generación obligatoria de `commit-backup-<YYYYMMDD_HHMM>.json` y `commit-last.json` en `ctx.files` al entrar al tab Testing. Commit escribe en `state.db` vía `session.title` solo títulos distintos (excluyendo cron y vacías), con refresco previo de backup si supera 10 minutos. Revert restaura los títulos anteriores en un clic con diálogo de confirmación. Commit y Revert nunca coexisten.
+- **Actualización de reglas («New Rules Update», §22.7)**: relee `index.json` y `facets.json` vía `ctx.files`, recalcula la simulación e informa cuántas sesiones cambiarían, alertando si el índice tiene más de 24 horas de antigüedad.
+- **Rutas de datos canónicas y espejo (`core/paths.py`)**: funciones `ui_data_dir()`, `bateria_dir()`, `bateria_objetiva()`, `bateria_personal()`, con orden de resolución `HERMES_PLUGIN_DATA` → `~/.hermes/plugin-data/make-it-smart/` → `plugin-files/data/make-it-smart/`.
+- **Publicación automática dual**: `tools/build_index.py` y `cellar_index op="rebuild"` escriben `index.json` y `facets.json` de manera idéntica en la raíz canónica y en el espejo de la UI (mismo hash MD5 garantizado).
+- **Manifiesto `plugin.yaml`**: sección `data:` detallando las rutas canónicas y del espejo de la UI, archivos de índice, facetas, batería y pendientes. Versión subida a `0.25.0`.
+- **`docs/DATA-PATHS.md`**: guía y tabla de referencia para agentes de Hermes con la regla de oro: la batería personal se lee y escribe en la raíz canónica; si aparece en otra ruta se avisa en vez de adivinar.
+- **Herramienta `cellar_bateria op="spec"`**: devuelve `canonical_dir`, `ui_dir`, `bateria_objetiva_exists`, `bateria_personal_exists` y `ui_bateria_obsolete`. En primera instalación limpia, inicializa `bateria.personal.yaml` preservando los comentarios de cabecera intactos.
+- **Eje `tag8 · Project`**: añadido como faceta filtrable en el panel lateral y visualizado con su píldora `tag8` en la ficha de detalle.
+
+### Cambiado
+- **Retiro definitivo del simulador (§22.1)**: eliminado `tools/simulator_template.html` (88.710 B) y limpiadas todas las referencias en herramientas, especificaciones y documentación. La interfaz nativa del plugin es ahora el único entorno.
+- **«Get Info» en el nombre del plugin (§22.6)**: se retira el badge `V 0.25` del footer; el modal de información y reglas aprendidas (`vModal`) se abre haciendo clic en el nombre del plugin (`Make It Smart` / `h1`) en la cabecera.
+- **Tab vertical de sesión (R1 / §17)**: simplificado a una sola palabra y un solo `span` (`Sesión` en ES / `Session` en EN), eliminando el problema de recorte y letras pegadas (`SESSIONINFO`).
+- **Ubicación de filtros (R4)**: bloques de facetas "Pending" y "Sujeto" reubicados al inicio del panel izquierdo, antes de "tag1 · Maker".
+- **Ejes tag0/tag8/tag9 (R3 / §15)**: el filtro y la faceta de Sujeto leen `tag0` (`tag0 · Sujeto` / `tag0 · Subject`); el merge preserva `tag8` intacto y conmuta solo `tag9` a `'Pending'` si hay autorizaciones pendientes.
+- Versión actualizada a `0.25.0` en `plugin.yaml`, `desktop/plugin.js` y `CHANGELOG.md`.
+
 ## 0.24.0 — 11-nov-2026 · aprobación pendiente visible por sesión
 
 ### Añadido

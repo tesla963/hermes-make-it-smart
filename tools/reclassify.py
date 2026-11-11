@@ -87,7 +87,7 @@ def collect() -> list[dict]:
     """Every session in every database — titled or not.
 
     A session without the catalogue's NNN [Subject] MMM shape used to be skipped,
-    and 25 of them never reached the simulator. 'None left outside' means the
+    and 25 of them never reached the catalogue. 'None left outside' means the
     collector cannot filter by shape any more: it reads them all and hands the
     untitled ones a number after the last one in use.
     """

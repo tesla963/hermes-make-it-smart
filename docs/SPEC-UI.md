@@ -1,7 +1,7 @@
 # UI specification — what the plugin must reproduce
 
-Every rule here was decided on the simulator and is binding for
-`desktop/plugin.js`. The simulator is the spec: if the window disagrees with it,
+Every rule here defines the interface contract and is binding for
+`desktop/plugin.js`. This document is the spec: if the window disagrees with it,
 the window is wrong.
 
 ## 1 · The row shows only what the name shows

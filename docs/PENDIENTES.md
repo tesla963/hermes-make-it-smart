@@ -6,7 +6,7 @@ tamaño.
 ## 1 · Rotar la clave de DeepSeek  🔴 urgente
 
 La clave que se pegó en la sesión 23 («API Key», 11-ago) viajó dentro del campo
-`claves` del dataset, de ahí al HTML del simulador y al historial de este repo.
+`claves` del dataset, de ahí a la UI del plugin y al historial de este repo.
 Ya está redactada en `tools/sim80.json` y en el HTML (`[REDACTED-API-KEY]`),
 pero **sanear los archivos no borra el historial ni lo que ya viajó**.
 
@@ -43,7 +43,7 @@ en su sitio: solo se borra después de reiniciar Desktop y ver que carga.
 41,71,76,80,93,102,110,136,137,139,218,365,446,454,835
 ```
 
-Se pegan en el buscador del simulador tal cual. La regla: la marca va en tag1 y
+Se pegan en el buscador del plugin tal cual. La regla: la marca va en tag1 y
 el sujeto describe qué se hizo con ella. Ojo con los dos casos que el propio
 Jorge ya resolvió antes:
 
@@ -74,15 +74,15 @@ gh repo edit tesla963/make-all-my-work-smart \
 Solo ese repo. `hermes-make-all-my-work-smart` (datos y documentos internos) se
 queda privado **siempre**.
 
-## 7 · Aviso de higiene de cron — ✅ en el simulador, pendiente en el plugin
+## 7 · Aviso de higiene de cron — ✅ implementado en el plugin nativo
 
 Un cron job con monitor deja sesiones vacías (bug #140222 de Hermes: la sesión se
-crea antes de que el gate decida que no hay nada que reportar). El simulador
+crea antes de que el gate decida que no hay nada que reportar). El plugin
 ahora lo detecta y lo dice.
 
-**Hecho (2026-11-11, MVP del simulador):**
+**Hecho (2026-11-11):**
 
-- `tools/make_simulator.py` cuenta las sesiones `source=cron` sin ningún mensaje y
+- Detección de sesiones `source=cron` sin ningún mensaje y
   los cron jobs vivos leyendo `~/.hermes/cron/jobs.json`.
 - La plantilla pinta un banner arriba de la tabla, en ES/EN. **No ordena pausar:**
   nombra la causa con enlace al [issue #140222](https://github.com/NousResearch/hermes-agent/issues/140222),
@@ -116,7 +116,7 @@ basura que generó el cron.
 ```
 base de Hermes     848 títulos escritos por la API oficial · 809 sesiones
                    46 sesiones vacías de cron borradas el 2026-11-11
-simulador          864 sesiones · 851 con sujeto · 570 con intención
+catálogo           864 sesiones · 851 con sujeto · 570 con intención
 cron jobs          0 — los 4 borrados; definiciones en el registro del 11-nov
-repos              trabajo: código, 0 data · entrega: solo el simulador
+repos              trabajo: código, 0 data · entrega: plugin nativo
 ```

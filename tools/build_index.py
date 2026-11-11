@@ -26,7 +26,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from adapters.hermes import attach_messages, discover_databases, read_sessions  # noqa: E402
-from core.paths import data_dir  # noqa: E402
+from core.paths import data_dir, ui_data_dir  # noqa: E402
 
 # The ordinal sits OUTSIDE the subject bracket: 001 [Chat en Telegram] 001 [Tag] …
 TITLE_RE = re.compile(
@@ -166,7 +166,32 @@ def main() -> int:
     data = build(with_messages=not args.no_messages)
     out = Path(args.out).expanduser() if args.out else data_dir() / "index.json"
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+    content = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
+    out.write_text(content, encoding="utf-8")
+    if not args.out:
+        try:
+            ui_out = ui_data_dir() / "index.json"
+            ui_out.parent.mkdir(parents=True, exist_ok=True)
+            ui_out.write_text(content, encoding="utf-8")
+        except Exception:
+            pass
+        try:
+            can_facets = data_dir() / "facets.json"
+            if can_facets.exists():
+                ui_facets = ui_data_dir() / "facets.json"
+                ui_facets.parent.mkdir(parents=True, exist_ok=True)
+                ui_facets.write_text(can_facets.read_text(encoding="utf-8"), encoding="utf-8")
+        except Exception:
+            pass
+        try:
+            can_pending = data_dir() / "pending_index.json"
+            ui_pending = ui_data_dir() / "pending_index.json"
+            if can_pending.exists() and not ui_pending.exists():
+                ui_pending.write_text(can_pending.read_text(encoding="utf-8"), encoding="utf-8")
+            elif ui_pending.exists() and not can_pending.exists():
+                can_pending.write_text(ui_pending.read_text(encoding="utf-8"), encoding="utf-8")
+        except Exception:
+            pass
 
     print(f"{data['count']} sesiones · {data['subjects']} sujetos")
     print(f"{out} · {out.stat().st_size/1024:.0f} KB · generado {data['generated']}")

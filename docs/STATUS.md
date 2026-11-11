@@ -48,7 +48,7 @@ messages do not evidence, and the fallback folds unknown platforms to `Hermes Ag
 
 | Piece | State |
 |---|---|
-| `desktop/plugin.js` | Not started — the catalog UI lives in the simulator HTML today |
+| `desktop/plugin.js` | Built — native catalog UI with Actual & Testing tabs, Commit, Revert, and facets |
 | `dashboard/plugin_api.py` | Not started — the five planned routes |
 | `POST /rename` from the UI | Not started; the writer class is ready |
 | Subject unification report | Designed (`GET /report/{subject}`), not built |

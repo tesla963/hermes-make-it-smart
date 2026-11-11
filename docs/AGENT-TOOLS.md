@@ -107,7 +107,7 @@ Leaves the machine or comes back into the loop.
 - `format`: `csv` | `yaml` | `json`.
 - Writes to `plugin_data_dir()/exports/<what>_<[CCCC]>.csv` with the counter, and returns
   `{path, rows, bytes}`.
-- Never overwrites: the counter is the contract the simulator already uses.
+- Never overwrites: the counter is the citation contract the export system uses.
 
 ## What I deliberately did not ask for
 

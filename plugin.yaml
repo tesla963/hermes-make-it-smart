@@ -1,5 +1,5 @@
 name: hermes-make-it-smart
-version: 0.24.0
+version: 0.25.0
 description: "Hermes, Make it Smart! — Session categorization, tagging and renaming to access all your sessions — faster than it takes to press 3 clicks."
 author: "Jorge Matsufuji"
 license: MIT
@@ -20,3 +20,13 @@ provides_tools:
   - cellar_verify
   - cellar_export
 requires_env: []
+data:
+  canonical_dir: "~/.hermes/plugin-data/make-it-smart"
+  ui_dir: "~/Library/Application Support/Hermes/plugin-files/data/make-it-smart"
+  bateria_objetiva: "core/bateria.yaml"
+  bateria_personal: "bateria.personal.yaml"
+  index: "index.json"
+  facets: "facets.json"
+  pending: "pending_index.json"
+  exports: "exports/"
+  backups: "backups/"

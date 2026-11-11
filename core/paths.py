@@ -41,10 +41,59 @@ def hermes_root() -> Path:
 
 
 def data_dir(plugin: str = PLUGIN) -> Path:
-    """``<hermes root>/plugin-data/<plugin>/`` — created if missing."""
-    root = hermes_root() / "plugin-data" / plugin
+    """Canonical plugin data directory:
+    Resolves HERMES_PLUGIN_DATA (env) -> hermes_root() / "plugin-data" / plugin.
+    Created if missing.
+    """
+    env = os.environ.get("HERMES_PLUGIN_DATA")
+    if env:
+        root = Path(env).expanduser().resolve()
+    else:
+        root = hermes_root() / "plugin-data" / plugin
     root.mkdir(parents=True, exist_ok=True)
     return root
+
+
+def ui_data_dir(plugin: str = PLUGIN) -> Path:
+    """The desktop UI mirror folder:
+    ~/Library/Application Support/Hermes/plugin-files/data/<plugin>/ (macOS)
+    or fallback to <hermes root>/plugin-files/data/<plugin>/
+    """
+    env = os.environ.get("HERMES_UI_DATA")
+    if env:
+        p = Path(env).expanduser().resolve()
+    else:
+        mac_dir = Path.home() / "Library" / "Application Support" / "Hermes" / "plugin-files" / "data" / plugin
+        if mac_dir.parent.exists() or (Path.home() / "Library" / "Application Support" / "Hermes").exists():
+            p = mac_dir
+        else:
+            p = hermes_root() / "plugin-files" / "data" / plugin
+    p.mkdir(parents=True, exist_ok=True)
+    return p
+
+
+def bateria_dir(plugin: str = PLUGIN) -> Path:
+    """Canonical directory where personal battery and runtime data live."""
+    return data_dir(plugin)
+
+
+def bateria_objetiva(plugin: str = PLUGIN) -> Path:
+    """Objective knowledge battery packaged with the plugin: core/bateria.yaml."""
+    return Path(__file__).resolve().parent / "bateria.yaml"
+
+
+def bateria_personal(plugin: str = PLUGIN) -> Path:
+    """Personal battery path.
+    Resolves HERMES_PLUGIN_DATA -> canonical data_dir() -> (fallback check UI mirror).
+    Canonical always takes priority.
+    """
+    canonical = data_dir(plugin) / "bateria.personal.yaml"
+    if canonical.exists():
+        return canonical
+    ui_mirror = ui_data_dir(plugin) / "bateria.personal.yaml"
+    if ui_mirror.exists():
+        return ui_mirror
+    return canonical
 
 
 def exports_dir(plugin: str = PLUGIN) -> Path:

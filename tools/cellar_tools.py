@@ -111,10 +111,30 @@ MAX_BATCH_WRITE = 50
 
 
 def _plugin_dir() -> Path:
-    """Resolve ``plugin_data_dir('make-it-smart')`` via the host API."""
-    from plugins.plugin_storage import plugin_data_dir
+    """Resolve canonical plugin data directory."""
+    try:
+        from core.paths import data_dir
+        return data_dir(PLUGIN_NAME)
+    except ImportError:
+        try:
+            from ..core.paths import data_dir
+            return data_dir(PLUGIN_NAME)
+        except Exception:
+            from plugins.plugin_storage import plugin_data_dir
+            return plugin_data_dir(PLUGIN_NAME)
 
-    return plugin_data_dir(PLUGIN_NAME)
+
+def _ui_dir() -> Path:
+    """Resolve desktop UI mirror directory."""
+    try:
+        from core.paths import ui_data_dir
+        return ui_data_dir(PLUGIN_NAME)
+    except ImportError:
+        try:
+            from ..core.paths import ui_data_dir
+            return ui_data_dir(PLUGIN_NAME)
+        except Exception:
+            return _plugin_dir()
 
 
 def _index_path() -> Path:
@@ -909,10 +929,22 @@ def handle_cellar_index(args: dict[str, Any], **_kwargs: Any) -> str:
                     r[k] = ex[k]
         out_path = _index_path()
         out_path.parent.mkdir(parents=True, exist_ok=True)
-        out_path.write_text(
-            json.dumps(rebuilt, ensure_ascii=False, separators=(",", ":")),
-            encoding="utf-8",
-        )
+        content = json.dumps(rebuilt, ensure_ascii=False, separators=(",", ":"))
+        out_path.write_text(content, encoding="utf-8")
+        try:
+            ui_path = _ui_dir() / "index.json"
+            ui_path.parent.mkdir(parents=True, exist_ok=True)
+            ui_path.write_text(content, encoding="utf-8")
+        except Exception:
+            pass
+        try:
+            can_facets = _facets_path()
+            if can_facets.exists():
+                ui_facets = _ui_dir() / "facets.json"
+                ui_facets.parent.mkdir(parents=True, exist_ok=True)
+                ui_facets.write_text(can_facets.read_text(encoding="utf-8"), encoding="utf-8")
+        except Exception:
+            pass
         rebuilt_rows = rebuilt.get("sessions") or []
         untitled_after = sum(1 for r in rebuilt_rows if not parse_title(str(r.get("raw") or "")))
         return _json(
@@ -1564,16 +1596,16 @@ _BATERIA_SECTIONS = (
 def _load_personal_bateria() -> dict[str, Any]:
     p = _personal_bateria_path()
     if not p.exists():
-        # Seed from repo's core/bateria.personal.yaml if present
+        # First install: copy template from core/bateria.personal.yaml preserving header comment
         repo_seed = BATERIA_PATH.with_name("bateria.personal.yaml")
         if repo_seed.exists():
             try:
-                data = yaml.safe_load(repo_seed.read_text(encoding="utf-8"))
-                if isinstance(data, dict):
-                    return data
+                p.parent.mkdir(parents=True, exist_ok=True)
+                p.write_text(repo_seed.read_text(encoding="utf-8"), encoding="utf-8")
             except Exception:
                 pass
-        return {"version": 1, "owner": "jorge", "vocabulario": {}, "reglas": {}, "servicios": {}}
+        else:
+            return {"version": 1, "owner": "jorge", "vocabulario": {}, "reglas": {}, "servicios": {}}
     try:
         data = yaml.safe_load(p.read_text(encoding="utf-8"))
         return data if isinstance(data, dict) else {}
@@ -1615,12 +1647,17 @@ def handle_cellar_bateria(args: dict[str, Any], **kwargs: Any) -> str:
     sec_counts = {sec: len(merged.get(sec) or {}) for sec in _BATERIA_SECTIONS}
 
     if op == "spec":
+        can_p = _personal_bateria_path()
+        ui_p = _ui_dir() / "bateria.personal.yaml"
+        can_exists = can_p.exists()
+        ui_exists = ui_p.exists() and ui_p.resolve() != can_p.resolve()
         return _json(
             {
                 "ok": True,
                 "nomenclature": "NNN [Sujeto] MMM [Tag1] [Tag2] Descripción · Verbo",
                 "max_title_length": MAX_TITLE_LENGTH,
                 "axes": {
+                    "tag0": {"name": "Subject (session patient)", "in_title": True},
                     "tag1": {"name": "Protagonist (brand or program/platform/service)", "in_title": True},
                     "tag2": {"name": "Context (place, machine, country, store)", "in_title": True},
                     "tag3": {"name": "Intention (closed 7-verb vocabulary)", "in_title": False},
@@ -1628,8 +1665,8 @@ def handle_cellar_bateria(args: dict[str, Any], **kwargs: Any) -> str:
                     "tag5": {"name": "Date (year / when it happened)", "in_title": False},
                     "tag6": {"name": "Machine (which computer)", "in_title": False},
                     "tag7": {"name": "Reserved", "in_title": False},
-                    "tag8": {"name": "Reserved", "in_title": False},
-                    "tag9": {"name": "Reserved", "in_title": False},
+                    "tag8": {"name": "Project", "in_title": False},
+                    "tag9": {"name": "Pending (authorization requests)", "in_title": False},
                 },
                 "vocabularies": {
                     "tag3_intentions": list(INTENTIONS),
@@ -1638,7 +1675,12 @@ def handle_cellar_bateria(args: dict[str, Any], **kwargs: Any) -> str:
                     "verbs": list(VERBS),
                 },
                 "bateria_sections": sec_counts,
-                "personal_bateria_path": str(_personal_bateria_path()),
+                "personal_bateria_path": str(can_p),
+                "canonical_dir": str(_plugin_dir()),
+                "ui_dir": str(_ui_dir()),
+                "bateria_objetiva_exists": BATERIA_PATH.exists(),
+                "bateria_personal_exists": can_exists,
+                "ui_bateria_obsolete": ui_exists and can_exists,
             }
         )
 

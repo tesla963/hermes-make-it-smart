@@ -8,7 +8,7 @@
  * `plugin-data/<id>/index.json` and `facets.json` when available, and lazy
  * transcript/title RPCs (`session.resume`, `session.title`).
  *
- * Visual & behavioral twin of `tools/simulator_template.html` (docs/SPEC-UI.md).
+ * Visual & behavioral UI (docs/SPEC-UI.md).
  * Loaded uncompiled by Hermes Desktop: only `@hermes/plugin-sdk`, `react`, and
  * `react/jsx-runtime` are imported.
  */
@@ -19,7 +19,8 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 
 const ID = 'make-it-smart'
 const NAME = 'Hermes, Make it Smart!'
-const VERSION = '0.24.0'
+const APP_TITLE = 'Make It Smart'
+const VERSION = '0.25.0'
 const ROUTE = '/smart'
 
 /** jsx-runtime helper: keeps uncompiled React code compact and readable. */
@@ -49,7 +50,7 @@ const fmtH = (m) =>
     ? Math.floor(m / 60) + 'h' + String(Math.round(m % 60)).padStart(2, '0')
     : Math.round(m || 0) + 'm'
 
-/** Simulator 2026-11-11 duration formatter: supports '—' for <=0 and days ('Xd Yh') for >=1440 min. */
+/** Duration formatter: supports '—' for <=0 and days ('Xd Yh') for >=1440 min. */
 const fmtHoras = (v) => {
   const m = Math.round(Number(v) || 0)
   if (m <= 0) return '—'
@@ -126,7 +127,7 @@ const esBorrada = (d) =>
         /^\s*\[?sesi[oó]n borrada/i.test(d.raw || ''))
   )
 
-/* Bilingual synonym table from simulator_template.html */
+/* Bilingual synonym table */
 const SIN = {
   'inteligencia artificial': 'ia',
   'artificial intelligence': 'ia',
@@ -260,6 +261,46 @@ function parseTitle(title) {
   return m && m.groups ? m.groups : null
 }
 
+function canonicalTitle(d) {
+  if (!d) return ''
+  if (esCron(d) || d.vacia || esBorrada(d)) return d.raw || ''
+
+  const nnn = String(Number(d.n) || 0).padStart(3, '0')
+  const subj = (d.sujeto || d.tag0 || '').trim() || 'Sin sujeto'
+  const mmm = String(Number(d.mmm) || 1).padStart(3, '0')
+
+  let head = `${nnn} [${subj}] ${mmm}`
+  const t1 = (d.tag1 || '').trim()
+  const t2 = (d.tag2 || '').trim()
+  if (t1) head += ` [${t1}]`
+  if (t2) head += ` [${t2}]`
+
+  if (head.length >= 100) {
+    return head.slice(0, 100).trimEnd()
+  }
+
+  const verb = (d.verb || '').trim()
+  const tail = verb ? ` · ${verb}` : ''
+  const budget = 100 - head.length - 1 - tail.length
+
+  let desc = (d.desc || '').trim()
+  if (desc && budget > 0) {
+    if (desc.length > budget) {
+      desc = desc.slice(0, budget).trimEnd()
+    }
+    return `${head} ${desc}${tail}`.trim()
+  }
+  if (tail && head.length + tail.length + 1 <= 100) {
+    return `${head}${tail}`.trim()
+  }
+  return head
+}
+
+function getBackupStamp(date = new Date()) {
+  const z = (n) => String(n).padStart(2, '0')
+  return `${date.getFullYear()}${z(date.getMonth() + 1)}${z(date.getDate())}_${z(date.getHours())}${z(date.getMinutes())}`
+}
+
 function toFecha(startedAt, fallback) {
   if (typeof startedAt === 'number' && startedAt > 0) {
     try {
@@ -307,7 +348,7 @@ const I18N = {
   es: {
     navPrev: 'Sesión anterior',
     navNext: 'Sesión siguiente',
-    tabInfo: 'Info sesión',
+    tabInfo: 'Sesión',
     tabInfoTitle: 'Abrir la ficha de la primera sesión de la lista',
     mostrarLbl: 'Mostrar:',
     ordenar: 'Ordenar:',
@@ -351,7 +392,7 @@ const I18N = {
     pendHuerfanas: 'Sin sesión atribuible',
     pendFacet: 'Pendientes',
     pendFacetCount: 'con pendientes',
-    sujetoFacet: 'Sujeto',
+    sujetoFacet: 'tag0 · Sujeto',
     sujetosCount: 'sujetos',
     copyIds: '⧉ Copiar IDs',
     kPend1: 'PENDIENTES',
@@ -390,6 +431,7 @@ const I18N = {
     lblAnio: 'año',
     lblMaquina: 'máquina',
     lblLibre: 'libre',
+    lblProyecto: 'Proyecto',
     kHor1: 'Horas',
     kHor2: 'trabajo',
     kPost1: 'Total',
@@ -422,7 +464,7 @@ const I18N = {
       'Lisa, tengo {n} sesiones vacías de cron (source=cron sin ningún mensaje). Bórralas y dime qué cron jobs tengo activos para pausarlos o pasarlos a modo no_agent.',
     vIntro:
       'Catálogo navegable de tus sesiones: las indexa de las 12 bases, les pone nombre canónico y las deja filtrar por plataforma, familia y pilar. La ventana del plugin solo pinta — el clasificador es Python puro y no sabe que existe Hermes.',
-    vSub: 'v0.24 · plugin nativo',
+    vSub: 'v0.25 · plugin nativo',
     vVer: 'ESTA VERSIÓN',
     vReg: 'REGLAS QUE APRENDIÓ',
     vCerrar: 'Cerrar',
@@ -439,11 +481,29 @@ const I18N = {
     r2: 'La marca y el producto son dos cosas: USPS + Ground Advantage',
     r3: 'El sujeto es el paciente, no quien sostiene la ficha',
     r4: 'Una serie, un pilar: si hay 40 hermanos, el que no encaja está mal',
+    tabActual: 'Actual Hermes DB Sessions',
+    tabActualTitle: 'Sesiones reales de la base de datos de Hermes (solo lectura)',
+    tabTesting: 'Testing',
+    tabTestingTitle: 'Simulación de nomenclatura canónica y herramientas de commit/revert',
+    commitBtn: 'Commit Changes to Hermes DB',
+    commitBtnTitle: 'Escribe los títulos canónicos simulados en state.db vía session.title',
+    revertBtn: 'Revert',
+    revertBtnTitle: 'Restaura los títulos anteriores desde el último backup',
+    updateBtn: 'New Rules Update',
+    updateBtnTitle: 'Relee index.json y facets.json, recalcula la simulación e informa cambios',
+    infoPluginTitle: 'Ver información y reglas aprendidas del plugin Make It Smart',
+    confirmCommit: '¿Aplicar {n} cambios de título en tu base de sesiones de Hermes?',
+    confirmRevert: '¿Revertir {n} títulos a su estado anterior al último commit?',
+    commitProgress: 'Commit {current}/{total}',
+    commitDone: '{n} actualizados · {m} sin cambios',
+    revertDone: '{n} títulos restaurados',
+    updateDone: '{count} sesiones cambiarían con las reglas actuales',
+    updateStale: 'El índice tiene más de 24 h y está desactualizado; pídele a Hermes: reindexa el catálogo del plugin',
   },
   en: {
     navPrev: 'Previous session',
     navNext: 'Next session',
-    tabInfo: 'Session Info',
+    tabInfo: 'Session',
     tabInfoTitle: 'Open the card of the first session in the list',
     mostrarLbl: 'Show:',
     ordenar: 'Sort:',
@@ -487,7 +547,7 @@ const I18N = {
     pendHuerfanas: 'Unattributed',
     pendFacet: 'Pending',
     pendFacetCount: 'with pending',
-    sujetoFacet: 'Subject',
+    sujetoFacet: 'tag0 · Subject',
     sujetosCount: 'subjects',
     copyIds: '⧉ Copy IDs',
     kPend1: 'PENDING',
@@ -526,6 +586,7 @@ const I18N = {
     lblAnio: 'year',
     lblMaquina: 'machine',
     lblLibre: 'free',
+    lblProyecto: 'Project',
     kHor1: 'Work',
     kHor2: 'hours',
     kPost1: 'Total',
@@ -558,7 +619,7 @@ const I18N = {
       'Lisa, I have {n} empty cron sessions (source=cron with no messages). Delete them and tell me which cron jobs are active so I can pause them or move them to no_agent mode.',
     vIntro:
       'A browsable catalogue of your sessions: it indexes them from the 12 databases, gives each a canonical name and lets you filter by platform, family and pillar. The plugin window only paints — the classifier is pure Python and does not know Hermes exists.',
-    vSub: 'v0.24 · native plugin',
+    vSub: 'v0.25 · native plugin',
     vVer: 'THIS VERSION',
     vReg: 'REGLAS QUE APRENDIÓ',
     vCerrar: 'Close',
@@ -575,6 +636,24 @@ const I18N = {
     r2: 'The brand and the product are two things: USPS + Ground Advantage',
     r3: 'The subject is the patient, not whoever holds the file',
     r4: 'One series, one pillar: with 40 siblings, the one that does not fit is wrong',
+    tabActual: 'Actual Hermes DB Sessions',
+    tabActualTitle: 'Actual sessions from Hermes database (read-only)',
+    tabTesting: 'Testing',
+    tabTestingTitle: 'Canonical nomenclature simulation and commit/revert tools',
+    commitBtn: 'Commit Changes to Hermes DB',
+    commitBtnTitle: 'Write simulated canonical titles to state.db via session.title',
+    revertBtn: 'Revert',
+    revertBtnTitle: 'Restore previous titles from the last backup',
+    updateBtn: 'New Rules Update',
+    updateBtnTitle: 'Re-read index.json and facets.json, recalculate simulation and report changes',
+    infoPluginTitle: 'View plugin information and learned rules for Make It Smart',
+    confirmCommit: 'Apply {n} title changes to your Hermes session database?',
+    confirmRevert: 'Revert {n} titles back to their state before the last commit?',
+    commitProgress: 'Commit {current}/{total}',
+    commitDone: '{n} updated · {m} unchanged',
+    revertDone: '{n} titles restored',
+    updateDone: '{count} sessions would change with current rules',
+    updateStale: 'The index is older than 24h and stale; ask Hermes: rebuild plugin catalog',
   },
 }
 
@@ -586,13 +665,19 @@ const CSS = `
 .mmws{--tabw:62px;--tabx:16px;--kbar-h:33px;--aside-ef:264px;--bg:#0d0b0e;--bg2:#141117;--card:#17131a;--line:#2a2330;--line2:#3a3040;--tx:#eae4ee;--tx2:#b9aec4;--tx3:#857a92;--wine:#a3234a;--wine2:#d94f78;--gold:#c9a227;--ok:#3f9e6a;
 position:relative;display:flex;flex-direction:column;width:100%;height:100%;min-height:0;overflow:hidden;background:var(--bg);color:var(--tx);font:14px/1.55 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",sans-serif}
 .mmws *{box-sizing:border-box}
-.mmws h1{font-size:12.5px;margin:0;letter-spacing:.01em;font-weight:800;color:var(--tx)}
+.mmws h1{font-size:12.5px;margin:0;letter-spacing:.01em;font-weight:800;color:var(--tx);cursor:pointer;transition:color .12s}
+.mmws h1:hover{color:var(--wine2)}
 .mmws h4{margin:13px 0 5px;font-size:9.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);display:flex;justify-content:space-between;align-items:center;gap:4px;flex-wrap:wrap}
 .mmws h4 span{font-weight:400;text-transform:none;letter-spacing:0;color:var(--tx3);font-size:9.5px}
 .mmws .sub{color:var(--tx2);font-size:12.5px}
 .mmws .mono{font-family:ui-monospace,Menlo,monospace;font-size:12px}
 .mmws header.top{flex:0 0 auto;z-index:40;background:linear-gradient(180deg,#100d12,#0d0b0e);border-bottom:1px solid var(--line);padding:10px 18px}
-.mmws .brandrow{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.mmws .brandrow{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.mmws .headtabs{display:inline-flex;align-items:center;gap:3px;background:#15101a;border:1px solid var(--line2);border-radius:7px;padding:2px;margin-left:6px}
+.mmws .headtab{border:0;background:transparent;color:var(--tx3);font-size:11.5px;font-weight:600;padding:3px 10px;border-radius:5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all .12s}
+.mmws .headtab:hover{color:var(--tx)}
+.mmws .headtab.on{background:#2a1f33;color:#fff;box-shadow:0 1px 3px rgba(0,0,0,.4)}
+.mmws .headtab.on.testing{background:var(--gold);color:#0d0b0e}
 .mmws .bodywrap{flex:1 1 auto;min-height:0;display:flex;align-items:stretch;position:relative;overflow:hidden}
 .mmws .abarra{flex:none;padding:9px 0 8px;background:var(--bg2);border-bottom:1px solid var(--line);z-index:2}
 .mmws .ascroll{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;padding:8px 0 14px;scrollbar-width:none;-ms-overflow-style:none;overscroll-behavior:contain}
@@ -745,12 +830,20 @@ position:relative;display:flex;flex-direction:column;width:100%;height:100%;min-
 .mmws .why{font-size:11.5px;color:var(--tx3);background:#151119;border:1px dashed var(--line2);border-radius:7px;padding:8px 10px;margin:10px 0}
 .mmws .pidfoot{margin-top:10px;padding-top:8px;border-top:1px solid var(--line);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px;line-height:1.45;color:var(--tx3);word-break:break-all;user-select:all}
 .mmws .pidfoot span{text-transform:uppercase;letter-spacing:.06em;font-size:9px;opacity:.7;margin-right:4px}
-.mmws .footrow{flex:0 0 var(--kbar-h);height:var(--kbar-h);display:flex;align-items:stretch;z-index:60;background:#0f0c13d9;backdrop-filter:blur(8px);border-top:1px solid var(--line2)}
-.mmws .vbadge{width:var(--aside-ef);flex:0 0 var(--aside-ef);height:100%;display:flex;align-items:center;justify-content:flex-start;gap:7px;cursor:pointer;border-right:1px solid var(--line2);padding:0 10px;font:600 9.5px/1 ui-monospace,Menlo,monospace;letter-spacing:.11em;color:#c9a8f0}
-.mmws .vbadge:hover{background:#171320;color:#e6d3f2}
-.mmws .vbadge b{font-weight:700;color:#eee6f3}
-.mmws .vbadge i{width:5px;height:5px;border-radius:50%;background:#8fd0f5;box-shadow:0 0 6px #8fd0f5aa;font-style:normal}
-.mmws .kbar{flex:1 1 auto;display:flex;align-items:stretch;gap:0;padding:0 4px}
+.mmws .footrow{flex:0 0 var(--kbar-h);height:var(--kbar-h);display:flex;align-items:stretch;justify-content:space-between;z-index:60;background:#0f0c13d9;backdrop-filter:blur(8px);border-top:1px solid var(--line2)}
+.mmws .footbtns{display:flex;align-items:center;gap:8px;padding:0 12px;flex:0 0 auto}
+.mmws .footbtns button{height:24px;padding:1px 10px;font-size:11px;font-weight:600;border-radius:5px;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;transition:filter .12s,background .12s}
+.mmws .commitbtn{background:var(--wine);border:1px solid var(--wine);color:#fff}
+.mmws .commitbtn:hover:not(:disabled){background:var(--wine2);border-color:var(--wine2)}
+.mmws .commitbtn:disabled{opacity:.5;cursor:default}
+.mmws .revertbtn{background:var(--ok);border:1px solid var(--ok);color:#fff}
+.mmws .revertbtn:hover:not(:disabled){filter:brightness(1.18)}
+.mmws .revertbtn:disabled{opacity:.5;cursor:default}
+.mmws .updatebtn{background:#1d1822;border:1px solid var(--line2);color:var(--tx2)}
+.mmws .updatebtn:hover:not(:disabled){border-color:var(--wine);color:#fff}
+.mmws .updatebtn:disabled{opacity:.5;cursor:default}
+.mmws .footmsg{font-size:11px;color:var(--tx2);margin-left:6px;white-space:nowrap}
+.mmws .kbar{flex:1 1 auto;display:flex;align-items:stretch;justify-content:flex-end;gap:0;padding:0 4px}
 .mmws .kbar .kpi{flex:1 1 0;position:relative;display:flex;flex-direction:row;align-items:flex-end;justify-content:flex-start;gap:6px;padding:7px 10px 8px}
 .mmws .kbar .kpi+.kpi::before{content:"";position:absolute;left:0;top:6px;bottom:6px;width:1px;background:linear-gradient(180deg,transparent,#4a3d5e 22%,#4a3d5e 78%,transparent)}
 .mmws .kbar .kpi b{display:block;font-size:17px;line-height:1.0;font-variant-numeric:tabular-nums;letter-spacing:-.02em;font-weight:650;margin:0 0 -1px 0}
@@ -1073,6 +1166,7 @@ async function loadCatalogue(ctx) {
       n: g ? parseInt(g.nnn, 10) : Number(idx.n || 0),
       mmm: g ? parseInt(g.mmm, 10) : Number(idx.mmm || 1),
       sujeto,
+      tag0: sujeto,
       tag1,
       tag2,
       tag3,
@@ -1129,9 +1223,10 @@ async function loadCatalogue(ctx) {
 
   merged.sort((a, b) => a.n - b.n)
 
-  // Compute search synonym index per row once
+  // Compute canonical simulated title and search synonym index per row once
   for (const d of merged) {
-    d._s = sin([d.raw, d.desc, d.resumen, d.tema, d.sujeto, d.tag1, d.tag2, d.pilar, d.n, d.id].join(' '))
+    d.canonTitle = canonicalTitle(d)
+    d._s = sin([d.raw, d.canonTitle, d.desc, d.resumen, d.tema, d.sujeto, d.tag1, d.tag2, d.pilar, d.n, d.id].join(' '))
   }
 
   const vaciasCron = merged.filter((d) => esCron(d) && d.vacia).length
@@ -1175,6 +1270,7 @@ function App({ ctx }) {
     tag4: null,
     tag5: null,
     tag6: null,
+    tag8: null,
     tag9: null,
     sujeto: null,
     motor: null,
@@ -1197,6 +1293,18 @@ function App({ ctx }) {
   const [editModal, setEditModal] = useState(false)
   const [editVal, setEditVal] = useState('')
   const [vModal, setVModal] = useState(false)
+  const [activeTab, setActiveTab] = useState(() => {
+    try {
+      return localStorage.getItem('mmws_active_tab') || 'actual'
+    } catch (_) {
+      return 'actual'
+    }
+  })
+  const [lastBackup, setLastBackup] = useState(null)
+  const [canRevert, setCanRevert] = useState(false)
+  const [isCommitting, setIsCommitting] = useState(false)
+  const [isReverting, setIsReverting] = useState(false)
+  const [staleNotice, setStaleNotice] = useState('')
   const [btnMsg, setBtnMsg] = useState({
     copia: '',
     expc: '',
@@ -1206,6 +1314,10 @@ function App({ ctx }) {
     pendMem: '',
     pendSkl: '',
     pendOrph: '',
+    commit: '',
+    revert: '',
+    update: '',
+    foot: '',
   })
   const [lang, setLang] = useState(() => {
     try {
@@ -1216,7 +1328,15 @@ function App({ ctx }) {
     }
   })
 
-  const t = (k) => (I18N[lang] && I18N[lang][k]) || k
+  const t = (k, vars) => {
+    let s = (I18N[lang] && I18N[lang][k]) || k
+    if (vars && typeof vars === 'object') {
+      for (const [key, val] of Object.entries(vars)) {
+        s = s.replaceAll('{' + key + '}', String(val))
+      }
+    }
+    return s
+  }
 
   const toggleLang = () => {
     const next = lang === 'es' ? 'en' : 'es'
@@ -1270,6 +1390,21 @@ function App({ ctx }) {
         const years = [...new Set(res.sessions.map((d) => (d.mes || '').slice(0, 4)).filter(Boolean))].sort().reverse()
         if (years.length) {
           setOpenNodes(new Set(['y:' + years[0], 'init:' + years[0]]))
+        }
+        const filesApi = (ctx && ctx.files) || (host && host.files)
+        if (filesApi && typeof filesApi.readText === 'function') {
+          try {
+            const lastRes = await filesApi.readText('data', 'commit-last.json')
+            if (lastRes && lastRes.ok && lastRes.text) {
+              const lastData = JSON.parse(lastRes.text)
+              if (lastData && typeof lastData === 'object') {
+                setLastBackup(lastData)
+                if (lastData.committed && !lastData.reverted && lastData.changedCount > 0) {
+                  setCanRevert(true)
+                }
+              }
+            }
+          } catch (_) {}
         }
       } catch (err) {
         if (!alive) return
@@ -1420,8 +1555,9 @@ function App({ ctx }) {
     if (!skips.includes('tag4') && f.tag4 && d.tag4 !== f.tag4) return false
     if (!skips.includes('tag5') && f.tag5 && d.tag5 !== f.tag5) return false
     if (!skips.includes('tag6') && f.tag6 && d.tag6 !== f.tag6) return false
+    if (!skips.includes('tag8') && f.tag8 && d.tag8 !== f.tag8) return false
     if (!skips.includes('tag9') && f.tag9 && (d.pendTot > 0 ? 'Pending' : '') !== f.tag9) return false
-    if (!skips.includes('sujeto') && f.sujeto && norm(d.sujeto) !== norm(f.sujeto)) return false
+    if (!skips.includes('sujeto') && f.sujeto && norm(d.tag0 || d.sujeto) !== norm(f.sujeto)) return false
     if (!skips.includes('motor') && f.motor && (d.motor || 'Sin dato') !== f.motor) return false
     if (!skips.includes('autor') && f.autor && d.autor !== f.autor) return false
     if (!skips.includes('anio') && f.anio && (d.fecha || '').slice(0, 4) !== f.anio) return false
@@ -1511,6 +1647,7 @@ function App({ ctx }) {
     if (f.tag4) out.push(['tag4', f.tag4])
     if (f.tag5) out.push(['tag5', f.tag5])
     if (f.tag6) out.push(['tag6', f.tag6])
+    if (f.tag8) out.push(['tag8', f.tag8])
     if (f.tag9) out.push(['tag9', f.tag9])
     if (f.sujeto) out.push(['sujeto', f.sujeto])
     if (f.motor) out.push(['motor', f.motor])
@@ -1556,6 +1693,7 @@ function App({ ctx }) {
       tag4: null,
       tag5: null,
       tag6: null,
+      tag8: null,
       tag9: null,
       sujeto: null,
       motor: null,
@@ -1667,6 +1805,7 @@ function App({ ctx }) {
       'tag1 (' + t('lblPlataforma').toLowerCase() + '): ' + k(d.tag1) + ' | tag2 (' + t('lblFamilia').toLowerCase() + '): ' + k(d.tag2),
       'tag3 (' + t('lblPilar').toLowerCase() + '): ' + k(d.pilar || d.tag3) + ' | tag4 (' + t('lblPais').toLowerCase() + '): ' + k(d.pais || d.tag4) + ' | tag5 (' + t('lblAnio').toLowerCase() + '): ' + k(d.anio || d.tag5),
       'tag6 (' + t('lblMaquina').toLowerCase() + '): ' + k(d.tag6),
+      'tag7: ' + k(d.tag7) + ' | tag8 (' + t('lblProyecto').toLowerCase() + '): ' + k(d.tag8) + ' | tag9: ' + k(d.tag9),
       t('descripcion') + ': ' + k(d.desc),
       t('fecha').toLowerCase() + ': ' + k(d.fecha) + ' · ' + t('mensajes').toLowerCase() + ': ' + k(d.mc) + ' · posts: ' + k(d.posts),
       t('costo').toLowerCase() + ': ' + fmtC(d.costo) + ' · ' + t('horas').toLowerCase() + ': ' + fmtHoras(d.horas) + ' · tokens: ' + (d.tok_tot ? Math.round(d.tok_tot / 1000) + 'k' : '—'),
@@ -1773,7 +1912,7 @@ function App({ ctx }) {
       h(
         'div',
         { className: 'pthead' },
-        h('div', { className: 'pname', id: 'pname' }, d.raw),
+        h('div', { className: 'pname', id: 'pname' }, activeTab === 'testing' ? (d.canonTitle || d.raw) : d.raw),
         h(
           'div',
           { className: 'pnaveg' },
@@ -1812,11 +1951,11 @@ function App({ ctx }) {
       h(
         'div',
         { className: 'kv', id: 'pkv' },
-        h('div', null, t('sujeto')),
+        h('div', null, 'tag0 · ' + t('sujeto')),
         h(
           'div',
           null,
-          h('b', null, d.sujeto),
+          h('b', null, d.tag0 || d.sujeto),
           ' · ' + String(d.mmm || 1).padStart(3, '0'),
           d.vacia
             ? h(
@@ -1949,10 +2088,10 @@ function App({ ctx }) {
         h('div', null, h('span', { className: 'pill tag6' }, d.tag6 || '—')),
         h('div', null, 'tag7 · ' + t('lblLibre')),
         h('div', null, d.tag7 || '—'),
-        h('div', null, 'tag8 · ' + t('lblLibre')),
-        h('div', null, d.tag8 || '—'),
-        h('div', null, 'tag9 · ' + t('lblLibre')),
-        h('div', null, d.tag9 || '—'),
+        h('div', null, 'tag8 · ' + t('lblProyecto')),
+        h('div', null, d.tag8 ? h('span', { className: 'pill tag8' }, d.tag8) : '—'),
+        h('div', null, 'tag9 · Pending'),
+        h('div', null, d.tag9 ? h('span', { className: 'pill tag9' }, d.tag9) : '—'),
         h('div', { style: { gridColumn: '1/-1', borderTop: '1px solid var(--line)', margin: '6px 0 2px' } }),
         h('div', null, t('ruta')),
         h('div', null, `${d.dom || 'Software'} › ${d.tag5 || '—'} › ${d.tag1 || '—'}`),
@@ -2061,6 +2200,243 @@ function App({ ctx }) {
     if (res && res.session_id) {
       await callRpc(ctx, 'session.title', { session_id: res.session_id, title: v })
     }
+  }
+
+  const createCommitBackup = async (sessionsList) => {
+    const list = sessionsList || sessions || []
+    const entries = list
+      .filter((d) => !esCron(d) && !d.vacia && !esBorrada(d) && d.canonTitle && d.canonTitle !== d.raw)
+      .map((d) => ({
+        id: d.id,
+        title_before: d.raw,
+        title_after: d.canonTitle,
+        prof: d.prof,
+        ts: new Date().toISOString(),
+      }))
+    const fname = `commit-backup-${getBackupStamp()}.json`
+    const payload = {
+      filename: fname,
+      ts: Date.now(),
+      committed: false,
+      reverted: false,
+      changedCount: entries.length,
+      entries,
+    }
+    const filesApi = (ctx && ctx.files) || (host && host.files)
+    if (filesApi && typeof filesApi.writeText === 'function') {
+      try {
+        await filesApi.writeText('data', fname, JSON.stringify(payload, null, 2))
+        await filesApi.writeText('data', 'commit-last.json', JSON.stringify(payload, null, 2))
+      } catch (_) {}
+    }
+    setLastBackup(payload)
+    return payload
+  }
+
+  const switchTab = async (tab) => {
+    setActiveTab(tab)
+    try {
+      localStorage.setItem('mmws_active_tab', tab)
+    } catch (_) {}
+    if (tab === 'testing') {
+      await createCommitBackup(sessions)
+    }
+  }
+
+  const handleCommit = async () => {
+    let curBackup = lastBackup
+    // If backup is missing or older than 10 minutes (600,000 ms), refresh before writing
+    if (!curBackup || !curBackup.ts || Date.now() - curBackup.ts > 600000) {
+      curBackup = await createCommitBackup(sessions)
+    }
+    const targets = (curBackup && curBackup.entries) || []
+    const eligibleCount = sessions.filter((d) => !esCron(d) && !d.vacia && !esBorrada(d)).length
+    const unchangedCount = eligibleCount - targets.length
+
+    if (targets.length === 0) {
+      setBtnMsg((p) => ({
+        ...p,
+        commit: t('commitDone', { n: 0, m: unchangedCount }),
+      }))
+      setTimeout(() => setBtnMsg((p) => ({ ...p, commit: '' })), 4000)
+      return
+    }
+
+    const ok = window.confirm(t('confirmCommit', { n: targets.length }))
+    if (!ok) return
+
+    setIsCommitting(true)
+    let updated = 0
+    for (let i = 0; i < targets.length; i++) {
+      const ent = targets[i]
+      setBtnMsg((p) => ({
+        ...p,
+        commit: t('commitProgress', { current: i + 1, total: targets.length }),
+      }))
+      try {
+        const res = await callRpc(ctx, 'session.resume', {
+          session_id: ent.id,
+          profile: ent.prof === 'default' ? undefined : ent.prof,
+          lazy: true,
+          omit_messages: true,
+        })
+        if (res && res.session_id) {
+          await callRpc(ctx, 'session.title', { session_id: res.session_id, title: ent.title_after })
+        }
+        updated++
+      } catch (err) {
+        console.error('Error committing title for', ent.id, err)
+      }
+    }
+
+    const idMap = new Map(targets.map((e) => [e.id, e.title_after]))
+    setSessions((prev) =>
+      prev.map((s) => (idMap.has(s.id) ? { ...s, raw: idMap.get(s.id) } : s))
+    )
+
+    const updatedBackup = {
+      ...curBackup,
+      committed: true,
+      reverted: false,
+      commitTs: Date.now(),
+      changedCount: updated,
+    }
+    setLastBackup(updatedBackup)
+    const filesApi = (ctx && ctx.files) || (host && host.files)
+    if (filesApi && typeof filesApi.writeText === 'function') {
+      try {
+        await filesApi.writeText('data', 'commit-last.json', JSON.stringify(updatedBackup, null, 2))
+        if (updatedBackup.filename) {
+          await filesApi.writeText('data', updatedBackup.filename, JSON.stringify(updatedBackup, null, 2))
+        }
+      } catch (_) {}
+    }
+
+    setIsCommitting(false)
+    if (updated > 0) {
+      setCanRevert(true)
+    }
+    setBtnMsg((p) => ({
+      ...p,
+      commit: '',
+      foot: t('commitDone', { n: updated, m: unchangedCount }),
+    }))
+    setTimeout(() => setBtnMsg((p) => ({ ...p, foot: '' })), 4500)
+  }
+
+  const handleRevert = async () => {
+    if (!lastBackup || !Array.isArray(lastBackup.entries) || lastBackup.entries.length === 0) return
+    const targets = lastBackup.entries
+
+    const ok = window.confirm(t('confirmRevert', { n: targets.length }))
+    if (!ok) return
+
+    setIsReverting(true)
+    let reverted = 0
+    for (let i = 0; i < targets.length; i++) {
+      const ent = targets[i]
+      setBtnMsg((p) => ({
+        ...p,
+        revert: `Revert ${i + 1}/${targets.length}`,
+      }))
+      try {
+        const res = await callRpc(ctx, 'session.resume', {
+          session_id: ent.id,
+          profile: ent.prof === 'default' ? undefined : ent.prof,
+          lazy: true,
+          omit_messages: true,
+        })
+        if (res && res.session_id) {
+          await callRpc(ctx, 'session.title', { session_id: res.session_id, title: ent.title_before })
+        }
+        reverted++
+      } catch (err) {
+        console.error('Error reverting title for', ent.id, err)
+      }
+    }
+
+    const revMap = new Map(targets.map((e) => [e.id, e.title_before]))
+    setSessions((prev) =>
+      prev.map((s) => (revMap.has(s.id) ? { ...s, raw: revMap.get(s.id) } : s))
+    )
+
+    const updatedBackup = {
+      ...lastBackup,
+      committed: false,
+      reverted: true,
+      revertTs: Date.now(),
+    }
+    setLastBackup(updatedBackup)
+    const filesApi = (ctx && ctx.files) || (host && host.files)
+    if (filesApi && typeof filesApi.writeText === 'function') {
+      try {
+        await filesApi.writeText('data', 'commit-last.json', JSON.stringify(updatedBackup, null, 2))
+        if (updatedBackup.filename) {
+          await filesApi.writeText('data', updatedBackup.filename, JSON.stringify(updatedBackup, null, 2))
+        }
+      } catch (_) {}
+    }
+
+    setIsReverting(false)
+    setCanRevert(false)
+    setBtnMsg((p) => ({
+      ...p,
+      revert: '',
+      foot: t('revertDone', { n: reverted }),
+    }))
+    setTimeout(() => setBtnMsg((p) => ({ ...p, foot: '' })), 4500)
+  }
+
+  const handleUpdateRules = async () => {
+    let idx = null
+    let fac = null
+    const filesApi = (ctx && ctx.files) || (host && host.files)
+    if (filesApi && typeof filesApi.readText === 'function') {
+      try {
+        const [iRes, fRes] = await Promise.all([
+          filesApi.readText('data', 'index.json').catch(() => null),
+          filesApi.readText('data', 'facets.json').catch(() => null),
+        ])
+        if (iRes && iRes.ok && iRes.text) idx = JSON.parse(iRes.text)
+        if (fRes && fRes.ok && fRes.text) fac = JSON.parse(fRes.text)
+      } catch (_) {}
+    }
+
+    let isStale = false
+    if (idx && idx.generated) {
+      const genTs = new Date(idx.generated).getTime()
+      if (!isNaN(genTs) && Date.now() - genTs > 24 * 3600 * 1000) {
+        isStale = true
+      }
+    }
+
+    let diffCount = 0
+    setSessions((prev) =>
+      prev.map((s) => {
+        const cTitle = canonicalTitle(s)
+        if (!esCron(s) && !s.vacia && !esBorrada(s) && cTitle !== s.raw) {
+          diffCount++
+        }
+        return { ...s, canonTitle: cTitle }
+      })
+    )
+
+    if (isStale) {
+      setStaleNotice(t('updateStale'))
+      setBtnMsg((p) => ({
+        ...p,
+        update: `${diffCount} cambiarían`,
+        foot: `${diffCount} cambiarían · ${t('updateStale')}`,
+      }))
+    } else {
+      setStaleNotice('')
+      setBtnMsg((p) => ({
+        ...p,
+        update: `${diffCount} cambiarían`,
+        foot: t('updateDone', { count: diffCount }),
+      }))
+    }
+    setTimeout(() => setBtnMsg((p) => ({ ...p, update: '', foot: '' })), 6000)
   }
 
   const toggleFold = (b) => {
@@ -2359,7 +2735,7 @@ function App({ ctx }) {
     const cnt = {}
     for (const d of sessions) {
       if (pass(d)) {
-        const k = d.sujeto || 'Sin sujeto'
+        const k = d.tag0 || d.sujeto || 'Sin sujeto'
         cnt[k] = (cnt[k] || 0) + 1
       }
     }
@@ -2382,12 +2758,13 @@ function App({ ctx }) {
 
   // Build two-line rows matching 2026-11-11_simulador-solo-codigo.html
   const tableRows = sorted.flatMap((d) => {
-    const cut = d.raw.lastIndexOf(']')
-    const head = (cut > 0 ? d.raw.slice(0, cut + 1) : `[${d.sujeto}] ${String(d.mmm).padStart(3, '0')}`).replace(
+    const rawToDisplay = (activeTab === 'testing' ? (d.canonTitle || d.raw) : d.raw) || ''
+    const cut = rawToDisplay.lastIndexOf(']')
+    const head = (cut > 0 ? rawToDisplay.slice(0, cut + 1) : `[${d.sujeto}] ${String(d.mmm).padStart(3, '0')}`).replace(
       /^\d+\s+/,
       ''
     )
-    const tail = cut > 0 ? d.raw.slice(cut + 1).trim() : d.desc
+    const tail = cut > 0 ? rawToDisplay.slice(cut + 1).trim() : d.desc
     const isDel = /borrad/i.test(d.sujeto) || esBorrada(d)
     const isSel = Boolean(sel && sel.id === d.id)
 
@@ -2504,12 +2881,44 @@ function App({ ctx }) {
       h(
         'div',
         { className: 'brandrow' },
-        h('h1', null, NAME),
+        h(
+          'h1',
+          {
+            onClick: () => setVModal(true),
+            style: { cursor: 'pointer' },
+            title: t('infoPluginTitle'),
+          },
+          APP_TITLE
+        ),
         h(
           'span',
           { className: 'sub' },
           h('b', null, loading ? '—' : sessions.length),
           ' sesiones · NNN [Sujeto] MMM [Tag1] [Tag2] Descripción · Verbo'
+        ),
+        h(
+          'div',
+          { className: 'headtabs', role: 'tablist' },
+          h(
+            'button',
+            {
+              role: 'tab',
+              className: 'headtab' + (activeTab === 'actual' ? ' on' : ''),
+              onClick: () => switchTab('actual'),
+              title: t('tabActualTitle'),
+            },
+            t('tabActual')
+          ),
+          h(
+            'button',
+            {
+              role: 'tab',
+              className: 'headtab' + (activeTab === 'testing' ? ' on testing' : ''),
+              onClick: () => switchTab('testing'),
+              title: t('tabTestingTitle'),
+            },
+            t('tabTesting')
+          )
         ),
         h(
           'button',
@@ -2524,6 +2933,28 @@ function App({ ctx }) {
         )
       )
     ),
+
+    /* ---------- Stale Notice Banner ---------- */
+    staleNotice
+      ? h(
+          'div',
+          {
+            className: 'aviso',
+            style: { margin: '6px 16px', background: '#2e1c14', borderColor: '#733a1e' },
+          },
+          h('b', null, 'ℹ '),
+          staleNotice,
+          h(
+            'button',
+            {
+              className: 'ghost',
+              onClick: () => setStaleNotice(''),
+              style: { marginLeft: 'auto', padding: '1px 6px', fontSize: '11px' },
+            },
+            '✕'
+          )
+        )
+      : null,
 
     /* ---------- Visible Diagnostic Error Banner ---------- */
     rpcErrors && rpcErrors.length > 0
@@ -2595,67 +3026,6 @@ function App({ ctx }) {
         h(
           'div',
           { className: 'ascroll' },
-          renderFacetBlock('tag1', 'tag1', 'tag1', 'tag1', false),
-          renderFacetBlock('tag2', 'tag2', 'tag2', 'tag2', false),
-          renderFacetBlock('tag3', 'tag3', 'tag3i', 'tag3', false),
-          renderFacetBlock('tag4', 'tema', 'tag3', 'pilar', true),
-
-          h('h4', null, t('fecha')),
-          h('div', null, renderFechaTree()),
-
-          h('h4', null, t('diaExacto')),
-          h('input', {
-            id: 'dia',
-            type: 'date',
-            value: f.dia,
-            onChange: (e) => setF((p) => ({ ...p, dia: e.target.value })),
-            style: {
-              width: '100%',
-              background: '#100d13',
-              border: '1px solid var(--line2)',
-              color: 'var(--tx)',
-              borderRadius: '6px',
-              padding: '5px 8px',
-              fontSize: '12.5px',
-            },
-          }),
-
-          h('h4', null, t('rango')),
-          h(
-            'div',
-            { style: { display: 'flex', gap: '6px' } },
-            h('input', {
-              id: 'd1',
-              type: 'date',
-              value: f.d1,
-              onChange: (e) => setF((p) => ({ ...p, d1: e.target.value })),
-              style: {
-                flex: 1,
-                background: '#100d13',
-                border: '1px solid var(--line2)',
-                color: 'var(--tx)',
-                borderRadius: '6px',
-                padding: '4px',
-                fontSize: '11.5px',
-              },
-            }),
-            h('input', {
-              id: 'd2',
-              type: 'date',
-              value: f.d2,
-              onChange: (e) => setF((p) => ({ ...p, d2: e.target.value })),
-              style: {
-                flex: 1,
-                background: '#100d13',
-                border: '1px solid var(--line2)',
-                color: 'var(--tx)',
-                borderRadius: '6px',
-                padding: '4px',
-                fontSize: '11.5px',
-              },
-            })
-          ),
-
           pendMap
             ? [
                 h(
@@ -2728,6 +3098,68 @@ function App({ ctx }) {
                     : `+ ${sujetoStats.keys.length - 20} ${lang === 'en' ? 'more' : 'más'}`
                 )
               : null
+          ),
+
+          renderFacetBlock('tag1', 'tag1', 'tag1', 'tag1', false),
+          renderFacetBlock('tag2', 'tag2', 'tag2', 'tag2', false),
+          renderFacetBlock('tag3', 'tag3', 'tag3i', 'tag3', false),
+          renderFacetBlock('tag4', 'tema', 'tag3', 'pilar', true),
+          renderFacetBlock('tag8', 'lblProyecto', 'tag8', 'tag8', false),
+
+          h('h4', null, t('fecha')),
+          h('div', null, renderFechaTree()),
+
+          h('h4', null, t('diaExacto')),
+          h('input', {
+            id: 'dia',
+            type: 'date',
+            value: f.dia,
+            onChange: (e) => setF((p) => ({ ...p, dia: e.target.value })),
+            style: {
+              width: '100%',
+              background: '#100d13',
+              border: '1px solid var(--line2)',
+              color: 'var(--tx)',
+              borderRadius: '6px',
+              padding: '5px 8px',
+              fontSize: '12.5px',
+            },
+          }),
+
+          h('h4', null, t('rango')),
+          h(
+            'div',
+            { style: { display: 'flex', gap: '6px' } },
+            h('input', {
+              id: 'd1',
+              type: 'date',
+              value: f.d1,
+              onChange: (e) => setF((p) => ({ ...p, d1: e.target.value })),
+              style: {
+                flex: 1,
+                background: '#100d13',
+                border: '1px solid var(--line2)',
+                color: 'var(--tx)',
+                borderRadius: '6px',
+                padding: '4px',
+                fontSize: '11.5px',
+              },
+            }),
+            h('input', {
+              id: 'd2',
+              type: 'date',
+              value: f.d2,
+              onChange: (e) => setF((p) => ({ ...p, d2: e.target.value })),
+              style: {
+                flex: 1,
+                background: '#100d13',
+                border: '1px solid var(--line2)',
+                color: 'var(--tx)',
+                borderRadius: '6px',
+                padding: '4px',
+                fontSize: '11.5px',
+              },
+            })
           ),
 
           h(
@@ -2926,6 +3358,7 @@ function App({ ctx }) {
                             tag4: null,
                             tag5: null,
                             tag6: null,
+                            tag8: null,
                             tag9: null,
                             sujeto: null,
                             motor: null,
@@ -2956,8 +3389,7 @@ function App({ ctx }) {
                 }
               },
             },
-            h('span', { style: { display: 'block' } }, lang === 'en' ? 'Session' : 'Info'),
-            h('span', { style: { display: 'block' } }, lang === 'en' ? 'Info' : 'sesión')
+            h('span', null, t('tabInfo'))
           )
         ),
 
@@ -3017,21 +3449,51 @@ function App({ ctx }) {
       )
     ),
 
-    /* ---------- Bottom Footer Row (Version Badge + 5 KPIs) ---------- */
+    /* ---------- Bottom Footer Row (Unified Actions + 5 KPIs) ---------- */
     h(
       'div',
       { className: 'footrow' },
-      h(
-        'div',
-        {
-          className: 'vbadge',
-          onClick: () => setVModal(true),
-          title: 'Ficha del plugin',
-        },
-        h('i', null),
-        'V ',
-        h('b', null, '0.24')
-      ),
+      activeTab === 'testing'
+        ? h(
+            'div',
+            { className: 'footbtns' },
+            !canRevert
+              ? h(
+                  'button',
+                  {
+                    className: 'commitbtn',
+                    id: 'btnCommit',
+                    disabled: isCommitting || isReverting,
+                    onClick: handleCommit,
+                    title: t('commitBtnTitle'),
+                  },
+                  btnMsg.commit || t('commitBtn')
+                )
+              : h(
+                  'button',
+                  {
+                    className: 'revertbtn',
+                    id: 'btnRevert',
+                    disabled: isCommitting || isReverting,
+                    onClick: handleRevert,
+                    title: t('revertBtnTitle'),
+                  },
+                  btnMsg.revert || t('revertBtn')
+                ),
+            h(
+              'button',
+              {
+                className: 'updatebtn',
+                id: 'btnUpdate',
+                disabled: isCommitting || isReverting,
+                onClick: handleUpdateRules,
+                title: t('updateBtnTitle'),
+              },
+              btnMsg.update || t('updateBtn')
+            ),
+            btnMsg.foot ? h('span', { className: 'footmsg' }, btnMsg.foot) : null
+          )
+        : h('div', { className: 'footbtns' }),
       h(
         'div',
         { className: 'kbar' },
@@ -3046,12 +3508,6 @@ function App({ ctx }) {
           { className: 'kpi good' },
           h('b', null, '$' + totals.costo.toFixed(2)),
           h('div', { className: 'lb' }, h('i', null, t('kCos1')), h('i', null, t('kCos2')))
-        ),
-        h(
-          'div',
-          { className: 'kpi gold' },
-          h('b', null, Math.round(totals.horas / 60) + ' h'),
-          h('div', { className: 'lb' }, h('i', null, t('kHor1')), h('i', null, t('kHor2')))
         ),
         h(
           'div',
@@ -3125,7 +3581,7 @@ function App({ ctx }) {
             h(
               'div',
               { style: { display: 'flex', alignItems: 'baseline', gap: '10px', marginBottom: '12px' } },
-              h('h4', { style: { fontSize: '13px', margin: 0, color: 'var(--tx)' } }, NAME),
+              h('h4', { style: { fontSize: '13px', margin: 0, color: 'var(--tx)' } }, APP_TITLE),
               h('span', { className: 'mono', style: { fontSize: '11px', color: '#c9a8f0' } }, t('vSub'))
             ),
             h('p', { style: { fontSize: '12px', color: 'var(--tx2)', margin: '0 0 12px', lineHeight: 1.55 } }, t('vIntro')),
@@ -3159,7 +3615,7 @@ function App({ ctx }) {
 }
 
 // Named exports so tests/test_plugin.mjs can exercise the pure helpers without React.
-export { numSel, fmtC, fmtH, fmtN, loadCatalogue }
+export { numSel, fmtC, fmtH, fmtN, loadCatalogue, canonicalTitle }
 
 export default {
   id: ID,

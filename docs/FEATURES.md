@@ -123,26 +123,25 @@ English because they are what the owner actually says and searches for (`Trouble
 `Hardware`, `Data Backup`, `Gateway`). The **vocabulary file** exists precisely so the classifier
 uses *his* words instead of translating them.
 
-## 7 · The simulator — spec and workbench
+## 7 · The plugin workbench — live & testing modes
 
-`tools/simulator_template.html` is not a mock: it is the **spec** (*if the window disagrees with
-it, the window is wrong*) and the fastest way to work.
+The desktop plugin (`desktop/plugin.js`) is the full interactive workbench and the fastest way to work.
 
 - **Search** works because the description carries the keywords, so a half-remembered phrase
   finds the session.
 - **Copy** and **Export** are its strongest features: copy a corrected title, export the
   corrections as CSV.
-- **Side by side**: with the simulator open in the Desktop preview next to a live session, the
-  owner copies from the session, pastes into the simulator, and the plugin fixes the subject and
+- **Side by side**: with the plugin open in the Desktop view next to a live session, the
+  owner copies from the session, pastes into the search, and the plugin fixes the subject and
   **updates the batería** — the plugin gets smarter with each pass.
 - **Bidirectional bridge**: Hermes reports a sequence of session numbers (`45, 76, 450, 32`), the
-  owner pastes them into the simulator's search, opens each one and issues the corrections. That
+  owner pastes them into the plugin's search, opens each one and issues the corrections. That
   loop — *reach a large archive, improve it, and never let it rot* — is the main feature.
 
 ## 8 · Modularity (decision from session 897)
 
-The **simulator is modular** and the renaming algorithm will keep improving. The plugin is built
-so **implementation is optional**: the nomenclature engine and the simulator can be reused
+The renaming algorithm will keep improving. The plugin is built
+so the nomenclature engine can be reused
 outside Hermes — in OpenClaw, in another agent host, or standalone. Nothing in the algorithm
 needs Hermes; only the write-back does.
 
@@ -158,36 +157,31 @@ answerable.
 | Surface | State |
 |---|---|
 | `register(ctx)` + `on_session_end` hook | **built** — refreshes `index.json` with `build(with_messages=False)` |
-| `desktop/plugin.js` (catalogue page, nine tags) | **built** — `v0.23` |
-| Agent tools | **not declared** yet (`provides_tools` empty) |
+| `desktop/plugin.js` (catalogue page, nine tags) | **built** — `v0.25` |
+| Agent tools | **built** — 10 tools declared and functional |
 | Backend routes (`dashboard/plugin_api.py`) | **not built** — five routes, zero lines |
 | Validator | `hermes plugins validate .` → **passed**, no warnings |
 
 ## 11 · Future star features
 
-1. **External bookmarks.** Managed from the simulator, imported by the plugin, folded into the
+1. **External bookmarks.** Managed from the plugin, imported into the
    batería — the agent understands the owner better.
 2. **The same algorithm for YouTube titles** — the same language, a different archive.
 3. **Obsidian bridge.** A folder of `.md` files maintained externally, so the archive is
    searchable outside Hermes too.
 
-## 12 · Two bodies, one brain — dual delivery
+## 12 · Architecture — one engine, native UI
 
-This is a plugin with **two fronts and a single engine**, and that is a feature, not a duplicate:
+The plugin provides a unified native interface with **Actual** and **Testing** tabs:
 
-| Front | Runs in | Reads | Writes |
+| Mode | Runs in | Reads | Writes |
 |---|---|---|---|
-| **Native plugin** | Hermes Desktop (sidebar page `desktop/plugin.js` + routes) | the live session database | through the host API only |
-| **Simulator** | any browser (`tools/simulator_template.html`) | a snapshot / export | the corrections file |
+| **Actual** | Hermes Desktop (`desktop/plugin.js`) | the live session database (`state.db`) | Read-only |
+| **Testing** | Hermes Desktop (`desktop/plugin.js`) | simulated nomenclature over index/DB | Commit (`session.title`) with Revert |
 
-Both show **exactly the same functionality**: the same row shape, the same nine tags, the same
-filters, the same search, the same detail card, the same copy/export. The simulator is not a
-lesser mock — it is the same product running on a file instead of on the database, which is what
-makes it usable for testing and for other hosts (OpenClaw, another agent) while the plugin talks
-to Hermes.
-
-**The rule that follows:** every capability the simulator has, the native plugin must have, with
-the same behaviour — only the data source changes.
+Both views provide the full feature set: the same row shape, the same nine tags, the same
+filters, the same search, the same detail card, the same copy/export. Testing mode enables safe
+simulation with automated backups before writing back to Hermes.
 
 ## 13 · Acceptance criteria
 
