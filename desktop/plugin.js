@@ -1113,9 +1113,10 @@ function App({ ctx }) {
   const [btnMsg, setBtnMsg] = useState({ copia: '', expc: '', updb: '', pcopia: '', avcopia: '' })
   const [lang, setLang] = useState(() => {
     try {
-      return localStorage.getItem('mmws-lang') === 'en' ? 'en' : 'es'
+      // English is the plugin's default language; Spanish is the opt-in.
+      return localStorage.getItem('mmws-lang') === 'es' ? 'es' : 'en'
     } catch (_) {
-      return 'es'
+      return 'en'
     }
   })
 
