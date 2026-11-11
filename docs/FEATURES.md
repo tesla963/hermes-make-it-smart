@@ -1,4 +1,4 @@
-# Features — Hermes, Make All my Work Smart!
+# Features — Hermes, Make it Smart!
 
 ## 1 · What it really is
 
@@ -205,3 +205,24 @@ outside the host API. No title write without a backup.**
 - `ALGORITHM.md` still lists `Date` as a **name field**; this page puts the date in **`tag5`**.
   `ALGORITHM.md` gets corrected, not this page.
 - `SPEC-UI.md`'s axis names for `tag5`/`tag6` must match §3 (date, machine).
+
+## 15 · Branding — one product, three names
+
+The name is not repeated where the context already says it. Inside Hermes Desktop "Hermes" is noise.
+
+| Context | Name | Where it lives |
+|---|---|---|
+| Short name **inside** the app | `Make It Smart` | `SIDEBAR_NAV_AREA` label in `desktop/plugin.js` |
+| Full name **outside** the app | `Hermes, Make it Smart!` | repo description, README H1, release notes, `plugin.yaml` description |
+| Plugin id | `hermes-make-it-smart` | `plugin.yaml` → `name:` |
+| Storage key | `make-it-smart` | `core/paths.py` → `PLUGIN`; folder name under `desktop-plugins/` and `plugin-data/` |
+
+Rules that follow from this:
+
+- **Never** put "Hermes" in the sidebar label: the user is already inside Hermes.
+- The exported `id` in `desktop/plugin.js` is the **storage key**, not the plugin id. It must match the
+  folder name under `desktop-plugins/`, or the page will not mount.
+- Renaming the id renames the data folders: migrate `plugin-data/<key>/` and
+  `desktop-plugins/<key>/` together, then **fully restart** Hermes Desktop (⌘Q) — it scans the folder
+  only at launch.
+
