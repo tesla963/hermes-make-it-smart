@@ -1,54 +1,109 @@
 # Changelog
 
-## v0.1.0-preview — 2026-11-10 · GUI instalable, sin funcionalidad de escritura
+## v0.1.1-preview — 2026-11-10 · Port of the 2026-11-11 simulator
 
-**Qué es:** la primera versión que un tercero puede instalar y ver funcionando con sus propios
-datos. La ventana nativa de Hermes Desktop lee las sesiones reales del gateway y las muestra en el
-catálogo. **No escribe nada**: no renombra, no clasifica, no actualiza la base.
+**What it is:** the native GUI now behaves like the current simulator, not the November 7 one.
+Still **read-only**: it lists, filters, searches and copies; it does not rename, classify or write
+to the database.
 
-### Hito — la GUI nativa muestra las 910 sesiones reales
+Ported from `2026-11-11_simulador-solo-codigo.html` (1.5 MB, 40 functions) into
+`desktop/plugin.js`: **+640 / −330 lines, one file**. Verified with `hermes plugins validate .`
+(passed) and `node tests/test_plugin.mjs` (all green); the copy in `~/.hermes/desktop-plugins/` was
+synchronised to the same SHA-256.
 
-Verificado sobre la instalación del autor: tabla con las columnas del simulador, aside con árbol
-de fechas, y barra KPI con **768 sesiones visibles · $69.85 acumulados · 267M tokens**.
+### Added
 
-### Añadido
+- **Exclusive state filters + an `Empty` state** (`setEstado`). Three mutually exclusive buttons
+  under *Mostrar* — `Deleted · N`, `Empty · N`, `Cron · N`. With none active the list hides deleted
+  sessions, cron sessions and empty ones; activating one shows only that subset; pressing it again
+  turns it off. `esCron` now also detects `profile`/`id` matching `cron[_-]…`.
+- **Sequential navigation between sessions from the detail card** (`filasVisibles`,
+  `sesionActualIdx`, `navSesion`, `updNaveg`). ▲/▼ arrows walk the *visible* rows, call
+  `scrollIntoView({block:'center'})` when the row leaves the 22 %–74 % band of the viewport, disable
+  themselves at the ends, and mark `.sele` on both the body row (with the wine left bar) and the
+  aside row.
+- **Vertical `Info sesión` / `Session Info` tab** on the right edge of the toolbar: one click opens
+  the detail card of the first visible session without the global click-outside listener closing it.
+- **Cron hygiene notice** (`pintaAviso` + `CRON_INFO`): a banner above the table appears when there
+  are empty cron sessions or live jobs, explains the cause, and offers **Copy** to put a ready-to-use
+  prompt on the clipboard for the assistant.
+- **Full bilingual detail card** (`pintaPanel` + `fichaTexto`): switching ES | EN repaints the open
+  card in place without losing the selection, translating labels that used to be hard-coded in
+  Spanish (path, messages, description, ADN, note, empty pill).
 
-- `register(ctx)` con el hook `on_session_end`, que refresca `index.json` con
-  `build(with_messages=False)` para no reconstruir los cuerpos de mensaje en cada turno.
-- Página nativa (`desktop/plugin.js`) registrada en `ROUTES_AREA` (`/smart`) y en el sidebar como
-  **Make It Smart**, gemela del simulador: fila de dos líneas, nueve slots de tag, pills, aside con
-  facetas, barra KPI de cinco cifras, ficha de detalle, copiar/exportar y switch ES|EN.
-- Carga de datos desde el host: `session.list` por perfil (vía `host.request` /
-  `host.listPersistedSessions`), con costo, horas, tokens y motor calculados desde `state.db`.
-- **Banner de diagnóstico** visible: si un RPC falla, muestra el método, el mensaje literal y un
-  botón Reintentar, en lugar de callar el error.
+### Changed
 
-### Corregido
+- **Toolbar reorganised.** `.trow` groups the actions on the left (`Limpiar`, `Copiar · N`,
+  `Exportar · N`) followed by *Mostrar* filters; four redundant controls (sort, update DB, filter
+  drawer, fit check) were removed. Below them, `.chipsrow` holds the active-filter chips on the left
+  and the row counter on the right.
+- **Aside and facets.** The search input `#q` is pinned in `.abarra`, outside the scrolling
+  `.ascroll`; `tag1` always pins `Bot` (`FIJOS1`); the date tree keeps **one month open at a time**
+  (`openSoloUnMes`) and no longer repeats the year in each month name.
+- **Search index** (`_s`) now indexes `raw` and `resumen` too, so half-remembered phrases match.
+- **Duration formatter** (`fmtHoras`): `—` for zero or negative, `Xd Yh` / `Xd` above 1440 minutes,
+  `Xh` when fewer than 5 minutes remain. `fmtH` stays exported for the unit test.
+- `calling` in the new simulator is **text inside `DATA`**, not a function — the earlier count of
+  "new functions" over-counted it.
 
-- La tabla salía vacía porque `ctx.files.readText('data', …)` lee de
-  `~/Library/Application Support/Hermes/plugin-files/data/<plugin>/` y no de
-  `~/.hermes/plugin-data/<plugin>/`. Los datos se publican ahora en la ruta que el host lee.
-- Los cargadores se tragaban los fallos con `catch(_)`, lo que hacía invisible la causa.
+### Known limitations of this version
 
-### Limitaciones conocidas de esta versión
+- **It does not write.** Editing and persisting titles from the window, and the batch classifier,
+  are the next stage.
+- **The hours statistic does not work yet** — the KPI column formats correctly but the value comes
+  from `state.db` and is not being computed for every session. Deferred: the GUI was frozen by
+  decision, not by oversight.
+- *Actualizar BD* detects sessions without a canonical title but does not run the Python classifier:
+  the host exposes no RPC method that triggers it.
+- Tag axes still follow the old order in `core/taxonomy.py`; the remap to the nomenclature in
+  `docs/FEATURES.md` is pending.
+- Parity gaps remaining: synonym-aware search, clickable row pills, deleted-session filter wired to
+  the new state buttons, export with `[CCCC]` counter and `verb`/`verb_nuevo` columns.
 
-- **No escribe.** Editar y persistir títulos desde la ventana, y el clasificador en lote, son la
-  siguiente etapa.
-- El botón *Actualizar BD* detecta sesiones sin título canónico pero **no** ejecuta el clasificador
-  Python: no existe todavía un método RPC del host que lo dispare.
-- Los ejes de tags siguen el orden viejo en `core/taxonomy.py`; el remapeo a la nomenclatura de
-  `docs/FEATURES.md` está pendiente.
-- Paridad visual incompleta: chips de filtros activos, sinónimos en la búsqueda, pills clicables,
-  filtro de sesiones borradas, export con contador.
-
-### Instalación
+### Install
 
 ```bash
 git clone https://github.com/tesla963/hermes-make-all-my-work-smart
 cd hermes-make-all-my-work-smart
-python3 tools/build_index.py          # construye index.json desde tus state.db (solo lectura)
+python3 tools/build_index.py          # builds index.json from your state.db (read-only)
 cp desktop/plugin.js ~/.hermes/desktop-plugins/make-all-my-work-smart/plugin.js
 ```
 
-Reinicia Hermes Desktop y abre **Make It Smart** en el sidebar. La especificación funcional completa
-está en `docs/FEATURES.md`.
+Restart Hermes Desktop and open **Make It Smart** in the sidebar. The full functional specification
+is in `docs/FEATURES.md`.
+
+---
+
+## v0.1.0-preview — 2026-11-10 · Installable GUI, no write functionality
+
+**What it is:** the first version a third party can install and see working against their own data.
+The native Hermes Desktop window reads the real sessions from the gateway and shows them in the
+catalogue. **It writes nothing**: it does not rename, classify or update the database.
+
+### Milestone — the native GUI shows the real 910 sessions
+
+Verified on the author's install: the table with the simulator's columns, the aside with the date
+tree, and the KPI bar reading **768 visible sessions · $69.85 accumulated · 267M tokens**.
+
+### Added
+
+- `register(ctx)` with the `on_session_end` hook, refreshing `index.json` via
+  `build(with_messages=False)` so message bodies are not rebuilt on every turn.
+- Native page (`desktop/plugin.js`) registered in `ROUTES_AREA` (`/smart`) and in the sidebar as
+  **Make It Smart**: two-line row, nine tag slots, pills, faceted aside, five-figure KPI bar, detail
+  card, copy/export and ES | EN switch.
+- Data loaded from the host: `session.list` per profile (through `host.request` /
+  `host.listPersistedSessions`), with cost, hours, tokens and engine computed from `state.db`.
+- **Visible diagnostic banner:** when an RPC fails it shows the method, the literal message and a
+  Retry button, instead of swallowing the error.
+
+### Fixed
+
+- The table came up empty because `ctx.files.readText('data', …)` reads from
+  `~/Library/Application Support/Hermes/plugin-files/data/<plugin>/` and not from
+  `~/.hermes/plugin-data/<plugin>/`. Data is now published where the host actually reads it.
+- The loaders swallowed failures with `catch(_)`, which made the cause invisible.
+
+### Install
+
+Same as above.
