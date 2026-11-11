@@ -43,7 +43,7 @@ const plugin = mod.default
 
 console.log('\n§ forma del plugin')
 ok(plugin && typeof plugin === 'object', 'exports a default object')
-ok(plugin.id === 'make-all-my-work-smart', 'id is make-all-my-work-smart')
+ok(plugin.id === 'make-it-smart', 'id is the storage key (make-it-smart)')
 ok(/Smart!$/.test(plugin.name || ''), "name ends in 'Smart!'")
 ok(/^\d+\.\d+\.\d+$/.test(plugin.version || ''), 'version is semver')
 ok(typeof plugin.register === 'function', 'register() exists')

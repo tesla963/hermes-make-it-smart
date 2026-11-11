@@ -17,8 +17,8 @@ import { host, ROUTES_AREA, SIDEBAR_NAV_AREA } from '@hermes/plugin-sdk'
 import { jsx, jsxs } from 'react/jsx-runtime'
 import { useState, useEffect, useMemo, useRef } from 'react'
 
-const ID = 'make-all-my-work-smart'
-const NAME = 'Hermes, Make All my Work Smart!'
+const ID = 'make-it-smart'
+const NAME = 'Hermes, Make it Smart!'
 const VERSION = '0.23.0'
 const ROUTE = '/smart'
 
@@ -751,7 +751,7 @@ async function callRpc(ctx, method, params, errors) {
   } catch (err) {
     const msg = (err && (err.message || err.code || String(err))) || 'Error RPC desconocido'
     try {
-      console.error('[make-all-my-work-smart] RPC error:', method, params, err)
+      console.error('[make-it-smart] RPC error:', method, params, err)
     } catch (_) {
       /* ignore console error */
     }
@@ -813,8 +813,9 @@ async function loadCatalogue(ctx) {
         } catch (e) {
           errors.push({ method: 'JSON.parse(index.json)', message: String((e && e.message) || e) })
         }
-      } else if (idxRes && !idxRes.ok && idxRes.error && idxRes.error !== 'not-found') {
-        errors.push({ method: "files.readText('data','index.json')", message: String(idxRes.error) })
+      } else {
+        const err = (idxRes && (idxRes.error || idxRes.message)) || 'no se pudo leer index.json'
+        errors.push({ method: "files.readText('data','index.json')", message: String(err) })
       }
       if (facRes && facRes.ok && facRes.text) {
         try {
@@ -826,6 +827,8 @@ async function loadCatalogue(ctx) {
     } catch (e) {
       errors.push({ method: 'files.readText', message: String((e && e.message) || e) })
     }
+  } else {
+    errors.push({ method: 'files.readText', message: 'API files.readText no disponible' })
   }
 
   const idxById = new Map()
@@ -943,19 +946,24 @@ async function loadCatalogue(ctx) {
     })
   }
 
-  // 5. Combine live gateway rows with index.json cache
-  const allIds = new Set([...liveById.keys(), ...idxById.keys()])
+  // 5. Use the index as the authoritative source of rows (importing is not filtering: 910 rows).
+  // Live gateway listing is used to check for live runtime and enrich runtime metrics (duration, costs).
+  const hasIndex = Boolean(idxData && Array.isArray(idxData.sessions) && idxData.sessions.length > 0)
+  const sessionList = hasIndex ? idxData.sessions : [...liveById.values()]
   const merged = []
 
-  for (const id of allIds) {
+  for (const item of sessionList) {
+    const id = item && item.id
+    if (!id) continue
+    const idx = hasIndex ? item : (idxById.get(id) || {})
     const live = liveById.get(id)
-    const idx = idxById.get(id) || {}
     const ex = facetsMap[id] || {}
+    const isLive = Boolean(live)
 
-    const rawTitle = String((live && live.title) || idx.raw || '').trim()
+    const rawTitle = String(idx.raw || (live && live.title) || '').trim()
     const g = parseTitle(rawTitle)
 
-    const fecha = toFecha(live && live.started_at, idx.fecha)
+    const fecha = String(idx.fecha || toFecha(live && live.started_at, '')).slice(0, 10)
     const mes = fecha ? fecha.slice(0, 7) : idx.mes || ''
     const semana = isoWeek(fecha) || idx.semana || ''
     const anio = (ex.anio || idx.anio || ex.tag5 || idx.tag5 || (fecha ? fecha.slice(0, 4) : '') || '').trim()
@@ -986,9 +994,9 @@ async function loadCatalogue(ctx) {
       (Number(live && live.cache_write_tokens) || 0) +
       (Number(live && live.reasoning_tokens) || 0)
     const tok = Number(idx.tok_tot || idx.tok || liveTok || 0)
-    const liveCost = live && (live.actual_cost_usd != null ? live.actual_cost_usd : live.estimated_cost_usd)
-    const costo = Number(idx.costo != null ? idx.costo : liveCost || 0)
-    const liveEnd = live && (live.ended_at || live.last_active)
+    const liveCost = Number((live && (live.actual_cost_usd != null ? live.actual_cost_usd : live.estimated_cost_usd)) || 0)
+    const costo = Number(idx.costo != null && idx.costo > 0 ? idx.costo : (liveCost || idx.costo || 0))
+    const liveEnd = live && (live.ended_at || live.last_activity_at || live.last_active)
     const liveMin =
       live && live.started_at && liveEnd && liveEnd > live.started_at
         ? Math.min(480, Math.max(1, Math.round((liveEnd - live.started_at) / 60)))
@@ -1039,6 +1047,9 @@ async function loadCatalogue(ctx) {
       vacia: Boolean(idx.vacia != null ? idx.vacia : mc <= 0 && (!claves || claves.length === 0)),
       esCron: Boolean(idx.esCron || /^cron[_-]/i.test(id) || /^cron[_-]/i.test(prof)),
       _canonical: Boolean(g),
+      isLive,
+      runtimeVivo: isLive,
+      vivo: isLive,
     })
   }
 
@@ -1739,7 +1750,9 @@ function App({ ctx }) {
         'div',
         { className: 'pidfoot', id: 'pidfoot' },
         h('span', null, 'id'),
-        (d.prof && d.prof !== 'default' ? `· ${t('perfil').toLowerCase()} ${d.prof} · ` : '') + d.id
+        (d.prof && d.prof !== 'default' ? `· ${t('perfil').toLowerCase()} ${d.prof} · ` : '') +
+          d.id +
+          (d.isLive ? ' · [runtime vivo]' : '')
       )
     )
   }
