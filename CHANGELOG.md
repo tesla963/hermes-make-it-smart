@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.24.0 — 11-nov-2026 · aprobación pendiente visible por sesión
+
+### Añadido
+- **Panel derecho**: bloques `Pending Authorization IDs — Memory` y `— Skills`, con el botón de copiar **arriba** de cada título, los ids en monoespaciado y tooltip de confianza (`exact` / `window` / `window_amb` / `orphan`).
+- **Columna `Pending`** en el listado, después de Posts, con su clave de orden.
+- **Filtro Pending** (tag9) y **filtro Sujeto** (tag0) en el panel izquierdo, con contadores, y combinables con el filtro de mes ya existente.
+- **KPI `PENDING AUTH`** en el footer, clickeable para activar el filtro.
+- Bloque colapsable **«Sin sesión atribuible»** con las propuestas que no se pudieron atribuir a ninguna sesión.
+- CSV: columnas `pending`, `pend_mem`, `pend_skl` alineadas con la tabla.
+- `pending_index.json` como fuente de los ids (lo genera un indexador externo, no el plugin).
+
+### Cambiado
+- El tab lateral **Session Info** se dibuja en dos líneas: ya no se recorta.
+- Los botones **Copy session / Open session** aparecen también en la parte superior del panel de detalle.
+- Si `pending_index.json` falta, el feature completo se oculta sin errores visibles.
+
+### Notas
+- Solo lectura: el plugin nunca aprueba, rechaza ni borra propuestas.
+- El contador de horas (columna `HOURS` y KPI) sigue en cero: **bug documentado, no corregido en esta versión** (§13 de la spec del batch).
+
 ## Unreleased — plugin id renamed to `hermes-make-it-smart`
 
 The plugin id and its storage key were renamed to match the repository:
