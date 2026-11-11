@@ -204,14 +204,6 @@ Requires Hermes Agent with plugin support. Python 3.11+.
 - **Never** edits `config.yaml`, never disables the host's own title generator, and leaves
   no state behind if removed.
 
-## Relationship to other plugins
-
-This plugin is designed to sit alongside
-[hermes-auto-titler](https://github.com/Vocllum/hermes-auto-titler). AutoTitler keeps a
-title *current*; Make All my Work Smart turns the whole archive into a *catalog*. They write
-through the same host API and respect the same provenance ladder, so they compose rather
-than collide.
-
 ## License
 
 MIT — see [`LICENSE`](LICENSE).
