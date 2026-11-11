@@ -17,6 +17,12 @@ data directory, so nothing is lost. `hermes plugins validate .` → passed · `n
 → OK · `tests/test_invariants.py` → 11/11. **Hermes Desktop must be restarted** so it scans the new
 folder name.
 
+> **Operational note:** the plugin id *is* the folder name under `desktop-plugins/`, and Hermes Desktop
+> scans that folder **only at launch**. Between the rename and the next full quit (⌘Q, not just closing
+> the window) the plugin looks uninstalled — the sidebar entry disappears with no error anywhere.
+> Verified 2026-11-10: after quitting and reopening, **Make It Smart** came back on its own.
+
+
 ## v0.1.2-preview — 2026-11-11 · Last known good (CLI tools + English default)
 
 **Install this one.** Content is exactly commit **`6365c9b`**: the ten `cellar_*` agent tools,
