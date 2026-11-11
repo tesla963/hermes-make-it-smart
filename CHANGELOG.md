@@ -1,46 +1,46 @@
 # Changelog
 
-## 0.25.0 — 11-nov-2026 · arquitectura de rutas de datos, ejes tag0/tag8/tag9, tabs Actual/Testing, commit/revert y retiro del simulador
+## 0.25.0 — 11-nov-2026 · data paths architecture, tag0/tag8/tag9 axes, Actual/Testing tabs, commit/revert and removal of the simulator
 
-### Añadido
-- **Tabs Actual / Testing (§22.2)**: doble pestaña superior `[ Actual Hermes DB Sessions ]` (solo lectura de títulos reales en `state.db` vía RPC) y `[ Testing ]` (simulación en vivo de títulos aplicando la nomenclatura canónica, badge `TESTING` visible en cabecera y persistencia en `localStorage`).
-- **Fila inferior unificada (§22.3, §22.4)**: franja inferior única con botones de acción a la izquierda (`Commit Changes to Hermes DB` en rojo, `Revert` en verde y `New Rules Update` neutro) y estadísticas a la derecha. Eliminado el KPI de horas (`Work hours`) para ganar espacio horizontal.
-- **Sistema de backup y Revert (§22.5)**: generación obligatoria de `commit-backup-<YYYYMMDD_HHMM>.json` y `commit-last.json` en `ctx.files` al entrar al tab Testing. Commit escribe en `state.db` vía `session.title` solo títulos distintos (excluyendo cron y vacías), con refresco previo de backup si supera 10 minutos. Revert restaura los títulos anteriores en un clic con diálogo de confirmación. Commit y Revert nunca coexisten.
-- **Actualización de reglas («New Rules Update», §22.7)**: relee `index.json` y `facets.json` vía `ctx.files`, recalcula la simulación e informa cuántas sesiones cambiarían, alertando si el índice tiene más de 24 horas de antigüedad.
-- **Rutas de datos canónicas y espejo (`core/paths.py`)**: funciones `ui_data_dir()`, `bateria_dir()`, `bateria_objetiva()`, `bateria_personal()`, con orden de resolución `HERMES_PLUGIN_DATA` → `~/.hermes/plugin-data/make-it-smart/` → `plugin-files/data/make-it-smart/`.
-- **Publicación automática dual**: `tools/build_index.py` y `cellar_index op="rebuild"` escriben `index.json` y `facets.json` de manera idéntica en la raíz canónica y en el espejo de la UI (mismo hash MD5 garantizado).
-- **Manifiesto `plugin.yaml`**: sección `data:` detallando las rutas canónicas y del espejo de la UI, archivos de índice, facetas, batería y pendientes. Versión subida a `0.25.0`.
-- **`docs/DATA-PATHS.md`**: guía y tabla de referencia para agentes de Hermes con la regla de oro: la batería personal se lee y escribe en la raíz canónica; si aparece en otra ruta se avisa en vez de adivinar.
-- **Herramienta `cellar_bateria op="spec"`**: devuelve `canonical_dir`, `ui_dir`, `bateria_objetiva_exists`, `bateria_personal_exists` y `ui_bateria_obsolete`. En primera instalación limpia, inicializa `bateria.personal.yaml` preservando los comentarios de cabecera intactos.
-- **Eje `tag8 · Project`**: añadido como faceta filtrable en el panel lateral y visualizado con su píldora `tag8` en la ficha de detalle.
+### Added
+- **Actual / Testing tabs (§22.2)**: top double tab `[ Actual Hermes DB Sessions ]` (read-only of real titles in `state.db` via RPC) and `[ Testing ]` (live simulation of titles applying the canonical nomenclature, `TESTING` badge visible in the header and persistence in `localStorage`).
+- **Unified bottom row (§22.3, §22.4)**: single bottom strip with the action buttons on the left (`Commit Changes to Hermes DB` in red, `Revert` in green and neutral `New Rules Update`) and statistics on the right. The hours KPI (`Work hours`) was removed to gain horizontal space.
+- **Backup and Revert system (§22.5)**: mandatory generation of `commit-backup-<YYYYMMDD_HHMM>.json` and `commit-last.json` in `ctx.files` when entering the Testing tab. Commit writes to `state.db` via `session.title` only differing titles (excluding cron and empty ones), refreshing the backup beforehand if it is more than 10 minutes old. Revert restores the previous titles in one click with a confirmation dialog. Commit and Revert never coexist.
+- **Rules update («New Rules Update», §22.7)**: re-reads `index.json` and `facets.json` via `ctx.files`, recomputes the simulation and reports how many sessions would change, warning if the index is more than 24 hours old.
+- **Canonical and mirror data paths (`core/paths.py`)**: functions `ui_data_dir()`, `bateria_dir()`, `bateria_objetiva()`, `bateria_personal()`, with resolution order `HERMES_PLUGIN_DATA` → `~/.hermes/plugin-data/make-it-smart/` → `plugin-files/data/make-it-smart/`.
+- **Dual automatic publishing**: `tools/build_index.py` and `cellar_index op="rebuild"` write `index.json` and `facets.json` identically in the canonical root and in the UI mirror (same MD5 hash guaranteed).
+- **`plugin.yaml` manifest**: `data:` section detailing the canonical and UI mirror paths, index files, facets, battery and pending items. Version bumped to `0.25.0`.
+- **`docs/DATA-PATHS.md`**: guide and reference table for Hermes agents with the golden rule: the personal battery is read from and written to the canonical root; if it shows up at another path, warn instead of guessing.
+- **`cellar_bateria op="spec"` tool**: returns `canonical_dir`, `ui_dir`, `bateria_objetiva_exists`, `bateria_personal_exists` and `ui_bateria_obsolete`. On a first clean install it initializes `bateria.personal.yaml`, preserving the header comments intact.
+- **`tag8 · Project` axis**: added as a filterable facet in the side panel and shown with its `tag8` pill in the detail card.
 
-### Cambiado
-- **Retiro definitivo del simulador (§22.1)**: eliminado `tools/simulator_template.html` (88.710 B) y limpiadas todas las referencias en herramientas, especificaciones y documentación. La interfaz nativa del plugin es ahora el único entorno.
-- **«Get Info» en el nombre del plugin (§22.6)**: se retira el badge `V 0.25` del footer; el modal de información y reglas aprendidas (`vModal`) se abre haciendo clic en el nombre del plugin (`Make It Smart` / `h1`) en la cabecera.
-- **Tab vertical de sesión (R1 / §17)**: simplificado a una sola palabra y un solo `span` (`Sesión` en ES / `Session` en EN), eliminando el problema de recorte y letras pegadas (`SESSIONINFO`).
-- **Ubicación de filtros (R4)**: bloques de facetas "Pending" y "Sujeto" reubicados al inicio del panel izquierdo, antes de "tag1 · Maker".
-- **Ejes tag0/tag8/tag9 (R3 / §15)**: el filtro y la faceta de Sujeto leen `tag0` (`tag0 · Sujeto` / `tag0 · Subject`); el merge preserva `tag8` intacto y conmuta solo `tag9` a `'Pending'` si hay autorizaciones pendientes.
-- Versión actualizada a `0.25.0` en `plugin.yaml`, `desktop/plugin.js` y `CHANGELOG.md`.
+### Changed
+- **Definitive removal of the simulator (§22.1)**: `tools/simulator_template.html` (88.710 B) deleted and every reference in tools, specifications and documentation cleaned up. The plugin's native interface is now the only environment.
+- **«Get Info» on the plugin name (§22.6)**: the `V 0.25` badge is removed from the footer; the information and learned-rules modal (`vModal`) opens by clicking the plugin name (`Make It Smart` / `h1`) in the header.
+- **Vertical session tab (R1 / §17)**: simplified to a single word and a single `span` (`Sesión` in ES / `Session` in EN), removing the clipping and stuck-together letters problem (`SESSIONINFO`).
+- **Filter location (R4)**: the "Pending" and "Subject" facet blocks moved to the top of the left panel, before "tag1 · Maker".
+- **tag0/tag8/tag9 axes (R3 / §15)**: the Subject filter and facet read `tag0` (`tag0 · Sujeto` / `tag0 · Subject`); the merge preserves `tag8` intact and switches only `tag9` to `'Pending'` if there are pending authorizations.
+- Version bumped to `0.25.0` in `plugin.yaml`, `desktop/plugin.js` and `CHANGELOG.md`.
 
-## 0.24.0 — 11-nov-2026 · aprobación pendiente visible por sesión
+## 0.24.0 — 11-nov-2026 · pending approval visible per session
 
-### Añadido
-- **Panel derecho**: bloques `Pending Authorization IDs — Memory` y `— Skills`, con el botón de copiar **arriba** de cada título, los ids en monoespaciado y tooltip de confianza (`exact` / `window` / `window_amb` / `orphan`).
-- **Columna `Pending`** en el listado, después de Posts, con su clave de orden.
-- **Filtro Pending** (tag9) y **filtro Sujeto** (tag0) en el panel izquierdo, con contadores, y combinables con el filtro de mes ya existente.
-- **KPI `PENDING AUTH`** en el footer, clickeable para activar el filtro.
-- Bloque colapsable **«Sin sesión atribuible»** con las propuestas que no se pudieron atribuir a ninguna sesión.
-- CSV: columnas `pending`, `pend_mem`, `pend_skl` alineadas con la tabla.
-- `pending_index.json` como fuente de los ids (lo genera un indexador externo, no el plugin).
+### Added
+- **Right panel**: `Pending Authorization IDs — Memory` and `— Skills` blocks, with the copy button **above** each title, the ids in monospace and a confidence tooltip (`exact` / `window` / `window_amb` / `orphan`).
+- **`Pending` column** in the listing, after Posts, with its sort key.
+- **Pending filter** (tag9) and **Subject filter** (tag0) in the left panel, with counters, and combinable with the existing month filter.
+- **`PENDING AUTH` KPI** in the footer, clickable to activate the filter.
+- Collapsible **«Unattributable session»** block with the proposals that could not be attributed to any session.
+- CSV: `pending`, `pend_mem`, `pend_skl` columns aligned with the table.
+- `pending_index.json` as the source of the ids (generated by an external indexer, not by the plugin).
 
-### Cambiado
-- El tab lateral **Session Info** se dibuja en dos líneas: ya no se recorta.
-- Los botones **Copy session / Open session** aparecen también en la parte superior del panel de detalle.
-- Si `pending_index.json` falta, el feature completo se oculta sin errores visibles.
+### Changed
+- The **Session Info** side tab is drawn on two lines: it no longer clips.
+- The **Copy session / Open session** buttons also appear at the top of the detail panel.
+- If `pending_index.json` is missing, the whole feature hides without visible errors.
 
-### Notas
-- Solo lectura: el plugin nunca aprueba, rechaza ni borra propuestas.
-- El contador de horas (columna `HOURS` y KPI) sigue en cero: **bug documentado, no corregido en esta versión** (§13 de la spec del batch).
+### Notes
+- Read-only: the plugin never approves, rejects or deletes proposals.
+- The hours counter (`HOURS` column and KPI) is still zero: **documented bug, not fixed in this version** (§13 of the batch spec).
 
 ## Unreleased — plugin id renamed to `hermes-make-it-smart`
 

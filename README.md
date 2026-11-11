@@ -83,9 +83,9 @@ The full rules live in [`docs/ALGORITHM.md`](docs/ALGORITHM.md).
 
 ## Install
 
-[`docs/GUIA-DE-USO.md`](docs/GUIA-DE-USO.md) — el orden que importa: respaldar,
-definir los pilares, alimentar la batería, mirar en el simulador, corregir,
-aplicar. El plugin vale lo que valen los nombres que le hayas enseñado.
+[`docs/GUIA-DE-USO.md`](docs/GUIA-DE-USO.md) — the order that matters: back up,
+define the pillars, feed the battery, look in the simulator, correct,
+apply. The plugin is worth exactly what the names you have taught it are worth.
 
 ```bash
 git clone https://github.com/tesla963/hermes-make-it-smart

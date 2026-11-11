@@ -1,37 +1,37 @@
 # Data Paths & Storage Architecture
 
-> Documento de referencia para **agentes autónomos de Hermes**. Define las raíces de almacenamiento, los archivos de estado, las responsabilidades de escritura y el protocolo de verificación.
+> Reference document for **Hermes autonomous agents**. It defines the storage roots, the state files, the write responsibilities and the verification protocol.
 
 ---
 
-## 1. Raíces de almacenamiento
+## 1. Storage roots
 
-| Raíz | Ruta absoluta (macOS) | Contenido | Quién escribe | Quién lee |
+| Root | Absolute path (macOS) | Content | Who writes | Who reads |
 |---|---|---|---|---|
-| **Canónica (Herramientas / Python)** | `~/.hermes/plugin-data/make-it-smart/` | `index.json`, `facets.json`, `pending_index.json`, `data.db`, `corrections.yaml`, `bateria.personal.yaml`, `backups/`, `exports/` | `tools/cellar_tools.py`, `tools/build_index.py` | Herramientas cellar, clasificadores Python |
-| **Espejo UI (Desktop)** | `~/Library/Application Support/Hermes/plugin-files/data/make-it-smart/` | `index.json`, `facets.json`, `pending_index.json` | Pipeline automático (`build_index.py`, `cellar_index op=rebuild`) | `desktop/plugin.js` vía `ctx.files.readText('data', ...)` |
-| **Código del Plugin** | `~/.hermes/desktop-plugins/make-it-smart/` | `plugin.js` | Instalador / despliegue | Host Hermes Desktop |
-| **Paquete (Batería Objetiva)** | `<repo>/core/bateria.yaml` | Taxonomía, intenciones, marcas, plataformas objetivas | Control de versiones (repo) | `core/bateria.py`, clasificador |
+| **Canonical (Tools / Python)** | `~/.hermes/plugin-data/make-it-smart/` | `index.json`, `facets.json`, `pending_index.json`, `data.db`, `corrections.yaml`, `bateria.personal.yaml`, `backups/`, `exports/` | `tools/cellar_tools.py`, `tools/build_index.py` | Cellar tools, Python classifiers |
+| **UI mirror (Desktop)** | `~/Library/Application Support/Hermes/plugin-files/data/make-it-smart/` | `index.json`, `facets.json`, `pending_index.json` | Automatic pipeline (`build_index.py`, `cellar_index op=rebuild`) | `desktop/plugin.js` via `ctx.files.readText('data', ...)` |
+| **Plugin code** | `~/.hermes/desktop-plugins/make-it-smart/` | `plugin.js` | Installer / deployment | Hermes Desktop host |
+| **Package (Objective battery)** | `<repo>/core/bateria.yaml` | Taxonomy, intents, brands, objective platforms | Version control (repo) | `core/bateria.py`, classifier |
 
 ---
 
-## 2. Regla de Oro (Golden Rule)
+## 2. Golden Rule
 
 > [!IMPORTANT]
-> **La batería personal vive y se resuelve ÚNICAMENTE en el directorio canónico:**
+> **The personal battery lives and resolves ONLY in the canonical directory:**
 > `~/.hermes/plugin-data/make-it-smart/bateria.personal.yaml`
 > 
-> Si un archivo `bateria.personal.yaml` aparece en otra ruta (por ejemplo en el Escritorio o en una carpeta de trabajo temporal), el agente **DEBE AVISAR** al usuario reportando la ruta exacta encontrada en vez de adivinar o mover archivos por cuenta propia.
+> If a `bateria.personal.yaml` file appears at another path (for example on the Desktop or in a temporary working folder), the agent **MUST WARN** the user by reporting the exact path found instead of guessing or moving files on its own.
 
 ---
 
-## 3. Resolución programática (`core/paths.py`)
+## 3. Programmatic resolution (`core/paths.py`)
 
-Cualquier herramienta o módulo de Python debe resolver rutas a través de las funciones canónicas de `core/paths.py`:
+Any Python tool or module must resolve paths through the canonical functions in `core/paths.py`:
 
 ```python
 from core.paths import (
-    data_dir,          # ~/.hermes/plugin-data/make-it-smart/ (respeta HERMES_PLUGIN_DATA)
+    data_dir,          # ~/.hermes/plugin-data/make-it-smart/ (honors HERMES_PLUGIN_DATA)
     ui_data_dir,       # ~/Library/Application Support/Hermes/plugin-files/data/make-it-smart/
     bateria_dir,       # == data_dir()
     bateria_objetiva,  # <repo>/core/bateria.yaml
@@ -39,56 +39,56 @@ from core.paths import (
 )
 ```
 
-### Orden de resolución
-1. Variable de entorno `HERMES_PLUGIN_DATA` (si está definida).
-2. Raíz estándar `~/.hermes/plugin-data/<plugin>/`.
-3. Para UI: `~/Library/Application Support/Hermes/plugin-files/data/<plugin>/` (o fallback a `HERMES_HOME/plugin-files/data/<plugin>/`).
+### Resolution order
+1. Environment variable `HERMES_PLUGIN_DATA` (if defined).
+2. Standard root `~/.hermes/plugin-data/<plugin>/`.
+3. For the UI: `~/Library/Application Support/Hermes/plugin-files/data/<plugin>/` (or fallback to `HERMES_HOME/plugin-files/data/<plugin>/`).
 
 ---
 
-## 4. Publicación automática y sincronización de espejo
+## 4. Automatic publication and mirror synchronization
 
-El indexador (`tools/build_index.py`) y la herramienta de indexado (`cellar_index op="rebuild"`) escriben automáticamente de forma dual:
-1. Escriben `index.json` y `facets.json` en la raíz canónica.
-2. Copian idénticamente los mismos bytes (mismo hash md5) a la raíz del espejo de la UI.
-3. Si existe `pending_index.json`, se preserva sincronizado entre ambas carpetas.
+The indexer (`tools/build_index.py`) and the indexing tool (`cellar_index op="rebuild"`) write automatically in a dual fashion:
+1. They write `index.json` and `facets.json` in the canonical root.
+2. They copy identically the same bytes (same md5 hash) to the UI mirror root.
+3. If `pending_index.json` exists, it is kept synchronized across both folders.
 
-**Nunca realizar copias manuales entre carpetas**: el pipeline garantiza la paridad de datos.
+**Never make manual copies between folders**: the pipeline guarantees data parity.
 
 ---
 
-## 5. Verificación rápida para agentes
+## 5. Quick verification for agents
 
-### A. Inspección vía herramienta `cellar_bateria`
-Llamar a `cellar_bateria` con `op="spec"`:
+### A. Inspection via the `cellar_bateria` tool
+Call `cellar_bateria` with `op="spec"`:
 ```json
 {
   "tool": "cellar_bateria",
   "arguments": { "op": "spec" }
 }
 ```
-Campos devueltos para validación:
-- `canonical_dir`: Ruta canónica absoluta en uso.
-- `ui_dir`: Ruta del espejo de la UI en uso.
-- `personal_bateria_path`: Ruta canónica de la batería personal.
-- `bateria_objetiva_exists`: Booleano de presencia de `core/bateria.yaml`.
-- `bateria_personal_exists`: Booleano de presencia de `bateria.personal.yaml`.
-- `ui_bateria_obsolete`: `true` si existe una copia huérfana en el espejo UI que deba considerarse obsoleta.
+Fields returned for validation:
+- `canonical_dir`: Absolute canonical path in use.
+- `ui_dir`: UI mirror path in use.
+- `personal_bateria_path`: Canonical path of the personal battery.
+- `bateria_objetiva_exists`: Boolean for the presence of `core/bateria.yaml`.
+- `bateria_personal_exists`: Boolean for the presence of `bateria.personal.yaml`.
+- `ui_bateria_obsolete`: `true` if an orphan copy exists in the UI mirror that must be considered obsolete.
 
-### B. Inspección vía terminal
+### B. Inspection via terminal
 ```bash
-# 1. Comprobar rutas y estado de batería
+# 1. Check paths and battery status
 python3 -c "from tools.cellar_tools import handle_cellar_bateria; import json; print(json.dumps(json.loads(handle_cellar_bateria({'op': 'spec'})), indent=2))"
 
-# 2. Verificar paridad de hashes del índice
+# 2. Verify index hash parity
 md5 ~/.hermes/plugin-data/make-it-smart/index.json ~/Library/Application\ Support/Hermes/plugin-files/data/make-it-smart/index.json
 ```
 
 ---
 
-## 6. Primera instalación y migración
+## 6. First installation and migration
 
-1. **Primera instalación limpia**:
-   Si `bateria.personal.yaml` no existe en la raíz canónica, la llamada a `cellar_bateria` crea automáticamente la plantilla copiando `core/bateria.personal.yaml` con sus comentarios de cabecera intactos.
-2. **Deduplicación**:
-   Si el archivo existe en ambas raíces (canónica y espejo UI), la versión canónica toma precedencia absoluta y la versión del espejo se reporta como obsoleta (`ui_bateria_obsolete: true`).
+1. **Clean first installation**:
+   If `bateria.personal.yaml` does not exist in the canonical root, the call to `cellar_bateria` automatically creates the template by copying `core/bateria.personal.yaml` with its header comments intact.
+2. **Deduplication**:
+   If the file exists in both roots (canonical and UI mirror), the canonical version takes absolute precedence and the mirror version is reported as obsolete (`ui_bateria_obsolete: true`).

@@ -1,138 +1,138 @@
-# Alineación de reglas a la estructura nueva de filtros
+# Aligning the rules to the new filter structure
 
-Fecha: 2026-11-10 · base: 884 sesiones · 50 reglas · 13 intenciones
+Date: 2026-11-10 · base: 884 sessions · 50 rules · 13 intents
 
 ---
 
-## 1 · La estructura, tal como quedó
+## 1 · The structure, as it stands
 
-| Tag | Eje | Responde | Ejemplo |
+| Tag | Axis | Answers | Example |
 |---|---|---|---|
-| **tag1** | **Marca** | ¿de quién es el sujeto? — un adjetivo | `DJI` |
-| **tag2** | **Contexto** | ¿dónde o en qué marco? | `Amazon` · `Ebay` · `Panamá` |
-| **tag3** | **Intención** | ¿qué quiso hacer el usuario? | `Comparar` |
-| **tag4** | **Lugar** | país o tienda | `Panamá` · `Ebay` |
-| **tag5** | **Tema** | el frente de trabajo | `IA Bot` · `VPS` |
-| tag6 | Año | cuándo | `2026` |
-| tag7 | Máquina | en qué equipo | `Mac mini M4` |
+| **tag1** | **Brand** | whose is the subject? — an adjective | `DJI` |
+| **tag2** | **Context** | where, or inside what frame? | `Amazon` · `Ebay` · `Panamá` |
+| **tag3** | **Intent** | what did the user want to do? | `Comparar` |
+| **tag4** | **Place** | country or store | `Panamá` · `Ebay` |
+| **tag5** | **Theme** | the work front | `IA Bot` · `VPS` |
+| tag6 | Year | when | `2026` |
+| tag7 | Machine | on which machine | `Mac mini M4` |
 
-Y el título:
+And the title:
 
 ```
-NNN [Sujeto] MMM [tag1] [tag2] [tag3] Descripción
+NNN [Subject] MMM [tag1] [tag2] [tag3] Description
 ```
 
-> **tag2 y tag4 se solapan.** Los dos admiten `Ebay` y `Panamá`. Hay que
-> decidirlo antes de escribir nada: o **tag4 es el lugar** y tag2 queda para
-> contexto no geográfico, o **se fusionan** y el país y la tienda viven juntos.
-> Recomiendo la primera: `tag4 = Ebay`, `tag2 = "comparación de precios"`.
+> **tag2 and tag4 overlap.** Both accept `Ebay` and `Panamá`. It has to be
+> decided before writing anything: either **tag4 is the place** and tag2 is left
+> for non-geographic context, or **they merge** and the country and the store live
+> together. I recommend the first: `tag4 = Ebay`, `tag2 = "comparación de precios"`.
 
 ---
 
-## 2 · «Automation» no es una intención
+## 2 · «Automation» is not an intent
 
-Tenías razón en desconfiar. Medido:
+You were right to be suspicious. Measured:
 
 ```
-Automation: 98 sesiones
-  ├─ 67 son cron            (el usuario no las pidió: se programaron antes)
-  └─ 31 son "encender el gateway", "configurar el bot"  → Instalar / Administrar
+Automation: 98 sessions
+  ├─ 67 are cron          (the user did not ask for them: they were scheduled beforehand)
+  └─ 31 are "turn on the gateway", "configure the bot"  → Instalar / Administrar
 ```
 
-**Automation describe la ausencia de intención**, no una intención. Una tarea
-automática es una tarea que el usuario **ya no hace**. Ponerla como Tag3 sería
-como poner «ya está hecho» en la columna de lo que quiso hacer.
+**Automation describes the absence of intent**, not an intent. An automatic task
+is a task the user **no longer does**. Putting it as Tag3 would be like putting
+«already done» in the column of what they wanted to do.
 
-**Qué hacer con esas 98:**
+**What to do with those 98:**
 
-| Grupo | Cuántas | Tag3 correcto |
+| Group | How many | Correct Tag3 |
 |---|---|---|
-| Vigilan algo periódicamente | 67 | **`Monitorear`** |
-| Encienden o configuran un servicio | ~23 | **`Administrar`** |
-| Las demás | ~8 | según su descripción |
+| They watch something periodically | 67 | **`Monitorear`** |
+| They turn on or configure a service | ~23 | **`Administrar`** |
+| The rest | ~8 | according to their description |
 
-`Monitorear` sí es una intención: alguien decidió que eso había que vigilarlo.
-Y marca una diferencia útil en el filtro — «lo que hice» contra «lo que corre
-solo».
+`Monitorear` is indeed an intent: someone decided that this had to be watched.
+And it marks a useful difference in the filter — «what I did» against «what runs
+on its own».
 
-**Propuesta:** retirar `Automation` del vocabulario de Tag3 y añadir
-`Monitorear`. El hecho de que sea cron ya lo dice el id de la sesión.
+**Proposal:** retire `Automation` from the Tag3 vocabulary and add
+`Monitorear`. The fact that it is cron is already said by the session id.
 
 ---
 
-## 3 · La medición de tag5
+## 3 · The tag5 measurement
 
-Con los nombres que diste, mapeando los pilares actuales:
+With the names you gave, mapping the current pillars:
 
-| Subcategoría | Sesiones | % del total |
+| Subcategory | Sessions | % of the total |
 |---|---|---|
 | **IA Bot** | 316 | 36 % |
 | **VPS** | 187 | 21 % |
 | **Data Backup** | 76 | 9 % |
 | **Hardware** | 69 | 8 % |
 | **MindMap** | 33 | 4 % |
-| **IT Manager** (sin subcategoría) | 0 | — |
+| **IT Manager** (no subcategory) | 0 | — |
 | **Network** | 13 | 1,5 % |
 | **OS** | 27 | 3 % |
 | **Total IT Manager** | **681** | **77 %** |
 
-### El problema de Network y OS
+### The Network and OS problem
 
-Esas dos no son pilares de hoy: son **cortes transversales**.
+Those two are not pillars today: they are **cross-cutting slices**.
 
 ```
-Network = las 13 sesiones con tag2 "Networking"
-OS      = las 27 sesiones con tag2 "File System"
+Network = the 13 sessions with tag2 "Networking"
+OS      = the 27 sessions with tag2 "File System"
 ```
 
-Pero esas sesiones ya viven dentro de VPS, Data Backup o IA Bot. Si Network y OS
-suben a subcategoría, **hay que decidir si se mueven o se copian**:
+But those sessions already live inside VPS, Data Backup or IA Bot. If Network and
+OS rise to subcategory, **you have to decide whether they move or are copied**:
 
-- **Si se mueven:** VPS baja de 187 a ~180, Data Backup baja, y Network/OS suben.
-  Cada sesión en un solo sitio. **Recomendado.**
-- **Si se copian:** una sesión viviría en dos subcategorías. El filtro deja de
-  ser exclusivo y los conteos suman más que el total — el mismo problema del
-  slice que arreglamos hoy.
+- **If they move:** VPS drops from 187 to ~180, Data Backup drops, and Network/OS rise.
+  Each session in a single place. **Recommended.**
+- **If they are copied:** a session would live in two subcategories. The filter stops
+  being exclusive and the counts add up to more than the total — the same problem as the
+  slice we fixed today.
 
-### El problema de fondo: 77 %
+### The underlying problem: 77 %
 
-IT Manager se come tres cuartos del catálogo. Con esas siete subcategorías,
-`IA Bot` sola tiene 316 — más que las otras seis juntas.
+IT Manager eats three quarters of the catalogue. With those seven subcategories,
+`IA Bot` alone has 316 — more than the other six together.
 
-**Dos lecturas posibles:**
+**Two possible readings:**
 
-1. **Es correcto:** tu trabajo *es* IT. El catálogo refleja tu vida, y tu vida es
-   esta. Las siete subcategorías bastan para navegar.
-2. **Falta un nivel:** `IA Bot` con 316 es lo que era `Asistente IA` — el cajón
-   de todo lo que toca Hermes. Necesita partirse: *el asistente* (voz, modelos,
-   gateway), *el plugin* (este proyecto), *las skills*, *las pruebas*.
+1. **It is correct:** your work *is* IT. The catalogue reflects your life, and your life is
+   this one. The seven subcategories are enough to navigate.
+2. **A level is missing:** `IA Bot` with 316 is what `Asistente IA` used to be — the drawer
+   for everything that touches Hermes. It needs to be split: *the assistant* (voice, models,
+   gateway), *the plugin* (this project), *the skills*, *the tests*.
 
-Yo me inclino por la 2, pero **es tu llamada**: tú sabes si esas 316 sesiones se
-sienten como una cosa o como cinco.
+I lean toward 2, but **it is your call**: you know whether those 316 sessions feel
+like one thing or like five.
 
 ---
 
-## 4 · Las 203 sesiones que quedan fuera de IT Manager
+## 4 · The 203 sessions left outside IT Manager
 
-| Pilar actual | Sesiones | ¿Qué tema es? |
+| Current pillar | Sessions | What theme is it? |
 |---|---|---|
-| Derecho | 61 | falta declararlo |
-| Temas Varios | 43 | es la lista de espera |
-| Compras | 41 | falta declararlo |
-| Youtuber | 33 | falta declararlo |
-| Geopolítica | 18 | falta declararlo |
-| Masoterapia | 7 | falta declararlo |
+| Derecho | 61 | missing declaration |
+| Temas Varios | 43 | it is the waiting list |
+| Compras | 41 | missing declaration |
+| Youtuber | 33 | missing declaration |
+| Geopolítica | 18 | missing declaration |
+| Masoterapia | 7 | missing declaration |
 
-Solo nombraste IT Manager como tema. **Los otros cinco siguen sin tag5** — y son
-203 sesiones, el 23 % del catálogo.
+You only named IT Manager as a theme. **The other five still have no tag5** — and they are
+203 sessions, 23 % of the catalogue.
 
 ---
 
-## 5 · Las 50 reglas, una por una
+## 5 · The 50 rules, one by one
 
-### 5.1 · Reglas que NO cambian (siguen válidas tal cual) — 31
+### 5.1 · Rules that do NOT change (still valid as they are) — 31
 
-Estas hablan del **sujeto**, y el sujeto no se movió:
+These speak about the **subject**, and the subject has not moved:
 
 `subject-is-a-point-not-a-sentence` · `subject-never-carries-the-action` ·
 `subject-strips-action-prefix` · `subject-does-not-repeat-tag1` ·
@@ -144,89 +144,89 @@ Estas hablan del **sujeto**, y el sujeto no se movió:
 `third-party-program-is-tag1-not-subject` · `brand-equals-subject-exception` ·
 `brand-and-product-are-two-things` · `brand-of-a-program-comes-from-its-site` ·
 `brand-never-in-subject` · `closest-item-wins-in-compatibility` ·
-y las once de series, fechas y formato.
+and the eleven on series, dates and format.
 
-### 5.2 · Reglas que CAMBIAN de destino — 4
+### 5.2 · Rules that CHANGE destination — 4
 
-| Regla | Antes | Ahora |
+| Rule | Before | Now |
 |---|---|---|
-| `tag2-carries-the-intent` | la intención iba en **tag2** | va en **tag3** |
-| `intent-not-topic` | «tag2 es el verbo» | «**tag3** es el verbo» |
-| `two-layers-actors-then-intent` | resolvía tag1 + tag2 | resuelve tag1 + **tag3** |
-| `python-decides-llm-investigates` | igual, pero el destino es tag3 | sin cambio de fondo |
+| `tag2-carries-the-intent` | the intent went in **tag2** | it goes in **tag3** |
+| `intent-not-topic` | «tag2 is the verb» | «**tag3** is the verb» |
+| `two-layers-actors-then-intent` | resolved tag1 + tag2 | resolves tag1 + **tag3** |
+| `python-decides-llm-investigates` | same, but the destination is tag3 | no change in substance |
 
-**Y una consecuencia grande:** las 79 sesiones que corregimos ayer moviendo la
-intención a tag2 **tienen que moverse otra vez a tag3**. Ese trabajo no se
-pierde — el valor es el correcto — pero el campo cambia de sitio.
+**And a big consequence:** the 79 sessions we corrected yesterday by moving the
+intent to tag2 **have to move again to tag3**. That work is not lost — the value
+is the right one — but the field changes place.
 
-### 5.3 · Reglas nuevas que hacen falta — 5
+### 5.3 · New rules that are needed — 5
 
 **`tag1-is-an-adjective`**
-> Tag1 califica al sujeto, no lo nombra. `DJI` califica a `Air 2S`; `DJI Avata 360`
-> no califica nada, es un adjetivo con el sustantivo pegado.
+> Tag1 qualifies the subject, it does not name it. `DJI` qualifies `Air 2S`; `DJI Avata 360`
+> qualifies nothing, it is an adjective with the noun glued to it.
 
 **`place-not-platform`**
-> Un país o una tienda nunca es Tag1. `Amazon` en Tag1 dice «esto trata de
-> Amazon»; en Tag4 dice «lo compré en Amazon». La segunda frase es la útil.
+> A country or a store is never Tag1. `Amazon` in Tag1 says «this is about
+> Amazon»; in Tag4 it says «I bought it on Amazon». The second sentence is the useful one.
 
 **`intent-is-what-the-user-did`**
-> Tag3 es un verbo en infinitivo que el usuario reconocería como suyo. Si no
-> existe en la lista de 13, se usa `Investigar` — nunca se inventa uno nuevo.
+> Tag3 is an infinitive verb that the user would recognize as their own. If it does not
+> exist in the list of 13, `Investigar` is used — a new one is never invented.
 
 **`automation-is-not-an-intent`**
-> Una tarea programada no expresa lo que el usuario quiso: expresa lo que ya
-> decidió antes. Va a `Monitorear`, y el id de la sesión ya dice que es cron.
+> A scheduled task does not express what the user wanted: it expresses what they already
+> decided before. It goes to `Monitorear`, and the session id already says it is cron.
 
 **`one-session-one-theme`**
-> Tag5 admite una sola subcategoría. Si una sesión cae en dos, la subcategoría
-> está mal delimitada, no la sesión.
+> Tag5 accepts a single subcategory. If a session falls into two, the subcategory
+> is badly delimited, not the session.
 
-### 5.4 · Reglas que mueren — 2
+### 5.4 · Rules that die — 2
 
-**`productos-vs-compras`** — la distinción desaparece. `Productos` pasa a ser la
-subcategoría `Hardware`, y `Compras` deja de ser pilar: comprar es una
-**intención** (`Cotizar`) más un **lugar** (`Amazon`).
+**`productos-vs-compras`** — the distinction disappears. `Productos` becomes the
+subcategory `Hardware`, and `Compras` stops being a pillar: buying is an
+**intent** (`Cotizar`) plus a **place** (`Amazon`).
 
-**`one-series-one-pillar`** — se queda en el fondo, pero cambia de nombre a
-`one-series-one-theme`: la serie comparte **tag5**, no pilar.
+**`one-series-one-pillar`** — it stays in substance, but is renamed to
+`one-series-one-theme`: the series shares **tag5**, not a pillar.
 
-### 5.5 · El resultado
+### 5.5 · The result
 
 ```
-50 reglas
- ├─ 31 intactas
- ├─  4 cambian de campo (tag2 → tag3)
- ├─  5 nuevas
- ├─  2 mueren o se renombran
- └─  8 pendientes de decisión (abajo)
+50 rules
+ ├─ 31 intact
+ ├─  4 change field (tag2 → tag3)
+ ├─  5 new
+ ├─  2 die or are renamed
+ └─  8 pending decision (below)
 ```
 
 ---
 
-## 6 · Lo que hay que decidir antes de migrar
+## 6 · What has to be decided before migrating
 
-1. **¿tag2 y tag4 se solapan?** Los dos admiten `Ebay`. O se especializan
-   (tag2 = marco, tag4 = lugar) o se fusionan.
-2. **¿Network y OS se mueven o se copian** de VPS y Data Backup?
-3. **¿IA Bot con 316 se parte** en asistente / plugin / skills / pruebas?
-4. **¿Qué tag5 llevan Derecho, Compras, Youtuber, Geopolítica y Masoterapia?**
-   Son 203 sesiones sin tema.
-5. **¿`Monitorear` entra** en el vocabulario de Tag3 y sale `Automation`?
-6. **¿Las 79 correcciones de ayer se mudan a tag3** en la misma corrida?
+1. **Do tag2 and tag4 overlap?** Both accept `Ebay`. Either they specialize
+   (tag2 = frame, tag4 = place) or they merge.
+2. **Do Network and OS move or are they copied** from VPS and Data Backup?
+3. **Does IA Bot with 316 split** into assistant / plugin / skills / tests?
+4. **What tag5 do Derecho, Compras, Youtuber, Geopolítica and Masoterapia carry?**
+   They are 203 sessions with no theme.
+5. **Does `Monitorear` come in** to the Tag3 vocabulary and `Automation` go out?
+6. **Do yesterday's 79 corrections move to tag3** in the same run?
 
 ---
 
-## 7 · Orden de la migración, cuando esté decidido
+## 7 · Order of the migration, once it is decided
 
 ```
-1. declarar los tag5 que faltan (Derecho, Compras, Youtuber, Geopolítica, Medicina)
-2. mover la intención de tag2 → tag3 en las 884
-3. retirar Automation, añadir Monitorear, reclasificar sus 98
-4. llenar tag4 (lugar) desde la batería: Amazon, Ebay, Panamá
-5. limpiar las 303 sesiones con tag1 = "Hermes Agent"
-6. medir en el simulador antes de escribir
-7. aplicar con backup
+1. declare the missing tag5 (Derecho, Compras, Youtuber, Geopolítica, Medicina)
+2. move the intent from tag2 → tag3 in all 884
+3. retire Automation, add Monitorear, reclassify its 98
+4. fill tag4 (place) from the battery: Amazon, Ebay, Panamá
+5. clean the 303 sessions with tag1 = "Hermes Agent"
+6. measure in the simulator before writing
+7. apply with backup
 ```
 
-Cada paso se puede medir en seco antes de tocar la base. **Ninguno se aplica sin
-haberse visto en el simulador.**
+Each step can be measured dry before touching the database. **None is applied without
+having been seen in the simulator.**

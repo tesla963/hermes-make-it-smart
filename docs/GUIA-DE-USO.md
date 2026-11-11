@@ -1,22 +1,23 @@
-# Guía de uso — Hermes, make all my work Smart!
+# User Guide — Hermes, make all my work Smart!
 
-Esta guía es para el usuario, no para el programador. Cuenta **en qué orden**
-hacer las cosas para que el plugin trabaje bien, y por qué ese orden importa.
+This guide is for the user, not the programmer. It tells you **in what order**
+to do things so the plugin works well, and why that order matters.
 
 ---
 
-## Antes de tocar nada: haz un respaldo
+## Before touching anything: make a backup
 
-El plugin **renombra tus sesiones**. Renombrar no borra nada —los mensajes, los
-costos y las fechas siguen intactos— pero un nombre es la única forma de
-reconocer una sesión seis meses después. Si algo sale mal, quieres poder volver.
+The plugin **renames your sessions**. Renaming doesn't delete anything —the
+messages, the costs and the dates stay intact— but a name is the only way to
+recognize a session six months later. If something goes wrong, you want to be
+able to go back.
 
 ```bash
 cp -a ~/.hermes/state.db \
       ~/state.db.backup-$(date +%Y%m%d-%H%M)
 ```
 
-Y si tienes más de un perfil:
+And if you have more than one profile:
 
 ```bash
 for f in ~/.hermes/profiles/*/state.db; do
@@ -24,91 +25,94 @@ for f in ~/.hermes/profiles/*/state.db; do
 done
 ```
 
-El plugin hace su propio respaldo antes de escribir, en
-`/Volumes/<tu disco>/Backups-Lisa/<fecha>_<motivo>/`. **Pero no confíes solo en
-él**: tu respaldo es el que sabes dónde está.
+The plugin makes its own backup before writing, in
+`/Volumes/<tu disco>/Backups-Lisa/<fecha>_<motivo>/`. **But don't trust it
+alone**: your backup is the one you know where it is.
 
-> Con el tiempo vas a querer versionar los nombres, no la base. Un archivo
-> `titulos.txt` con una línea `id<TAB>titulo` es todo lo que hace falta para
-> reconstruir el catálogo sin volver a clasificar nada.
+> Over time you'll want to version the names, not the database. A `titulos.txt`
+> file with one line `id<TAB>titulo` is all it takes to rebuild the catalog
+> without classifying anything again.
 
 ---
 
-## Paso 1 · Mira antes de escribir: el simulador
+## Step 1 · Look before writing: the simulator
 
-El plugin genera un **simulador en HTML** — un archivo único que se abre en el
-navegador, sin servidor y sin conexión.
+The plugin generates an **HTML simulator** — a single file that opens in the
+browser, with no server and no connection.
 
 ```
 ~/Documents/Reportes - [Lisa]/<fecha>/<fecha>_simulador-plugin-bodega-de-sesiones.html
 ```
 
-Ahí ves **las 884 sesiones tal como quedarían**, con sus filtros, su buscador y
-su ficha. Y lo más importante: **no escribe nada**.
+There you see **the 884 sessions as they would end up**, with their filters,
+their search box and their card. And the most important thing: **it writes
+nothing**.
 
-| En el simulador puedes | Sin riesgo porque |
+| In the simulator you can | Without risk because |
 |---|---|
-| filtrar por pilar, plataforma, familia | es una copia de lectura |
-| buscar por número (`126,305`, `50-75`) | no toca la base |
-| revisar la intención de cada sesión | no renombra |
-| exportar un CSV de correcciones | el archivo es tuyo |
+| filter by pillar, platform, family | it's a read-only copy |
+| search by number (`126,305`, `50-75`) | it doesn't touch the database |
+| review the intent of each session | it doesn't rename |
+| export a CSV of corrections | the file is yours |
 
-**Esta es la parte que hace que el plugin sea seguro.** El simulador y la app
-leen exactamente el mismo índice; si algo se ve mal ahí, se verá mal en la app.
-Pero corregirlo es una decisión tuya, no un efecto secundario.
+**This is the part that makes the plugin safe.** The simulator and the app read
+exactly the same index; if something looks wrong there, it will look wrong in
+the app. But fixing it is your decision, not a side effect.
 
-Regla práctica: **ninguna corrección entra a la base sin haberse visto antes en
-el simulador.**
+Rule of thumb: **no correction goes into the database without having been seen
+first in the simulator.**
 
 ---
 
-## Paso 2 · Los pilares: lo primero que hay que definir
+## Step 2 · Pillars: the first thing to define
 
-Un pilar es **el frente de trabajo al que pertenece una sesión**: Asistente IA,
-VPS, Data Backup, Derecho, Productos, Compras, Youtuber, MindMap, Geopolítica,
+A pillar is **the work front a session belongs to**: Asistente IA, VPS, Data
+Backup, Derecho, Productos, Compras, Youtuber, MindMap, Geopolítica,
 Masoterapia.
 
-Es el filtro que más veces vas a usar, y **es el que el plugin no puede adivinar
-por ti**. Un modelo puede decir «esto trata de servidores»; solo tú sabes si en
-tu mundo eso es *VPS* o es *WebHosting* o es *Infraestructura*.
+It's the filter you'll use most often, and **it's the one the plugin cannot
+guess for you**. A model can say "this is about servers"; only you know whether
+in your world that's *VPS* or *WebHosting* or *Infrastructure*.
 
-### Cómo se definen
+### How they are defined
 
-En `core/taxonomy.py`, la lista `PILLARS`. Cada uno con:
+In `core/taxonomy.py`, the `PILLARS` list. Each one with:
 
 ```python
 {"name": "VPS", "hint": "el servidor propio: CyberPanel, DNS, correo, certificados"}
 ```
 
-El `hint` no es decoración: **es lo que lee el clasificador para decidir**. Un
-pilar con un hint vago («temas técnicos») atrae medio catálogo y arruina el
-filtro. Un pilar con un límite claro («el servidor propio: …») se queda con lo
-suyo.
+The `hint` is not decoration: **it's what the classifier reads to decide**. A
+pillar with a vague hint ("technical topics") attracts half the catalog and
+ruins the filter. A pillar with a clear boundary ("the server that's mine: …")
+keeps to its own.
 
-### Las tres preguntas para saber si un pilar está bien
+### The three questions to tell whether a pillar is right
 
-1. **¿Podrías decir en una frase qué NO es?** Si no, es un cajón de sastre.
-2. **¿Tiene al menos cinco sesiones?** Un pilar con una sola sesión es una
-   etiqueta, no un frente.
-3. **¿Cada sesión cae en uno y solo uno?** Si dos pilares se pelean la misma
-   sesión, sus límites no están escritos.
+1. **Could you say in one sentence what it is NOT?** If not, it's a
+   catch-all.
+2. **Does it have at least five sessions?** A pillar with a single session is
+   a label, not a front.
+3. **Does each session fall into one and only one?** If two pillars fight over
+   the same session, their boundaries aren't written.
 
-> El error más común es crear un pilar por cada tema que aparece. El resultado
-> son veinte pilares con tres sesiones cada uno, y ninguno sirve para navegar.
-> **Es mejor un pilar menos y bien delimitado.**
+> The most common mistake is creating a pillar for every topic that shows up.
+> The result is twenty pillars with three sessions each, and none of them is
+> any good for navigating. **One pillar fewer and well delimited is better.**
 
-### Cuando dudes, no inventes: usa «Temas Varios»
+### When in doubt, don't invent: use "Temas Varios"
 
-Es el cajón honesto de lo que todavía no tiene frente propio. **No es un
-fracaso**: es una lista de espera que te dice qué pilares te faltan. Cuando
-«Temas Varios» llegue a veinte sesiones sobre lo mismo, ahí nace el pilar.
+It's the honest drawer for what doesn't have a front of its own yet. **It is
+not a failure**: it's a waiting list that tells you which pillars you're
+missing. When "Temas Varios" reaches twenty sessions about the same thing,
+that's where the pillar is born.
 
 ---
 
-## Paso 3 · La batería: el diccionario que hace al plugin tuyo
+## Step 3 · The battery: the dictionary that makes the plugin yours
 
-`core/bateria.yaml` es lo que el plugin sabe de **tu** mundo. No es código: es
-una lista de nombres con su contexto.
+`core/bateria.yaml` is what the plugin knows about **your** world. It's not
+code: it's a list of names with their context.
 
 ```yaml
 marcas:
@@ -122,59 +126,60 @@ programas:
     sitio: https://www.devontechnologies.com/
 ```
 
-**Por qué esto es lo que más rinde:** cada nombre que agregas es una sesión
-futura que el plugin resuelve **sin preguntarle a ningún modelo**. La batería es
-la memoria del clasificador.
+**Why this is what pays off the most:** every name you add is a future session
+that the plugin resolves **without asking any model**. The battery is the
+classifier's memory.
 
-| Sin batería | Con batería |
+| Without the battery | With the battery |
 |---|---|
-| el modelo adivina si «Avata 360» es marca o producto | lo lee de la lista, gratis |
-| «Devon Technologies» sale mal escrito cada vez | se escribe una vez, para siempre |
-| cada sesión cuesta tokens | las conocidas cuestan cero |
+| the model guesses whether "Avata 360" is a brand or a product | it reads it from the list, free |
+| "Devon Technologies" comes out misspelled every time | it's written once, forever |
+| every session costs tokens | the known ones cost zero |
 
-### Reglas para escribirla bien
+### Rules for writing it well
 
-- **La marca va en Tag1, sola.** `Ground Advantage` es el producto; `USPS` es la
-  marca. Nunca `USPS Ground Advantage` en el mismo campo.
-- **La marca de un programa está en su sitio, no en su nombre.** `DEVONthink`
-  es el programa; `devontechnologies.com` dice que la compañía es *Devon
+- **The brand goes in Tag1, alone.** `Ground Advantage` is the product; `USPS`
+  is the brand. Never `USPS Ground Advantage` in the same field.
+- **A program's brand is on its site, not in its name.** `DEVONthink` is the
+  program; `devontechnologies.com` tells you the company is *Devon
   Technologies*.
-- **Una línea por cosa.** Si dudas entre dos formas, escribe las dos en `alias`.
-- **Nada de experiencia personal.** «Con este courier se pierden los paquetes»
-  va en `bateria.personal.yaml`, que **no se publica**.
+- **One line per thing.** If you hesitate between two forms, write both in
+  `alias`.
+- **No personal experience.** "Packages get lost with this courier" goes in
+  `bateria.personal.yaml`, which **is not published**.
 
 ---
 
-## Paso 4 · Corrige en el simulador, no en la base
+## Step 4 · Correct in the simulator, not in the database
 
-El flujo es siempre el mismo:
+The flow is always the same:
 
 ```
-mirar en el simulador  →  exportar el CSV  →  corregir  →  aplicar
+look in the simulator  →  export the CSV  →  correct  →  apply
 ```
 
-El botón **Exportar** genera un CSV con una fila por sesión y columnas vacías
-para lo que quieras cambiar:
+The **Export** button generates a CSV with one row per session and empty
+columns for whatever you want to change:
 
 ```
 n, id, fecha, titulo_actual, sujeto, tag1, tag2, descripcion,
 sujeto_nuevo, tag1_nuevo, tag2_nuevo, descripcion_nueva, observaciones
 ```
 
-Llenas solo lo que está mal y lo dejas volver. **Nada se aplica hasta que tú lo
-pides.**
+You fill in only what's wrong and let it come back. **Nothing is applied until
+you ask for it.**
 
 ---
 
-## Paso 5 · Aplica, y verifica
+## Step 5 · Apply, and verify
 
 ```bash
 python3 tools/apply_protocol.py           # muestra qué cambiaría, no escribe
 python3 tools/apply_protocol.py --apply   # respalda, escribe, relee
 ```
 
-El primer comando **es el que usas el 90 % del tiempo**. Enseña la lista de
-cambios propuestos con su motivo:
+The first command **is the one you use 90 % of the time**. It shows the list of
+proposed changes with their reason:
 
 ```
 propuestas: 89 · sin cambio: 795
@@ -184,47 +189,48 @@ propuestas: 89 · sin cambio: 795
        + 002 [Hermes Desktop] 001 [Hermes Agent] [Instalar] Instalar la app…
 ```
 
-Si algo no te gusta, no lo aplicas y ajustas la regla.
+If you don't like something, you don't apply it and you adjust the rule.
 
 ---
 
-## Por qué entrenar el plugin importa tanto
+## Why training the plugin matters so much
 
-El plugin **no sabe nada de tu vida al instalarse**. Sabe de software en
-general, como cualquier modelo. Lo que lo vuelve útil es lo que tú le enseñas:
+The plugin **knows nothing about your life when you install it**. It knows
+about software in general, like any model. What makes it useful is what you
+teach it:
 
-| Lo que le das | Lo que ganas |
+| What you give it | What you gain |
 |---|---|
-| **pilares** | el filtro que de verdad usas |
-| **batería** | sesiones resueltas sin gastar tokens |
-| **correcciones** | las reglas que impiden repetir el error |
-| **tus nombres** | el catálogo deja de sonar a máquina y suena a ti |
+| **pillars** | the filter you actually use |
+| **battery** | sessions resolved without spending tokens |
+| **corrections** | the rules that prevent repeating the error |
+| **your names** | the catalog stops sounding like a machine and sounds like you |
 
-Y funciona así: **cada corrección se escribe como regla**, no como parche. La
-sesión 369 salió mal porque el sujeto era el controlador y no la marca; de ahí
-nació `subject-is-the-nearest-item`, y esa regla arregla las próximas cien antes
-de que existan.
+And it works like this: **every correction is written as a rule**, not as a
+patch. Session 369 came out wrong because the subject was the controller and
+not the brand; from there `subject-is-the-nearest-item` was born, and that rule
+fixes the next hundred before they exist.
 
-> **La forma más rápida de mejorar el plugin no es pedirle más inteligencia. Es
-> darle más nombres.** Un archivo de batería bien cuidado hace más que un modelo
-> más grande.
+> **The fastest way to improve the plugin is not to ask it for more
+> intelligence. It's to give it more names.** A well-kept battery file does
+> more than a bigger model.
 
-### La señal de que está entrenado
+### The sign that it's trained
 
-- Hay **pocas sesiones en «Temas Varios»** y las que hay son recientes.
-- Los **Tag2 son verbos** (`Instalar`, `Testear`, `Cotizar`), no estantes
+- There are **few sessions in "Temas Varios"** and the ones there are recent.
+- The **Tag2 are verbs** (`Instalar`, `Testear`, `Cotizar`), not shelves
   (`Electronica`, `IA`).
-- **Agregar una sesión nueva no requiere renombrar ninguna vieja.**
-- El sujeto de una sesión **no repite la marca** ni lleva verbos.
+- **Adding a new session doesn't require renaming any old one.**
+- A session's subject **doesn't repeat the brand** and carries no verbs.
 
-Si esas cuatro cosas se cumplen, el plugin ya está trabajando solo.
+If those four things hold, the plugin is already working on its own.
 
 ---
 
-## El orden, en una línea
+## The order, in one line
 
 ```
-respaldo → pilares → batería → simulador → correcciones → aplicar → repetir
+backup → pillars → battery → simulator → corrections → apply → repeat
 ```
 
-Y el paso que nunca se salta: **mirar antes de escribir.**
+And the step that is never skipped: **look before writing.**
