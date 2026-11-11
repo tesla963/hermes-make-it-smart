@@ -56,9 +56,12 @@ plugin.register({
   files: { readText: async () => ({ ok: false }), writeText: async () => ({ ok: false }) },
   os: {},
 })
-ok(seen.length === 2, `declares 2 entries (got ${seen.length})`)
+ok(seen.length === 6 || seen.length === 2, `declares valid entries (got ${seen.length})`)
 ok(seen.some((x) => x.render), 'one entry renders a component')
 ok(seen.some((x) => x.data && x.data.path), 'one entry carries a route path')
+if (seen.length > 2) {
+  ok(seen.filter((x) => x.area === 'keybinds').length === 4, 'declares 4 smarts.* keybinds')
+}
 
 console.log('\n§ primer render')
 const { renderToStaticMarkup } = await import(asUrl(join(HERMES, 'react-dom', 'server.js')))

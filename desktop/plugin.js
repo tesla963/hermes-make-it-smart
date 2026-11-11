@@ -13,7 +13,7 @@
  * `react/jsx-runtime` are imported.
  */
 
-import { host, ROUTES_AREA, SIDEBAR_NAV_AREA } from '@hermes/plugin-sdk'
+import { host, ROUTES_AREA, SIDEBAR_NAV_AREA, KEYBINDS_AREA } from '@hermes/plugin-sdk'
 import { jsx, jsxs } from 'react/jsx-runtime'
 import { useState, useEffect, useMemo, useRef } from 'react'
 
@@ -427,6 +427,9 @@ const I18N = {
     r2: 'La marca y el producto son dos cosas: USPS + Ground Advantage',
     r3: 'El sujeto es el paciente, no quien sostiene la ficha',
     r4: 'Una serie, un pilar: si hay 40 hermanos, el que no encaja está mal',
+    copiarTitulo: 'Copiar título',
+    copiarFicha: 'Copiar ficha',
+    verSerie: 'Ver la serie',
   },
   en: {
     navPrev: 'Previous session',
@@ -438,6 +441,9 @@ const I18N = {
     limpiar: 'Clear',
     copiar: 'Copy',
     exportar: 'Export',
+    copiarTitulo: 'Copy title',
+    copiarFicha: 'Copy card',
+    verSerie: 'View series',
     actualizar: 'Refresh DB',
     showDel: 'Deleted',
     hideDel: 'Deleted',
@@ -551,6 +557,9 @@ const I18N = {
     r2: 'The brand and the product are two things: USPS + Ground Advantage',
     r3: 'The subject is the patient, not whoever holds the file',
     r4: 'One series, one pillar: with 40 siblings, the one that does not fit is wrong',
+    copiarTitulo: 'Copy title',
+    copiarFicha: 'Copy card',
+    verSerie: 'View series',
   },
 }
 
@@ -731,6 +740,14 @@ position:relative;display:flex;flex-direction:column;width:100%;height:100%;min-
 .mmws .errbanner{background:#2b1118;border-bottom:1px solid #8c2d3e;color:#ffd4dc;padding:7px 14px;font-size:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .mmws .errbanner b{color:#ff7a90;font-family:ui-monospace,Menlo,monospace}
 .mmws .errbanner .errlist{flex:1 1 auto;display:flex;flex-direction:column;gap:2px;font-family:ui-monospace,Menlo,monospace;font-size:11.5px}
+.mmws aside.active-zone{box-shadow:inset 0 0 0 2px var(--wine2)}
+.mmws main.active-zone{box-shadow:inset 0 0 0 2px var(--wine2)}
+.mmws .panel.active-zone{box-shadow:inset 0 0 0 2px var(--wine2)}
+.mmws aside:focus,.mmws main:focus,.mmws .panel:focus,.mmws #tb:focus{outline:none}
+.mmws .ctxmenu{position:fixed;background:#1a1520;border:1px solid var(--line2);border-radius:8px;padding:4px;box-shadow:0 8px 24px rgba(0,0,0,0.6);z-index:100;min-width:160px;font-size:12px;color:var(--tx)}
+.mmws .ctxitem{padding:6px 12px;border-radius:5px;cursor:pointer;white-space:nowrap;user-select:none}
+.mmws .ctxitem:hover{background:var(--wine);color:#fff}
+.mmws .ctxsep{height:1px;background:var(--line);margin:4px 0}
 `
 
 /* ------------------------------------------------------------------ */
@@ -1107,6 +1124,9 @@ function App({ ctx }) {
   const [showCron, setShowCron] = useState(false)
   const [orden, setOrden] = useState({ k: 'fecha', asc: false })
   const [sel, setSel] = useState(null)
+  const [cardOpen, setCardOpen] = useState(false)
+  const [activeZone, setActiveZone] = useState('list')
+  const [contextMenu, setContextMenu] = useState(null)
   const [editModal, setEditModal] = useState(false)
   const [editVal, setEditVal] = useState('')
   const [vModal, setVModal] = useState(false)
@@ -1203,26 +1223,10 @@ function App({ ctx }) {
     }
   }, [ctx])
 
-  // Escape closes detail panel and modals
-  useEffect(() => {
-    const onKey = (e) => {
-      if (e.key === 'Escape') {
-        setSel(null)
-        setEditModal(false)
-        setVModal(false)
-      }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [])
-
   // Lazily hydrate user messages from live session.resume when opening a session with no cached claves
-  const selectSession = async (d, keepOpen = false) => {
-    if (!keepOpen && sel && sel.id === d.id) {
-      setSel(null)
-      return
-    }
+  const selectSession = async (d, openCard = false) => {
     setSel(d)
+    if (openCard) setCardOpen(true)
     if ((!d.claves || d.claves.length === 0) && d.id) {
       const res = await callRpc(ctx, 'session.resume', {
         session_id: d.id,
@@ -1324,6 +1328,17 @@ function App({ ctx }) {
     })
     return arr
   }, [visible, orden])
+
+  // Auto-select the first visible row whenever sorted list changes
+  useEffect(() => {
+    if (sorted.length > 0) {
+      if (!sel || !sorted.some((r) => r.id === sel.id)) {
+        setSel(sorted[0])
+      }
+    } else {
+      setSel(null)
+    }
+  }, [sorted, sel])
 
   const facetCounts = (skipKeys, field) => {
     const c = {}
@@ -1530,6 +1545,36 @@ function App({ ctx }) {
     }
   }
 
+  const scrollToRow = (targetId) => {
+    try {
+      const tr = typeof document !== 'undefined' && document.querySelector(`#tb tbody tr.r[data-id="${targetId}"]`)
+      if (tr && typeof tr.getBoundingClientRect === 'function') {
+        const rect = tr.getBoundingClientRect()
+        const vh = window.innerHeight || document.documentElement.clientHeight
+        const margenArriba = vh * 0.22
+        const margenAbajo = vh * 0.74
+        if (rect.top < margenArriba || rect.bottom > margenAbajo) {
+          tr.scrollIntoView({ block: 'center', behavior: 'auto' })
+        }
+      }
+    } catch (_) {
+      /* ignore in headless tests */
+    }
+  }
+
+  const selectIndex = (idx) => {
+    const rows = filasVisibles()
+    if (!rows.length) return
+    const i = Math.max(0, Math.min(rows.length - 1, idx))
+    const target = rows[i]
+    if (!target) return
+    setSel(target)
+    scrollToRow(target.id)
+    if (cardOpen) {
+      selectSession(target, true)
+    }
+  }
+
   const navSesion = (dir) => {
     const rows = filasVisibles()
     if (!rows.length) return
@@ -1537,22 +1582,208 @@ function App({ ctx }) {
     i = i < 0 ? 0 : Math.max(0, Math.min(rows.length - 1, i + dir))
     const target = rows[i]
     if (!target) return
-    try {
-      const tr = typeof document !== 'undefined' && document.querySelector(`#tb tbody tr.r[data-id="${target.id}"]`)
-      if (tr && typeof tr.getBoundingClientRect === 'function') {
-        const rect = tr.getBoundingClientRect()
-        const vh = window.innerHeight || document.documentElement.clientHeight
-        const margenArriba = vh * 0.22
-        const margenAbajo = vh * 0.74
-        if (rect.top < margenArriba || rect.bottom > margenAbajo) {
-          tr.scrollIntoView({ block: 'center', behavior: 'smooth' })
-        }
-      }
-    } catch (_) {
-      /* ignore in headless tests */
-    }
+    setSel(target)
+    setCardOpen(true)
+    scrollToRow(target.id)
     selectSession(target, true)
   }
+
+  const handleRowContextMenu = (e, d) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setSel(d)
+    if (!e.altKey) {
+      openSession(d)
+    } else {
+      setContextMenu({
+        x: e.clientX,
+        y: e.clientY,
+        session: d,
+      })
+    }
+  }
+
+  // Dismiss context menu when clicking outside
+  useEffect(() => {
+    if (!contextMenu) return
+    const closeMenu = (e) => {
+      if (!e.target.closest || !e.target.closest('.ctxmenu')) {
+        setContextMenu(null)
+      }
+    }
+    window.addEventListener('click', closeMenu)
+    window.addEventListener('contextmenu', closeMenu)
+    return () => {
+      window.removeEventListener('click', closeMenu)
+      window.removeEventListener('contextmenu', closeMenu)
+    }
+  }, [contextMenu])
+
+  // Custom keybind event listeners for smarts.search and smarts.nextSession / prevSession
+  useEffect(() => {
+    const onFocusSearch = () => {
+      setActiveZone('filters')
+      const qEl = typeof document !== 'undefined' && document.getElementById('q')
+      if (qEl) {
+        qEl.focus()
+        qEl.select()
+      }
+    }
+    const onNavEvt = (e) => {
+      const dir = (e && e.detail && e.detail.dir) || 1
+      navSesion(dir)
+    }
+    if (typeof window !== 'undefined') {
+      window.addEventListener('mmws-focus-search', onFocusSearch)
+      window.addEventListener('mmws-nav-session', onNavEvt)
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('mmws-focus-search', onFocusSearch)
+        window.removeEventListener('mmws-nav-session', onNavEvt)
+      }
+    }
+  }, [sorted, sel, cardOpen])
+
+  // Local keyboard interaction: Zones (Tab/Shift+Tab), List keys, Enter, Space, Esc, /
+  useEffect(() => {
+    const onKey = (e) => {
+      const isInput =
+        e.target &&
+        (e.target.tagName === 'INPUT' ||
+          e.target.tagName === 'TEXTAREA' ||
+          e.target.isContentEditable)
+
+      // 1. '/' focuses search (only when not in an input)
+      if (e.key === '/' && !isInput) {
+        e.preventDefault()
+        setActiveZone('filters')
+        const qEl = typeof document !== 'undefined' && document.getElementById('q')
+        if (qEl) {
+          qEl.focus()
+          qEl.select()
+        }
+        return
+      }
+
+      // 2. Tab / Shift+Tab cycles zones: Filters -> List -> Card
+      if (e.key === 'Tab') {
+        e.preventDefault()
+        const zones = ['filters', 'list', 'card']
+        const curIdx = zones.indexOf(activeZone)
+        let nextIdx
+        if (e.shiftKey) {
+          nextIdx = curIdx <= 0 ? zones.length - 1 : curIdx - 1
+        } else {
+          nextIdx = curIdx >= zones.length - 1 ? 0 : curIdx + 1
+        }
+        const nextZone = zones[nextIdx]
+        setActiveZone(nextZone)
+        if (nextZone === 'filters') {
+          const qEl = typeof document !== 'undefined' && document.getElementById('q')
+          if (qEl) qEl.focus()
+        } else if (nextZone === 'list') {
+          if (isInput && typeof e.target.blur === 'function') e.target.blur()
+          const tbEl = typeof document !== 'undefined' && document.getElementById('tb')
+          if (tbEl) tbEl.focus()
+        } else if (nextZone === 'card') {
+          if (isInput && typeof e.target.blur === 'function') e.target.blur()
+          setCardOpen(true)
+          const panelEl = typeof document !== 'undefined' && document.getElementById('panel')
+          if (panelEl) panelEl.focus()
+        }
+        return
+      }
+
+      // 3. Esc handling
+      if (e.key === 'Escape') {
+        if (contextMenu) {
+          setContextMenu(null)
+          return
+        }
+        if (editModal) {
+          setEditModal(false)
+          return
+        }
+        if (vModal) {
+          setVModal(false)
+          return
+        }
+        if (cardOpen) {
+          setCardOpen(false)
+          return
+        }
+        // If card was already closed: return selection to the first visible row
+        if (sorted.length > 0) {
+          selectIndex(0)
+        }
+        return
+      }
+
+      if (isInput) return
+
+      // 4. ⌥↓ / ⌥↑: previous/next visible session with Card following
+      if (e.altKey && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+        e.preventDefault()
+        navSesion(e.key === 'ArrowDown' ? 1 : -1)
+        return
+      }
+
+      // 5. Enter opens session
+      if (e.key === 'Enter') {
+        if (sel) {
+          e.preventDefault()
+          openSession(sel)
+        }
+        return
+      }
+
+      // 6. Space toggles the Card
+      if (e.key === ' ') {
+        e.preventDefault()
+        setCardOpen((prev) => !prev)
+        return
+      }
+
+      // 7. Arrow keys, PageDown/PageUp, Home/End in List
+      if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        const i = sesionActualIdx(sorted)
+        selectIndex(i + 1)
+        return
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        const i = sesionActualIdx(sorted)
+        selectIndex(i - 1)
+        return
+      }
+      if (e.key === 'PageDown') {
+        e.preventDefault()
+        const i = sesionActualIdx(sorted)
+        selectIndex(i + 10)
+        return
+      }
+      if (e.key === 'PageUp') {
+        e.preventDefault()
+        const i = sesionActualIdx(sorted)
+        selectIndex(i - 10)
+        return
+      }
+      if (e.key === 'Home') {
+        e.preventDefault()
+        selectIndex(0)
+        return
+      }
+      if (e.key === 'End') {
+        e.preventDefault()
+        selectIndex(sorted.length - 1)
+        return
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [sorted, sel, cardOpen, activeZone, contextMenu, editModal, vModal])
 
   // Notice banner for empty cron sessions
   const pintaAviso = () => {
@@ -1666,17 +1897,17 @@ function App({ ctx }) {
         ),
         h('div', { style: { gridColumn: '1/-1', borderTop: '1px solid var(--line)', margin: '6px 0 2px' } }),
         h('div', null, 'tag1 · ' + t('lblPlataforma')),
-        h('div', null, h('span', { className: 'pill tag1' }, d.tag1 || '—')),
+        h('div', null, d.tag1 ? h('span', { className: 'pill tag1 pick', title: 'Filtrar por tag1', onClick: (e) => { e.stopPropagation(); setF((p) => ({ ...p, tag1: p.tag1 === d.tag1 ? null : d.tag1 })) } }, d.tag1) : '—'),
         h('div', null, 'tag2 · ' + t('lblFamilia')),
-        h('div', null, h('span', { className: 'pill tag2' }, d.tag2 || '—')),
+        h('div', null, d.tag2 ? h('span', { className: 'pill tag2 pick', title: 'Filtrar por tag2', onClick: (e) => { e.stopPropagation(); setF((p) => ({ ...p, tag2: p.tag2 === d.tag2 ? null : d.tag2 })) } }, d.tag2) : '—'),
         h('div', null, 'tag3 · ' + t('lblPilar')),
-        h('div', null, h('span', { className: 'pill tag3' }, d.pilar || d.tag3 || '—')),
+        h('div', null, (d.pilar || d.tag3) ? h('span', { className: 'pill tag3 pick', title: 'Filtrar por tag3', onClick: (e) => { e.stopPropagation(); const v = d.pilar || d.tag3; setF((p) => ({ ...p, tag3: p.tag3 === v ? null : v })) } }, d.pilar || d.tag3) : '—'),
         h('div', null, 'tag4 · ' + t('lblPais')),
-        h('div', null, d.pais || d.tag4 ? h('span', { className: 'pill tag4' }, d.pais || d.tag4) : '—'),
+        h('div', null, (d.pais || d.tag4) ? h('span', { className: 'pill tag4 pick', title: 'Filtrar por tag4', onClick: (e) => { e.stopPropagation(); const v = d.pais || d.tag4; setF((p) => ({ ...p, tag4: p.tag4 === v ? null : v })) } }, d.pais || d.tag4) : '—'),
         h('div', null, 'tag5 · ' + t('lblAnio')),
-        h('div', null, d.anio || d.tag5 ? h('span', { className: 'pill tag5' }, d.anio || d.tag5) : '—'),
+        h('div', null, (d.anio || d.tag5) ? h('span', { className: 'pill tag5 pick', title: 'Filtrar por tag5', onClick: (e) => { e.stopPropagation(); const v = d.anio || d.tag5; setF((p) => ({ ...p, anio: p.anio === v ? null : v })) } }, d.anio || d.tag5) : '—'),
         h('div', null, 'tag6 · ' + t('lblMaquina')),
-        h('div', null, h('span', { className: 'pill tag6' }, d.tag6 || '—')),
+        h('div', null, d.tag6 ? h('span', { className: 'pill tag6 pick', title: 'Filtrar por tag6', onClick: (e) => { e.stopPropagation(); setF((p) => ({ ...p, tag6: p.tag6 === d.tag6 ? null : d.tag6 })) } }, d.tag6) : '—'),
         h('div', null, 'tag7 · ' + t('lblLibre')),
         h('div', null, d.tag7 || '—'),
         h('div', null, 'tag8 · ' + t('lblLibre')),
@@ -2105,7 +2336,16 @@ function App({ ctx }) {
         {
           className: 't' + (isSel ? ' sele' : ''),
           key: d.id + '-t',
-          onClick: () => selectSession(d),
+          role: 'presentation',
+          onClick: () => {
+            selectSession(d)
+            setActiveZone('list')
+          },
+          onDoubleClick: () => {
+            setSel(d)
+            openSession(d)
+          },
+          onContextMenu: (e) => handleRowContextMenu(e, d),
         },
         h('td', { className: 'ncol t' }, d.n),
         h(
@@ -2120,8 +2360,19 @@ function App({ ctx }) {
         {
           className: 'r' + (isSel ? ' sele' : ''),
           'data-id': d.id,
+          id: 'row-' + d.id,
           key: d.id + '-r',
-          onClick: () => selectSession(d),
+          role: 'row',
+          'aria-selected': isSel ? 'true' : 'false',
+          onClick: () => {
+            selectSession(d)
+            setActiveZone('list')
+          },
+          onDoubleClick: () => {
+            setSel(d)
+            openSession(d)
+          },
+          onContextMenu: (e) => handleRowContextMenu(e, d),
         },
         h('td', { className: 'ncol' }),
         h('td', { className: 'mono tight fecha' }, d.fecha),
@@ -2136,7 +2387,7 @@ function App({ ctx }) {
               onClick: (e) => {
                 e.stopPropagation()
                 setQ(d.sujeto)
-                setSel(null)
+                setSel(d)
               },
             },
             d.sujeto
@@ -2153,7 +2404,6 @@ function App({ ctx }) {
                   onClick: (e) => {
                     e.stopPropagation()
                     setF((p) => ({ ...p, tag1: p.tag1 === d.tag1 ? null : d.tag1 }))
-                    setSel(null)
                   },
                 },
                 d.tag1
@@ -2169,7 +2419,6 @@ function App({ ctx }) {
                   onClick: (e) => {
                     e.stopPropagation()
                     setF((p) => ({ ...p, tag2: p.tag2 === d.tag2 ? null : d.tag2 }))
-                    setSel(null)
                   },
                 },
                 d.tag2
@@ -2263,7 +2512,10 @@ function App({ ctx }) {
       /* Left Filters Aside */
       h(
         'aside',
-        null,
+        {
+          className: activeZone === 'filters' ? 'active-zone' : '',
+          onClick: () => setActiveZone('filters'),
+        },
         h(
           'div',
           { className: 'abarra' },
@@ -2272,6 +2524,7 @@ function App({ ctx }) {
             type: 'text',
             placeholder: t('buscar'),
             value: q,
+            onFocus: () => setActiveZone('filters'),
             onChange: (e) => setQ(e.target.value),
             style: {
               width: '100%',
@@ -2410,16 +2663,9 @@ function App({ ctx }) {
       h(
         'main',
         {
-          onClick: (e) => {
-            if (
-              sel &&
-              !e.target.closest('tr.t') &&
-              !e.target.closest('tr.r') &&
-              !e.target.closest('#tabInfo')
-            ) {
-              setSel(null)
-            }
-          },
+          className: activeZone === 'list' ? 'active-zone' : '',
+          onClick: () => setActiveZone('list'),
+          onFocus: () => setActiveZone('list'),
         },
         h(
           'div',
@@ -2567,8 +2813,10 @@ function App({ ctx }) {
               title: t('tabInfoTitle'),
               onClick: (e) => {
                 e.stopPropagation()
-                if (sorted.length > 0) {
-                  selectSession(sorted[0], true)
+                setCardOpen((p) => !p)
+                setActiveZone('card')
+                if (sorted.length > 0 && !sel) {
+                  setSel(sorted[0])
                 }
               },
             },
@@ -2580,7 +2828,13 @@ function App({ ctx }) {
 
         h(
           'table',
-          { id: 'tb' },
+          {
+            id: 'tb',
+            role: 'grid',
+            tabIndex: 0,
+            'aria-activedescendant': sel ? 'row-' + sel.id : undefined,
+            onFocus: () => setActiveZone('list'),
+          },
           h(
             'thead',
             null,
@@ -2603,13 +2857,19 @@ function App({ ctx }) {
       /* Slide-over Detail Card Panel */
       h(
         'div',
-        { className: 'panel' + (sel ? ' on' : ''), id: 'panel' },
+        {
+          className: 'panel' + (cardOpen ? ' on' : '') + (activeZone === 'card' ? ' active-zone' : ''),
+          id: 'panel',
+          tabIndex: 0,
+          onClick: () => setActiveZone('card'),
+          onFocus: () => setActiveZone('card'),
+        },
         h(
           'div',
           { className: 'pbar' },
           h(
             'span',
-            { className: 'x', id: 'px', onClick: () => setSel(null) },
+            { className: 'x', id: 'px', onClick: () => setCardOpen(false) },
             '✕'
           )
         ),
@@ -2622,6 +2882,81 @@ function App({ ctx }) {
         )
       )
     ),
+
+    /* ---------- Context Menu (⌥ + Right Click) ---------- */
+    contextMenu
+      ? h(
+          'div',
+          {
+            className: 'ctxmenu',
+            style: {
+              left: Math.min(contextMenu.x, (typeof window !== 'undefined' ? window.innerWidth : 800) - 180) + 'px',
+              top: Math.min(contextMenu.y, (typeof window !== 'undefined' ? window.innerHeight : 600) - 180) + 'px',
+            },
+          },
+          h(
+            'div',
+            {
+              className: 'ctxitem',
+              onClick: () => {
+                const s = contextMenu.session
+                setContextMenu(null)
+                openSession(s)
+              },
+            },
+            t('abrirSesion')
+          ),
+          h(
+            'div',
+            {
+              className: 'ctxitem',
+              onClick: async () => {
+                const s = contextMenu.session
+                setContextMenu(null)
+                await copyText(ctx, s.raw || s.desc)
+              },
+            },
+            t('copiarTitulo')
+          ),
+          h(
+            'div',
+            {
+              className: 'ctxitem',
+              onClick: async () => {
+                const s = contextMenu.session
+                setContextMenu(null)
+                await copyText(ctx, fichaTexto(s))
+              },
+            },
+            t('copiarFicha')
+          ),
+          h(
+            'div',
+            {
+              className: 'ctxitem',
+              onClick: () => {
+                const s = contextMenu.session
+                setContextMenu(null)
+                setQ(s.sujeto)
+                setSel(s)
+              },
+            },
+            t('verSerie')
+          ),
+          h('div', { className: 'ctxsep' }),
+          h(
+            'div',
+            {
+              className: 'ctxitem',
+              onClick: () => {
+                setContextMenu(null)
+                limpiar()
+              },
+            },
+            t('limpiar')
+          )
+        )
+      : null,
 
     /* ---------- Bottom Footer Row (Version Badge + 5 KPIs) ---------- */
     h(
@@ -2767,6 +3102,66 @@ export default {
         id: 'nav',
         area: SIDEBAR_NAV_AREA,
         data: { path: ROUTE, label: 'Make It Smart', codicon: 'archive' },
+      },
+      {
+        id: 'smarts.open',
+        area: KEYBINDS_AREA,
+        data: {
+          id: 'smarts.open',
+          category: 'view',
+          defaults: ['mod+shift+s'],
+          label: 'Make It Smart: Open',
+          run: () => {
+            if (typeof host.navigate === 'function') host.navigate(ROUTE)
+            else if (typeof window !== 'undefined' && window.location) window.location.hash = ROUTE
+          },
+        },
+      },
+      {
+        id: 'smarts.search',
+        area: KEYBINDS_AREA,
+        data: {
+          id: 'smarts.search',
+          category: 'view',
+          defaults: ['mod+shift+f'],
+          label: 'Make It Smart: Search',
+          run: () => {
+            if (typeof host.navigate === 'function') host.navigate(ROUTE)
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('mmws-focus-search'))
+            }
+          },
+        },
+      },
+      {
+        id: 'smarts.nextSession',
+        area: KEYBINDS_AREA,
+        data: {
+          id: 'smarts.nextSession',
+          category: 'view',
+          defaults: ['alt+down'],
+          label: 'Make It Smart: Next session',
+          run: () => {
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('mmws-nav-session', { detail: { dir: 1 } }))
+            }
+          },
+        },
+      },
+      {
+        id: 'smarts.prevSession',
+        area: KEYBINDS_AREA,
+        data: {
+          id: 'smarts.prevSession',
+          category: 'view',
+          defaults: ['alt+up'],
+          label: 'Make It Smart: Previous session',
+          run: () => {
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('mmws-nav-session', { detail: { dir: -1 } }))
+            }
+          },
+        },
       },
     ])
   },

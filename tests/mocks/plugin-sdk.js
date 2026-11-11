@@ -5,8 +5,10 @@
  */
 export const ROUTES_AREA = 'routes'
 export const SIDEBAR_NAV_AREA = 'sidebar-nav'
+export const KEYBINDS_AREA = 'keybinds'
 export const host = {
   openSession: () => true,
   request: async () => true,
+  navigate: () => true,
 }
-export default { host, ROUTES_AREA, SIDEBAR_NAV_AREA }
+export default { host, ROUTES_AREA, SIDEBAR_NAV_AREA, KEYBINDS_AREA }
