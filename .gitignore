@@ -36,3 +36,7 @@ tools/*.csv
 
 # artefactos de herramientas (Antigravity .ts)
 docs/.ts/
+
+# codigo viejo: respaldos de plugin.js con fecha (nunca se publican)
+desktop/*.bak_*
+*.bak_*

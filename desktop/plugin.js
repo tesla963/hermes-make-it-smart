@@ -19,7 +19,7 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 
 const ID = 'make-it-smart'
 const NAME = 'Hermes, Make it Smart!'
-const VERSION = '0.23.0'
+const VERSION = '0.24.0'
 const ROUTE = '/smart'
 
 /** jsx-runtime helper: keeps uncompiled React code compact and readable. */
@@ -345,6 +345,18 @@ const I18N = {
     colHoras: 'Horas',
     colTokens: 'Tokens',
     colPosts: 'Posts',
+    colPending: 'Pendientes',
+    pendMemTitulo: 'Pending Authorization IDs — Memory',
+    pendSklTitulo: 'Pending Authorization IDs — Skills',
+    pendHuerfanas: 'Sin sesión atribuible',
+    pendFacet: 'Pendientes',
+    pendFacetCount: 'con pendientes',
+    sujetoFacet: 'Sujeto',
+    sujetosCount: 'sujetos',
+    copyIds: '⧉ Copiar IDs',
+    kPend1: 'PENDIENTES',
+    kPend2: 'AUTORIZ',
+    kPendTitle: 'Filtrar sesiones con solicitudes de autorización pendientes',
     mostrando: 'Mostrando',
     de: 'de',
     copiarSesion: 'Copiar sesión',
@@ -385,7 +397,7 @@ const I18N = {
     kTok1: 'Total',
     kTok2: 'tokens',
     sinMsgs: '(sin mensajes de usuario en esta sesión)',
-    hintUnica: 'Selección única. El sujeto no es faceta: usa el buscador.',
+    hintUnica: 'Selección única por faceta. Los filtros se combinan entre sí.',
     editarBtn: '✎ Editar nombre y reentrenar el algoritmo',
     editarTit: 'Editar título de la sesión',
     editarHint: 'Al guardar, el plugin escribe el título con autoridad de usuario en state.db vía session.title.',
@@ -410,7 +422,7 @@ const I18N = {
       'Lisa, tengo {n} sesiones vacías de cron (source=cron sin ningún mensaje). Bórralas y dime qué cron jobs tengo activos para pausarlos o pasarlos a modo no_agent.',
     vIntro:
       'Catálogo navegable de tus sesiones: las indexa de las 12 bases, les pone nombre canónico y las deja filtrar por plataforma, familia y pilar. La ventana del plugin solo pinta — el clasificador es Python puro y no sabe que existe Hermes.',
-    vSub: 'v0.23 · plugin nativo',
+    vSub: 'v0.24 · plugin nativo',
     vVer: 'ESTA VERSIÓN',
     vReg: 'REGLAS QUE APRENDIÓ',
     vCerrar: 'Cerrar',
@@ -469,6 +481,18 @@ const I18N = {
     colHoras: 'Hours',
     colTokens: 'Tokens',
     colPosts: 'Posts',
+    colPending: 'Pending',
+    pendMemTitulo: 'Pending Authorization IDs — Memory',
+    pendSklTitulo: 'Pending Authorization IDs — Skills',
+    pendHuerfanas: 'Unattributed',
+    pendFacet: 'Pending',
+    pendFacetCount: 'with pending',
+    sujetoFacet: 'Subject',
+    sujetosCount: 'subjects',
+    copyIds: '⧉ Copy IDs',
+    kPend1: 'PENDING',
+    kPend2: 'AUTH',
+    kPendTitle: 'Filter sessions with pending authorization requests',
     mostrando: 'Showing',
     de: 'of',
     copiarSesion: 'Copy session',
@@ -509,7 +533,7 @@ const I18N = {
     kTok1: 'Total',
     kTok2: 'tokens',
     sinMsgs: '(no user messages in this session)',
-    hintUnica: 'Single selection. Subject is not a facet: use the search bar.',
+    hintUnica: 'Single selection per facet. Filters combine with each other.',
     editarBtn: '✎ Edit title and retrain the algorithm',
     editarTit: 'Edit session title',
     editarHint: 'Saving writes the title with user authority into state.db via session.title.',
@@ -534,7 +558,7 @@ const I18N = {
       'Lisa, I have {n} empty cron sessions (source=cron with no messages). Delete them and tell me which cron jobs are active so I can pause them or move them to no_agent mode.',
     vIntro:
       'A browsable catalogue of your sessions: it indexes them from the 12 databases, gives each a canonical name and lets you filter by platform, family and pillar. The plugin window only paints — the classifier is pure Python and does not know Hermes exists.',
-    vSub: 'v0.23 · native plugin',
+    vSub: 'v0.24 · native plugin',
     vVer: 'THIS VERSION',
     vReg: 'REGLAS QUE APRENDIÓ',
     vCerrar: 'Close',
@@ -576,7 +600,7 @@ position:relative;display:flex;flex-direction:column;width:100%;height:100%;min-
 .mmws aside{width:var(--aside-ef);flex:0 0 var(--aside-ef);height:100%;display:flex;flex-direction:column;overflow:hidden;border-right:1px solid var(--line);background:var(--bg2);padding:0 10px}
 .mmws aside::-webkit-scrollbar{display:none;width:0;height:0}
 .mmws main{flex:1 1 auto;min-width:0;height:100%;overflow-y:auto;overflow-x:hidden;padding:0 0 40px}
-.mmws #tabInfo{position:absolute;right:0;top:0;bottom:0;width:46px;display:flex;align-items:center;justify-content:center;writing-mode:vertical-rl;text-orientation:mixed;background:#191420;border:0;border-left:1px solid var(--line);border-bottom:1px solid var(--line);border-radius:0 0 0 6px;color:var(--tx3);font-size:10.5px;font-weight:600;letter-spacing:.10em;text-transform:uppercase;cursor:pointer;padding:10px 8px;z-index:45}
+.mmws #tabInfo{position:absolute;right:0;top:0;bottom:0;width:44px;display:flex;align-items:center;justify-content:center;writing-mode:vertical-rl;text-orientation:mixed;background:#191420;border:0;border-left:1px solid var(--line);border-bottom:1px solid var(--line);border-radius:0 0 0 6px;color:var(--tx3);font-size:9.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;padding:8px 4px;white-space:normal;line-height:1.1;text-align:center;z-index:45}
 .mmws #tabInfo:hover{background:#241c2e;color:#fff}
 .mmws #tabInfo:active{background:#2d2338}
 .mmws .toolbar{position:sticky;top:0;z-index:30;background:rgba(13,11,14,.98);backdrop-filter:blur(6px);border-bottom:1px solid var(--line);padding:8px 54px 7px 16px;display:flex;gap:8px;row-gap:6px;align-items:center;flex-wrap:wrap}
@@ -649,6 +673,7 @@ position:relative;display:flex;flex-direction:column;width:100%;height:100%;min-
 .mmws #tb th:nth-child(5){width:54px}
 .mmws #tb th:nth-child(6){width:64px}
 .mmws #tb th:nth-child(7){width:50px}
+.mmws #tb th:nth-child(8){width:64px;text-align:center}
 .mmws #tb th:nth-child(1),.mmws #tb td.ncol{padding:6px 0;text-align:center;white-space:nowrap;width:48px}
 .mmws td.fecha{padding-left:8px !important;text-align:left !important;color:var(--tx3)}
 .mmws #tb td.ttitle{padding:6px 8px 2px 0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10.5px;line-height:1.45;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-bottom:none !important;color:#f4e6ee;font-weight:700}
@@ -684,10 +709,25 @@ position:relative;display:flex;flex-direction:column;width:100%;height:100%;min-
 .mmws .panel{position:absolute;right:0;top:0;bottom:0;width:360px;max-width:100%;background:#141117;border-left:1px solid var(--line);transform:translateX(100%);transition:transform .18s;z-index:70;box-shadow:-20px 0 40px #0009;display:flex;flex-direction:column}
 .mmws .panel.on{transform:none}
 .mmws .pbody{overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;padding:14px 16px 20px;flex:1;scrollbar-width:thin;scrollbar-color:#4a3f57 transparent}
-.mmws .pbar{padding:9px 16px;border-bottom:1px solid var(--line);display:flex;gap:8px;align-items:center;background:#100d12}
-.mmws .pbar.bottom{border-bottom:none;border-top:1px solid var(--line)}
-.mmws .pbar .x{margin-left:auto;cursor:pointer;color:var(--tx3);font-size:16px}
-.mmws .openbtn{background:var(--wine);border:1px solid var(--wine);color:#fff;border-radius:6px;padding:3px 8px;font-size:12px;font-weight:600;cursor:pointer}
+.mmws .pbar{padding:9px 16px;border-bottom:1px solid var(--line);display:flex;gap:8px;align-items:center;justify-content:space-between;background:#100d12}
+.mmws .pbar.bottom{border-bottom:none;border-top:1px solid var(--line);justify-content:flex-start}
+.mmws .pbar-l{display:flex;gap:6px;align-items:center}
+.mmws .pbar button{font-size:10.5px;padding:3px 8px;border-radius:6px;border:1px solid var(--line2);background:#1c1721;color:var(--tx2);cursor:pointer}
+.mmws .pbar button:hover{filter:brightness(1.35);border-color:var(--wine2)}
+.mmws .pbar .x{cursor:pointer;color:var(--tx3);font-size:16px}
+.mmws .openbtn{background:var(--wine);border:1px solid var(--wine);color:#fff;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:600;cursor:pointer}
+.mmws .pendsec{grid-column:1/-1;margin:10px 0 4px}
+.mmws .pendhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.mmws .pendtitle{font-size:11px;font-weight:700;color:#d8ec8f;text-transform:uppercase;letter-spacing:.05em;margin:0}
+.mmws .pendbtn{font-size:10.5px;padding:2px 7px;border-radius:5px;border:1px solid var(--line2);background:#1c1721;color:var(--tx2);cursor:pointer}
+.mmws .pendbtn:disabled{opacity:.4;cursor:default}
+.mmws .pendbox{max-height:140px;overflow-y:auto;overflow-x:hidden;background:#0d0a10;border:1px solid var(--line);border-radius:6px;padding:6px 8px;scrollbar-width:thin}
+.mmws .penditem{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10.5px;line-height:1.45;color:var(--tx2);cursor:default}
+.mmws .penditem:hover{color:#fff}
+.mmws .pendempty{color:var(--tx3);font-size:11.5px;padding:4px 0}
+.mmws .pendorph{grid-column:1/-1;margin:10px 0 4px;border-top:1px dashed var(--line);padding-top:8px}
+.mmws .pendorphtog{font-size:11px;font-weight:600;color:var(--tx3);cursor:pointer;display:flex;align-items:center;gap:4px}
+.mmws .pendorphtog:hover{color:var(--tx2)}
 .mmws .pname{font-family:ui-monospace,Menlo,monospace;font-size:17px;color:#f0dbe4;background:#1d1420;border:1px solid #3a2030;border-radius:8px;padding:9px 11px;margin:0 0 10px;line-height:1.5;word-break:break-word}
 .mmws .pthead{display:flex;align-items:flex-start;gap:10px;margin:0 0 10px}
 .mmws .pthead .pname{flex:1 1 auto;min-width:0;margin:0;overflow:hidden;text-overflow:ellipsis}
@@ -721,6 +761,10 @@ position:relative;display:flex;flex-direction:column;width:100%;height:100%;min-
 .mmws .kbar .kpi.gold b{color:var(--gold)}
 .mmws .kbar .kpi.tok b{color:#4bb8d8}
 .mmws .kbar .kpi.pst b{color:#c9c2d6}
+.mmws .kbar .kpi.pend b{color:#d8ec8f}
+.mmws .kbar .kpi.clickable{cursor:pointer;user-select:none}
+.mmws .kbar .kpi.clickable:hover{background:#1a1422}
+.mmws .kbar .kpi.active{background:#231728;box-shadow:inset 0 -2px 0 var(--wine2)}
 .mmws .hint{font-size:11px;color:var(--tx3);margin:6px 0 0}
 .mmws .modal{position:fixed;inset:0;background:#000a;display:flex;align-items:center;justify-content:center;z-index:90}
 .mmws .modal .box{background:#17131a;border:1px solid var(--line2);border-radius:12px;padding:18px;width:min(580px,92vw);max-height:85vh;overflow:auto}
@@ -799,13 +843,17 @@ async function loadCatalogue(ctx) {
   const errors = []
   let idxData = null
   let facetsMap = {}
+  let pendData = null
+  let pendMap = null
+  let pendAttr = null
 
   const filesApi = (ctx && ctx.files) || (host && host.files)
   if (filesApi && typeof filesApi.readText === 'function') {
     try {
-      const [idxRes, facRes] = await Promise.all([
+      const [idxRes, facRes, pendRes] = await Promise.all([
         filesApi.readText('data', 'index.json').catch((e) => ({ ok: false, error: String((e && e.message) || e) })),
         filesApi.readText('data', 'facets.json').catch((e) => ({ ok: false, error: String((e && e.message) || e) })),
+        filesApi.readText('data', 'pending_index.json').catch((e) => ({ ok: false, error: String((e && e.message) || e) })),
       ])
       if (idxRes && idxRes.ok && idxRes.text) {
         try {
@@ -822,6 +870,15 @@ async function loadCatalogue(ctx) {
           facetsMap = JSON.parse(facRes.text)
         } catch (e) {
           errors.push({ method: 'JSON.parse(facets.json)', message: String((e && e.message) || e) })
+        }
+      }
+      if (pendRes && pendRes.ok && pendRes.text) {
+        try {
+          pendData = JSON.parse(pendRes.text)
+          pendMap = (pendData && pendData.by_session) || null
+          pendAttr = (pendData && pendData.attribution) || null
+        } catch (e) {
+          errors.push({ method: 'JSON.parse(pending_index.json)', message: String((e && e.message) || e) })
         }
       }
     } catch (e) {
@@ -1007,6 +1064,11 @@ async function loadCatalogue(ctx) {
     const claves = Array.isArray(idx.claves) ? idx.claves : []
     const resumen = idx.resumen || (claves[0] || (live && live.preview) || '')
 
+    const pnd = (pendMap && pendMap[id]) || null
+    const pendMem = pnd ? (pnd.memoria || []) : []
+    const pendSkl = pnd ? (pnd.skills || []) : []
+    const pendTot = pendMem.length + pendSkl.length
+
     merged.push({
       n: g ? parseInt(g.nnn, 10) : Number(idx.n || 0),
       mmm: g ? parseInt(g.mmm, 10) : Number(idx.mmm || 1),
@@ -1019,7 +1081,11 @@ async function loadCatalogue(ctx) {
       tag6,
       tag7: ex.tag7 || idx.tag7 || '',
       tag8: ex.tag8 || idx.tag8 || '',
-      tag9: ex.tag9 || idx.tag9 || '',
+      tag9: pendTot > 0 ? 'Pending' : (ex.tag9 || idx.tag9 || ''),
+      pendMem,
+      pendSkl,
+      pendTot,
+      pending: pendTot,
       pilar,
       pais,
       anio,
@@ -1080,6 +1146,9 @@ async function loadCatalogue(ctx) {
     fromLiveRpc: liveById.size > 0,
     cronInfo: { vacias: vaciasCron, jobs_activos: jobsActivos },
     errors,
+    pendData,
+    pendMap,
+    pendAttr,
   }
 }
 
@@ -1092,6 +1161,11 @@ function App({ ctx }) {
   const [loading, setLoading] = useState(true)
   const [rpcErrors, setRpcErrors] = useState([])
   const [cronInfo, setCronInfo] = useState({ vacias: 0, jobs_activos: 0 })
+  const [pendData, setPendData] = useState(null)
+  const [pendMap, setPendMap] = useState(null)
+  const [pendAttr, setPendAttr] = useState(null)
+  const [expandSujetos, setExpandSujetos] = useState(false)
+  const [openOrphans, setOpenOrphans] = useState(false)
   const [q, setQ] = useState('')
   const [f, setF] = useState({
     tag1: null,
@@ -1101,6 +1175,8 @@ function App({ ctx }) {
     tag4: null,
     tag5: null,
     tag6: null,
+    tag9: null,
+    sujeto: null,
     motor: null,
     autor: null,
     anio: null,
@@ -1121,7 +1197,16 @@ function App({ ctx }) {
   const [editModal, setEditModal] = useState(false)
   const [editVal, setEditVal] = useState('')
   const [vModal, setVModal] = useState(false)
-  const [btnMsg, setBtnMsg] = useState({ copia: '', expc: '', updb: '', pcopia: '', avcopia: '' })
+  const [btnMsg, setBtnMsg] = useState({
+    copia: '',
+    expc: '',
+    updb: '',
+    pcopia: '',
+    avcopia: '',
+    pendMem: '',
+    pendSkl: '',
+    pendOrph: '',
+  })
   const [lang, setLang] = useState(() => {
     try {
       // English is the plugin's default language; Spanish is the opt-in.
@@ -1148,6 +1233,9 @@ function App({ ctx }) {
     setSessions(res.sessions)
     setCronInfo(res.cronInfo || { vacias: 0, jobs_activos: 0 })
     setRpcErrors(Array.isArray(res.errors) ? res.errors : [])
+    setPendData(res.pendData || null)
+    setPendMap(res.pendMap || null)
+    setPendAttr(res.pendAttr || null)
     setLoading(false)
     // Open the newest year node in Fecha tree automatically
     const years = [...new Set(res.sessions.map((d) => (d.mes || '').slice(0, 4)).filter(Boolean))].sort().reverse()
@@ -1176,6 +1264,9 @@ function App({ ctx }) {
         setSessions(res.sessions)
         setCronInfo(res.cronInfo || { vacias: 0, jobs_activos: 0 })
         setRpcErrors(Array.isArray(res.errors) ? res.errors : [])
+        setPendData(res.pendData || null)
+        setPendMap(res.pendMap || null)
+        setPendAttr(res.pendAttr || null)
         const years = [...new Set(res.sessions.map((d) => (d.mes || '').slice(0, 4)).filter(Boolean))].sort().reverse()
         if (years.length) {
           setOpenNodes(new Set(['y:' + years[0], 'init:' + years[0]]))
@@ -1267,6 +1358,42 @@ function App({ ctx }) {
     setShowCron(!yaActivo && cual === 'cron')
   }
 
+  const copyPendingIds = async (ids, key) => {
+    if (!ids || !ids.length) return
+    const ok = await copyText(ctx, ids.join('\n'))
+    setBtnMsg((p) => ({ ...p, [key]: ok ? `✔ ${ids.length}` : '✗' }))
+    setTimeout(() => setBtnMsg((p) => ({ ...p, [key]: '' })), 2000)
+  }
+
+  const getAttrTooltip = (pid) => {
+    const att = pendAttr && pendAttr[pid]
+    const m = att ? att.method : 'orphan'
+    if (m === 'exact') {
+      return lang === 'en'
+        ? "Exact: found in this session's tool result"
+        : 'Exacta: está en el resultado de herramienta de esta sesión'
+    }
+    if (m === 'window') {
+      return lang === 'en'
+        ? 'Approximate: session active within ±120 s'
+        : 'Aproximada: sesión activa en ±120 s'
+    }
+    if (m === 'window_amb') {
+      const n = (att && att.candidates ? att.candidates.length : 0) + 1
+      return lang === 'en'
+        ? `Approximate — ${n} sessions nearby, closest chosen`
+        : `Aproximada — ${n} sesiones cercanas, se eligió la más próxima`
+    }
+    return lang === 'en'
+      ? 'No session could be attributed'
+      : 'No se pudo atribuir a una sesión'
+  }
+
+  const orphanIds = useMemo(() => {
+    if (!pendAttr) return []
+    return Object.keys(pendAttr).filter((id) => pendAttr[id] && pendAttr[id].method === 'orphan')
+  }, [pendAttr])
+
   const nums = useMemo(() => numSel(q), [q])
   const qs = useMemo(() => (nums ? '' : sin(q)), [q, nums])
   const qNorm = useMemo(() => norm(q), [q])
@@ -1293,6 +1420,8 @@ function App({ ctx }) {
     if (!skips.includes('tag4') && f.tag4 && d.tag4 !== f.tag4) return false
     if (!skips.includes('tag5') && f.tag5 && d.tag5 !== f.tag5) return false
     if (!skips.includes('tag6') && f.tag6 && d.tag6 !== f.tag6) return false
+    if (!skips.includes('tag9') && f.tag9 && (d.pendTot > 0 ? 'Pending' : '') !== f.tag9) return false
+    if (!skips.includes('sujeto') && f.sujeto && norm(d.sujeto) !== norm(f.sujeto)) return false
     if (!skips.includes('motor') && f.motor && (d.motor || 'Sin dato') !== f.motor) return false
     if (!skips.includes('autor') && f.autor && d.autor !== f.autor) return false
     if (!skips.includes('anio') && f.anio && (d.fecha || '').slice(0, 4) !== f.anio) return false
@@ -1317,6 +1446,11 @@ function App({ ctx }) {
   const sorted = useMemo(() => {
     const arr = visible.slice()
     arr.sort((a, b) => {
+      if (orden.k === 'pending') {
+        const diff = (Number(a.pendTot) || 0) - (Number(b.pendTot) || 0)
+        if (diff !== 0) return diff * (orden.asc ? 1 : -1)
+        return b.n - a.n
+      }
       if (orden.k === 'tag1') {
         const A = norm((a.tag1 || '') + ' ' + (a.tag2 || ''))
         const B = norm((b.tag1 || '') + ' ' + (b.tag2 || ''))
@@ -1377,6 +1511,8 @@ function App({ ctx }) {
     if (f.tag4) out.push(['tag4', f.tag4])
     if (f.tag5) out.push(['tag5', f.tag5])
     if (f.tag6) out.push(['tag6', f.tag6])
+    if (f.tag9) out.push(['tag9', f.tag9])
+    if (f.sujeto) out.push(['sujeto', f.sujeto])
     if (f.motor) out.push(['motor', f.motor])
     if (f.autor) out.push(['autor', f.autor])
     if (f.anio) out.push(['anio', f.anio])
@@ -1420,6 +1556,8 @@ function App({ ctx }) {
       tag4: null,
       tag5: null,
       tag6: null,
+      tag9: null,
+      sujeto: null,
       motor: null,
       autor: null,
       anio: null,
@@ -1454,6 +1592,9 @@ function App({ ctx }) {
       'tag2',
       'descripcion',
       'verbo',
+      'pending',
+      'pend_mem',
+      'pend_skl',
       'sujeto_nuevo',
       'tag1_nuevo',
       'tag2_nuevo',
@@ -1462,7 +1603,26 @@ function App({ ctx }) {
       'observaciones',
     ]
     const rows = vis.map((d) =>
-      [d.n, d.id, d.fecha, d.raw, d.sujeto, d.tag1, d.tag2, d.desc, d.verb, '', '', '', '', '', '']
+      [
+        d.n,
+        d.id,
+        d.fecha,
+        d.raw,
+        d.sujeto,
+        d.tag1,
+        d.tag2,
+        d.desc,
+        d.verb,
+        d.pendTot || 0,
+        (d.pendMem || []).length,
+        (d.pendSkl || []).length,
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+      ]
         .map(esc)
         .join(',')
     )
@@ -1676,6 +1836,105 @@ function App({ ctx }) {
             : null
         ),
         h('div', { style: { gridColumn: '1/-1', borderTop: '1px solid var(--line)', margin: '6px 0 2px' } }),
+        pendMap
+          ? [
+              h(
+                'div',
+                { key: 'pend-mem', className: 'pendsec' },
+                h(
+                  'div',
+                  { className: 'pendhead' },
+                  h(
+                    'button',
+                    {
+                      className: 'pendbtn',
+                      disabled: (d.pendMem || []).length === 0,
+                      onClick: () => copyPendingIds(d.pendMem || [], 'pendMem'),
+                    },
+                    btnMsg.pendMem || t('copyIds')
+                  )
+                ),
+                h('h4', { className: 'pendtitle' }, t('pendMemTitulo')),
+                h(
+                  'div',
+                  { className: 'pendbox' },
+                  (d.pendMem || []).length > 0
+                    ? d.pendMem.map((pid) =>
+                        h('div', { key: pid, className: 'penditem', title: getAttrTooltip(pid) }, pid)
+                      )
+                    : h('div', { className: 'pendempty' }, '—')
+                )
+              ),
+              h(
+                'div',
+                { key: 'pend-skl', className: 'pendsec' },
+                h(
+                  'div',
+                  { className: 'pendhead' },
+                  h(
+                    'button',
+                    {
+                      className: 'pendbtn',
+                      disabled: (d.pendSkl || []).length === 0,
+                      onClick: () => copyPendingIds(d.pendSkl || [], 'pendSkl'),
+                    },
+                    btnMsg.pendSkl || t('copyIds')
+                  )
+                ),
+                h('h4', { className: 'pendtitle' }, t('pendSklTitulo')),
+                h(
+                  'div',
+                  { className: 'pendbox' },
+                  (d.pendSkl || []).length > 0
+                    ? d.pendSkl.map((pid) =>
+                        h('div', { key: pid, className: 'penditem', title: getAttrTooltip(pid) }, pid)
+                      )
+                    : h('div', { className: 'pendempty' }, '—')
+                )
+              ),
+              orphanIds.length > 0
+                ? h(
+                    'div',
+                    { key: 'pend-orph', className: 'pendorph' },
+                    h(
+                      'div',
+                      {
+                        className: 'pendorphtog',
+                        onClick: () => setOpenOrphans((v) => !v),
+                      },
+                      h('span', null, openOrphans ? '▾' : '▸'),
+                      h('span', null, `${t('pendHuerfanas')} (${orphanIds.length})`)
+                    ),
+                    openOrphans
+                      ? h(
+                          'div',
+                          { style: { marginTop: '8px' } },
+                          h(
+                            'div',
+                            { className: 'pendhead' },
+                            h(
+                              'button',
+                              {
+                                className: 'pendbtn',
+                                onClick: () => copyPendingIds(orphanIds, 'pendOrph'),
+                              },
+                              btnMsg.pendOrph || t('copyIds')
+                            )
+                          ),
+                          h(
+                            'div',
+                            { className: 'pendbox' },
+                            orphanIds.map((pid) =>
+                              h('div', { key: pid, className: 'penditem', title: getAttrTooltip(pid) }, pid)
+                            )
+                          )
+                        )
+                      : null
+                  )
+                : null,
+              h('div', { key: 'pend-div', style: { gridColumn: '1/-1', borderTop: '1px solid var(--line)', margin: '6px 0 2px' } }),
+            ]
+          : null,
         h('div', null, 'tag1 · ' + t('lblPlataforma')),
         h('div', null, h('span', { className: 'pill tag1' }, d.tag1 || '—')),
         h('div', null, 'tag2 · ' + t('lblFamilia')),
@@ -2090,6 +2349,26 @@ function App({ ctx }) {
     return { cnt, keys }
   }, [sessions, visible, f.autor])
 
+  const pendStats = useMemo(() => {
+    let n = 0
+    for (const d of sessions) if (pass(d) && d.pendTot > 0) n++
+    return n
+  }, [sessions, visible, f.tag9])
+
+  const sujetoStats = useMemo(() => {
+    const cnt = {}
+    for (const d of sessions) {
+      if (pass(d)) {
+        const k = d.sujeto || 'Sin sujeto'
+        cnt[k] = (cnt[k] || 0) + 1
+      }
+    }
+    const keys = Object.keys(cnt)
+      .filter((k) => (cnt[k] || 0) > 0 || f.sujeto === k)
+      .sort((a, b) => (cnt[b] || 0) - (cnt[a] || 0))
+    return { cnt, keys }
+  }, [sessions, visible, f.sujeto])
+
   const hiddenByFilterCount = useMemo(() => {
     if (visible.length > 0 || !qNorm) return 0
     return sessions.filter((d) =>
@@ -2123,7 +2402,7 @@ function App({ ctx }) {
         h('td', { className: 'ncol t' }, d.n),
         h(
           'td',
-          { colSpan: 6, className: 'ttitle' + (isDel ? ' borrada' : '') },
+          { colSpan: pendMap ? 7 : 6, className: 'ttitle' + (isDel ? ' borrada' : '') },
           h('b', { className: 'tfac' }, head),
           tail ? h('b', { className: 'tdesc' }, ' ' + tail) : null
         )
@@ -2148,7 +2427,7 @@ function App({ ctx }) {
               title: 'Filtrar por este sujeto',
               onClick: (e) => {
                 e.stopPropagation()
-                setQ(d.sujeto)
+                setF((p) => ({ ...p, sujeto: p.sujeto === d.sujeto ? null : d.sujeto }))
                 setSel(null)
               },
             },
@@ -2192,7 +2471,23 @@ function App({ ctx }) {
         h('td', { className: 'num tight cen' }, fmtC(d.costo)),
         h('td', { className: 'num tight cen' }, fmtHoras(d.horas)),
         h('td', { className: 'num tight cen', style: { color: 'var(--tx3)' } }, fmtT(d.tok_tot)),
-        h('td', { className: 'num tight cen', style: { color: 'var(--tx3)' } }, fmtP(d.posts))
+        h('td', { className: 'num tight cen', style: { color: 'var(--tx3)' } }, fmtP(d.posts)),
+        pendMap
+          ? h(
+              'td',
+              { className: 'num tight cen' },
+              d.pendTot > 0
+                ? h(
+                    'span',
+                    {
+                      className: 'pill tag9',
+                      title: `(mem) ${(d.pendMem || []).length} · (skills) ${(d.pendSkl || []).length}`,
+                    },
+                    'Pending'
+                  )
+                : '—'
+            )
+          : null
       ),
     ]
   })
@@ -2359,6 +2654,80 @@ function App({ ctx }) {
                 fontSize: '11.5px',
               },
             })
+          ),
+
+          pendMap
+            ? [
+                h(
+                  'h4',
+                  { key: 'pend-h4' },
+                  h('span', null, t('pendFacet')),
+                  h('span', null, pendStats + ' ' + t('pendFacetCount'))
+                ),
+                h(
+                  'div',
+                  { key: 'pend-opt' },
+                  h(
+                    'label',
+                    {
+                      className: 'opt' + (f.tag9 === 'Pending' ? ' sel' : ''),
+                      onClick: (e) => {
+                        e.preventDefault()
+                        setF((p) => ({ ...p, tag9: p.tag9 === 'Pending' ? null : 'Pending' }))
+                      },
+                    },
+                    h('input', { type: 'radio', checked: f.tag9 === 'Pending', readOnly: true }),
+                    h('span', null, 'Pending'),
+                    h('span', { className: 'n' }, pendStats)
+                  )
+                ),
+              ]
+            : null,
+
+          h(
+            'h4',
+            null,
+            h('span', null, t('sujetoFacet')),
+            h('span', null, (f.sujeto ? t('de1') : '') + sujetoStats.keys.length + ' ' + t('sujetosCount'))
+          ),
+          h(
+            'div',
+            null,
+            (expandSujetos ? sujetoStats.keys : sujetoStats.keys.slice(0, 20)).map((k) =>
+              h(
+                'label',
+                {
+                  key: k,
+                  className: 'opt' + (f.sujeto === k ? ' sel' : '') + (k === 'Sin sujeto' ? ' empty' : ''),
+                  onClick: (e) => {
+                    e.preventDefault()
+                    setF((p) => ({ ...p, sujeto: p.sujeto === k ? null : k }))
+                  },
+                },
+                h('input', { type: 'radio', checked: f.sujeto === k, readOnly: true }),
+                h('span', null, k),
+                h('span', { className: 'n' }, sujetoStats.cnt[k] || 0)
+              )
+            ),
+            sujetoStats.keys.length > 20
+              ? h(
+                  'button',
+                  {
+                    className: 'navb',
+                    style: {
+                      width: '100%',
+                      height: '24px',
+                      fontSize: '11px',
+                      marginTop: '4px',
+                      textAlign: 'center',
+                    },
+                    onClick: () => setExpandSujetos((v) => !v),
+                  },
+                  expandSujetos
+                    ? (lang === 'en' ? 'Show less' : 'Ver menos')
+                    : `+ ${sujetoStats.keys.length - 20} ${lang === 'en' ? 'more' : 'más'}`
+                )
+              : null
           ),
 
           h(
@@ -2557,6 +2926,8 @@ function App({ ctx }) {
                             tag4: null,
                             tag5: null,
                             tag6: null,
+                            tag9: null,
+                            sujeto: null,
                             motor: null,
                             autor: null,
                             anio: null,
@@ -2585,7 +2956,8 @@ function App({ ctx }) {
                 }
               },
             },
-            t('tabInfo')
+            h('span', { style: { display: 'block' } }, lang === 'en' ? 'Session' : 'Info'),
+            h('span', { style: { display: 'block' } }, lang === 'en' ? 'Info' : 'sesión')
           )
         ),
 
@@ -2606,7 +2978,10 @@ function App({ ctx }) {
               h('th', { className: 'tight', onClick: () => sortCol('costo', true) }, t('colCosto')),
               h('th', { className: 'tight', onClick: () => sortCol('horas', true) }, t('colHoras')),
               h('th', { className: 'tight', onClick: () => sortCol('tok_tot', true) }, t('colTokens')),
-              h('th', { className: 'tight', onClick: () => sortCol('posts', true) }, t('colPosts'))
+              h('th', { className: 'tight', onClick: () => sortCol('posts', true) }, t('colPosts')),
+              pendMap
+                ? h('th', { className: 'tight cen', onClick: () => sortCol('pending', true) }, t('colPending'))
+                : null
             )
           ),
           h('tbody', null, tableRows)
@@ -2620,6 +2995,12 @@ function App({ ctx }) {
         h(
           'div',
           { className: 'pbar' },
+          h(
+            'div',
+            { className: 'pbar-l' },
+            h('button', { id: 'pcopia-top', onClick: copyCard }, btnMsg.pcopia || t('copiarSesion')),
+            h('button', { className: 'openbtn', id: 'popen-top', onClick: () => openSession(sel) }, t('abrirSesion'))
+          ),
           h(
             'span',
             { className: 'x', id: 'px', onClick: () => setSel(null) },
@@ -2649,7 +3030,7 @@ function App({ ctx }) {
         },
         h('i', null),
         'V ',
-        h('b', null, '0.23')
+        h('b', null, '0.24')
       ),
       h(
         'div',
@@ -2683,7 +3064,19 @@ function App({ ctx }) {
           { className: 'kpi tok' },
           h('b', null, fmtT(totals.toks)),
           h('div', { className: 'lb' }, h('i', null, t('kTok1')), h('i', null, t('kTok2')))
-        )
+        ),
+        pendData
+          ? h(
+              'div',
+              {
+                className: 'kpi pend clickable' + (f.tag9 === 'Pending' ? ' active' : ''),
+                onClick: () => setF((p) => ({ ...p, tag9: p.tag9 === 'Pending' ? null : 'Pending' })),
+                title: t('kPendTitle'),
+              },
+              h('b', null, (pendData.counts && pendData.counts.total) || 0),
+              h('div', { className: 'lb' }, h('i', null, t('kPend1')), h('i', null, t('kPend2')))
+            )
+          : null
       )
     ),
 
