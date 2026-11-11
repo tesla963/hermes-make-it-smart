@@ -1,5 +1,25 @@
 # Changelog
 
+## v0.1.2-preview — 2026-11-11 · Last known good (CLI tools + English default)
+
+**Install this one.** Content is exactly commit **`6365c9b`**: the ten `cellar_*` agent tools,
+the native GUI reading real sessions from the gateway, English as the default language, and **no
+keyboard or mouse interaction layer**.
+
+`desktop/plugin.js` — 2,773 lines, SHA-256 `b46e4005010f…`. Verified: `hermes plugins validate .`
+passed · `node tests/test_plugin.mjs` OK · `tests/test_invariants.py` 11/11.
+
+### Withdrawn — batch 2 (commit `6d90737`): DO NOT USE
+
+An experimental UI batch was built on top of this version and **did not work in practice**:
+`Tab` zones, roving focus, `Enter` to open, `Space` to toggle the card, right-click to open,
+`⌥`+right-click context menu and the four `smarts.*` keybinds. It was reverted in **`2372694`**.
+
+- **Do not install** commit `6d90737` or any build produced from it.
+- It stays in the history only as a record of what was tried.
+- The failure was not diagnosed item by item; when it is retried, it should go one feature at a
+  time instead of eleven at once.
+
 ## v0.1.1-preview — 2026-11-10 · Port of the 2026-11-11 simulator
 
 **What it is:** the native GUI now behaves like the current simulator, not the November 7 one.
