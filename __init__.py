@@ -12,6 +12,7 @@ from typing import Any
 
 from .core.paths import data_dir
 from .tools.build_index import build
+from .tools.cellar_tools import register_tools
 
 __version__ = "0.1.0"
 
@@ -33,6 +34,7 @@ def _on_session_end(**_kwargs: Any) -> None:
 
 
 def register(ctx: Any) -> None:
-    """Register plugin lifecycle hooks with the Hermes host."""
+    """Register plugin lifecycle hooks and agent tools with the Hermes host."""
     ctx.register_hook("on_session_end", _on_session_end)
+    register_tools(ctx)
 

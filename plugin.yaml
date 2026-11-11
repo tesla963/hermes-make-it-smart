@@ -8,4 +8,15 @@ manifest_version: 2
 api_version: 1
 provides_hooks:
   - on_session_end
+provides_tools:
+  - cellar_search
+  - cellar_session
+  - cellar_stats
+  - cellar_series
+  - cellar_rename
+  - cellar_tag
+  - cellar_bateria
+  - cellar_index
+  - cellar_verify
+  - cellar_export
 requires_env: []

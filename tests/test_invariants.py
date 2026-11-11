@@ -101,7 +101,9 @@ def test_platform_folding() -> None:
     assert normalize_platform("dji ronin") == "DJI"
     assert normalize_platform("Cyberpanel") == "CyberPanel"
     assert normalize_platform("HERMES") == "Hermes Agent"
-    assert normalize_platform("inventado-xyz") == "Hermes Agent"
+    # Per docs/FEATURES.md an unknown protagonist stays EMPTY: the old
+    # "Hermes Agent" fallback is banned, so this assertion must stay "".
+    assert normalize_platform("inventado-xyz") == ""
 
 
 def test_pillar_folding() -> None:
