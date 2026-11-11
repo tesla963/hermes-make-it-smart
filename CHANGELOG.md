@@ -83,8 +83,8 @@ synchronised to the same SHA-256.
 ### Install
 
 ```bash
-git clone https://github.com/tesla963/hermes-make-all-my-work-smart
-cd hermes-make-all-my-work-smart
+git clone https://github.com/tesla963/hermes-make-it-smart
+cd hermes-make-it-smart
 python3 tools/build_index.py          # builds index.json from your state.db (read-only)
 cp desktop/plugin.js ~/.hermes/desktop-plugins/make-all-my-work-smart/plugin.js
 ```
