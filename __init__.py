@@ -30,7 +30,7 @@ def _on_session_end(**_kwargs: Any) -> None:
             encoding="utf-8",
         )
     except Exception as exc:  # pragma: no cover — observer hook must never raise
-        logger.debug("hermes-make-all-my-work-smart index refresh failed: %s", exc)
+        logger.debug("hermes-make-it-smart index refresh failed: %s", exc)
 
 
 def register(ctx: Any) -> None:

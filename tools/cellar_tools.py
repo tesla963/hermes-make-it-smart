@@ -5,7 +5,7 @@ Implements the 10-tool surface specified in ``docs/AGENT-TOOLS.md``:
   Write (5):  cellar_rename, cellar_tag, cellar_bateria, cellar_index, cellar_verify
   Export (1): cellar_export
 
-All persistent state lives in ``plugin_data_dir("make-all-my-work-smart")``.
+All persistent state lives in ``plugin_data_dir("make-it-smart")``.
 ``core/`` stays pure and untouched.
 """
 
@@ -97,8 +97,8 @@ except ImportError:
     )
     from tools.build_index import build, is_human, parse_title
 
-PLUGIN_NAME = "make-all-my-work-smart"
-TOOLSET_NAME = "make-all-my-work-smart"
+PLUGIN_NAME = "make-it-smart"
+TOOLSET_NAME = "make-it-smart"
 
 DEFAULT_LIMIT = 50
 MAX_LIMIT = 500
@@ -106,12 +106,12 @@ MAX_BATCH_WRITE = 50
 
 
 # --------------------------------------------------------------------------- #
-# Storage paths (always via plugin_data_dir('make-all-my-work-smart'))
+# Storage paths (always via plugin_data_dir('make-it-smart'))
 # --------------------------------------------------------------------------- #
 
 
 def _plugin_dir() -> Path:
-    """Resolve ``plugin_data_dir('make-all-my-work-smart')`` via the host API."""
+    """Resolve ``plugin_data_dir('make-it-smart')`` via the host API."""
     from plugins.plugin_storage import plugin_data_dir
 
     return plugin_data_dir(PLUGIN_NAME)

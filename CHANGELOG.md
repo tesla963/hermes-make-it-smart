@@ -1,5 +1,22 @@
 # Changelog
 
+## Unreleased — plugin id renamed to `hermes-make-it-smart`
+
+The plugin id and its storage key were renamed to match the repository:
+
+| Before | After |
+|---|---|
+| `plugin.yaml` → `name: hermes-make-all-my-work-smart` | `hermes-make-it-smart` |
+| `core/paths.py` → `PLUGIN` | `make-it-smart` |
+| `tools/cellar_tools.py` → `PLUGIN_NAME` / `TOOLSET_NAME` | `make-it-smart` |
+| Plugin data | `plugin-data/make-it-smart/` |
+| Desktop half | `desktop-plugins/make-it-smart/` |
+
+Migrated, not rebuilt: the existing `index.json` (910 sessions) and `facets.json` were moved with the
+data directory, so nothing is lost. `hermes plugins validate .` → passed · `node tests/test_plugin.mjs`
+→ OK · `tests/test_invariants.py` → 11/11. **Hermes Desktop must be restarted** so it scans the new
+folder name.
+
 ## v0.1.2-preview — 2026-11-11 · Last known good (CLI tools + English default)
 
 **Install this one.** Content is exactly commit **`6365c9b`**: the ten `cellar_*` agent tools,
