@@ -501,20 +501,16 @@ const I18N = {
     tabTesting: 'Testing',
     tabTestingTitle: 'Simulación de nomenclatura canónica y herramientas de commit/revert',
     commitBtn: 'Commit Changes to Hermes DB',
+    commitBtnCount: 'Commit Changes to Hermes DB ({n} sesiones por procesar)',
     commitBtnTitle: 'Escribe los títulos canónicos simulados en state.db vía session.title',
     revertBtn: 'Revert',
     revertBtnTitle: 'Restaura los títulos anteriores desde el último backup',
-    updateBtn: 'New Rules Update',
-    updateBtnTitle: 'Relee index.json y facets.json, recalcula la simulación e informa cambios',
     infoPluginTitle: 'Ver información y reglas aprendidas del plugin Make It Smart',
     confirmCommit: '¿Aplicar {n} cambios de título en tu base de sesiones de Hermes?',
     confirmRevert: '¿Revertir {n} títulos a su estado anterior al último commit?',
     commitProgress: 'Commit {current}/{total}',
     commitDone: '{n} actualizados · {m} sin cambios',
     revertDone: '{n} títulos restaurados',
-    updateDone: '{count} sesiones cambiarían con las reglas actuales',
-    updateCount: '{count} cambiarían',
-    updateClean: 'Todo al día · 0 cambios',
     updateStale: 'El índice tiene más de 24 h y está desactualizado; pídele a Hermes: reindexa el catálogo del plugin',
   },
   en: {
@@ -658,20 +654,16 @@ const I18N = {
     tabTesting: 'Testing',
     tabTestingTitle: 'Canonical nomenclature simulation and commit/revert tools',
     commitBtn: 'Commit Changes to Hermes DB',
+    commitBtnCount: 'Commit Changes to Hermes DB ({n} Sessions to Process)',
     commitBtnTitle: 'Write simulated canonical titles to state.db via session.title',
     revertBtn: 'Revert',
     revertBtnTitle: 'Restore previous titles from the last backup',
-    updateBtn: 'New Rules Update',
-    updateBtnTitle: 'Re-read index.json and facets.json, recalculate simulation and report changes',
     infoPluginTitle: 'View plugin information and learned rules for Make It Smart',
     confirmCommit: 'Apply {n} title changes to your Hermes session database?',
     confirmRevert: 'Revert {n} titles back to their state before the last commit?',
     commitProgress: 'Commit {current}/{total}',
     commitDone: '{n} updated · {m} unchanged',
     revertDone: '{n} titles restored',
-    updateDone: '{count} sessions would change with current rules',
-    updateCount: '{count} would change',
-    updateClean: 'All up to date · 0 changes',
     updateStale: 'The index is older than 24h and stale; ask Hermes: rebuild plugin catalog',
   },
 }
@@ -1647,9 +1639,17 @@ function App({ ctx }) {
     return true
   }
 
+  // In the Testing tab only the sessions a commit would actually change are listed:
+  // a session already carrying its canonical title is not work, and Bot Chat,
+  // cron, empty, deleted and subagent rows are never renamed.
+  const pendingRows = useMemo(
+    () => sessions.filter((d) => !esIntocable(d) && d.canonTitle && d.canonTitle !== d.raw),
+    [sessions]
+  )
+
   const visible = useMemo(
-    () => sessions.filter((d) => pass(d)),
-    [sessions, f, q, nums, qs, showElim, showVacio, showCron]
+    () => (activeTab === 'testing' ? pendingRows : sessions).filter((d) => pass(d)),
+    [sessions, pendingRows, activeTab, f, q, nums, qs, showElim, showVacio, showCron]
   )
 
   const sorted = useMemo(() => {
@@ -2470,49 +2470,6 @@ function App({ ctx }) {
       foot: t('revertDone', { n: reverted }),
     }))
     setTimeout(() => setBtnMsg((p) => ({ ...p, foot: '' })), 4500)
-  }
-
-  const handleUpdateRules = async () => {
-    let idx = null
-    const filesApi = (ctx && ctx.files) || (host && host.files)
-    if (filesApi && typeof filesApi.readText === 'function') {
-      try {
-        const iRes = await filesApi.readText('data', 'index.json').catch(() => null)
-        if (iRes && iRes.ok && iRes.text) idx = JSON.parse(iRes.text)
-      } catch (_) {}
-    }
-
-    // Re-read the catalogue from disk. This button exists to pick up new rules and
-    // a rebuilt index, so a count computed from the in-memory rows would be a lie.
-    let rows = sessions
-    try {
-      const res = await loadCatalogue(ctx)
-      if (res && Array.isArray(res.sessions)) {
-        rows = res.sessions
-        setSessions(rows)
-        setRpcErrors(Array.isArray(res.errors) ? res.errors : [])
-        setPendData(res.pendData || null)
-        setPendMap(res.pendMap || null)
-        setPendAttr(res.pendAttr || null)
-      }
-    } catch (_) {}
-
-    let isStale = false
-    if (idx && idx.generated) {
-      const genTs = new Date(idx.generated).getTime()
-      if (!isNaN(genTs) && Date.now() - genTs > 24 * 3600 * 1000) {
-        isStale = true
-      }
-    }
-
-    const diffCount = rows.filter(
-      (d) => !esIntocable(d) && d.canonTitle && d.canonTitle !== d.raw
-    ).length
-
-    setStaleNotice(isStale ? t('updateStale') : '')
-    const label = diffCount === 0 ? t('updateClean') : t('updateCount', { count: diffCount })
-    setBtnMsg((p) => ({ ...p, update: label, foot: isStale ? `${label} · ${t('updateStale')}` : label }))
-    setTimeout(() => setBtnMsg((p) => ({ ...p, update: '', foot: '' })), 8000)
   }
 
   const toggleFold = (b) => {
@@ -3539,11 +3496,11 @@ function App({ ctx }) {
                   {
                     className: 'commitbtn',
                     id: 'btnCommit',
-                    disabled: isCommitting || isReverting,
+                    disabled: isCommitting || isReverting || pendingRows.length === 0,
                     onClick: handleCommit,
                     title: t('commitBtnTitle'),
                   },
-                  btnMsg.commit || t('commitBtn')
+                  btnMsg.commit || t('commitBtnCount', { n: pendingRows.length })
                 )
               : h(
                   'button',
@@ -3556,17 +3513,6 @@ function App({ ctx }) {
                   },
                   btnMsg.revert || t('revertBtn')
                 ),
-            h(
-              'button',
-              {
-                className: 'updatebtn',
-                id: 'btnUpdate',
-                disabled: isCommitting || isReverting,
-                onClick: handleUpdateRules,
-                title: t('updateBtnTitle'),
-              },
-              btnMsg.update || t('updateBtn')
-            ),
             btnMsg.foot ? h('span', { className: 'footmsg' }, btnMsg.foot) : null
           )
         : h('div', { className: 'footbtns' }),
