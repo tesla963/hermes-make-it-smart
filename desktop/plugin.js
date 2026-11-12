@@ -127,6 +127,21 @@ const esBorrada = (d) =>
         /^\s*\[?sesi[oó]n borrada/i.test(d.raw || ''))
   )
 
+// The canonical Bot Chat's name IS its identity, and a subagent transcript is
+// machinery, not work: neither is renamed, and neither counts as a pending change.
+const esBotChat = (d) => Boolean(d && /^\s*bot chat\b/i.test(String(d.raw || '')))
+
+const esSubagent = (d) =>
+  Boolean(
+    d &&
+      (/^\s*subagent[\s:]/i.test(String(d.raw || '')) ||
+        /^subagent/i.test(String(d.prof || '')) ||
+        /^subagent/i.test(String(d.id || '')))
+  )
+
+/** Anything the renamer must never touch: cron, empty, deleted, Bot Chat, subagent. */
+const esIntocable = (d) => Boolean(d && (esCron(d) || d.vacia || esBorrada(d) || esBotChat(d) || esSubagent(d)))
+
 /* Bilingual synonym table */
 const SIN = {
   'inteligencia artificial': 'ia',
@@ -263,7 +278,7 @@ function parseTitle(title) {
 
 function canonicalTitle(d) {
   if (!d) return ''
-  if (esCron(d) || d.vacia || esBorrada(d)) return d.raw || ''
+  if (esIntocable(d)) return d.raw || ''
 
   const nnn = String(Number(d.n) || 0).padStart(3, '0')
   const subj = (d.sujeto || d.tag0 || '').trim() || 'Sin sujeto'
@@ -498,6 +513,8 @@ const I18N = {
     commitDone: '{n} actualizados · {m} sin cambios',
     revertDone: '{n} títulos restaurados',
     updateDone: '{count} sesiones cambiarían con las reglas actuales',
+    updateCount: '{count} cambiarían',
+    updateClean: 'Todo al día · 0 cambios',
     updateStale: 'El índice tiene más de 24 h y está desactualizado; pídele a Hermes: reindexa el catálogo del plugin',
   },
   en: {
@@ -653,6 +670,8 @@ const I18N = {
     commitDone: '{n} updated · {m} unchanged',
     revertDone: '{n} titles restored',
     updateDone: '{count} sessions would change with current rules',
+    updateCount: '{count} would change',
+    updateClean: 'All up to date · 0 changes',
     updateStale: 'The index is older than 24h and stale; ask Hermes: rebuild plugin catalog',
   },
 }
@@ -673,11 +692,11 @@ position:relative;display:flex;flex-direction:column;width:100%;height:100%;min-
 .mmws .mono{font-family:ui-monospace,Menlo,monospace;font-size:12px}
 .mmws header.top{flex:0 0 auto;z-index:40;background:linear-gradient(180deg,#100d12,#0d0b0e);border-bottom:1px solid var(--line);padding:10px 18px}
 .mmws .brandrow{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.mmws .headtabs{display:inline-flex;align-items:center;gap:3px;background:#15101a;border:1px solid var(--line2);border-radius:7px;padding:2px;margin-left:6px}
-.mmws .headtab{border:0;background:transparent;color:var(--tx3);font-size:11.5px;font-weight:600;padding:3px 10px;border-radius:5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all .12s}
-.mmws .headtab:hover{color:var(--tx)}
-.mmws .headtab.on{background:#2a1f33;color:#fff;box-shadow:0 1px 3px rgba(0,0,0,.4)}
-.mmws .headtab.on.testing{background:var(--gold);color:#0d0b0e}
+.mmws .headtabs{display:inline-flex;align-items:flex-end;gap:2px;background:transparent;border:0;border-bottom:1px solid var(--line2);border-radius:0;padding:0;margin-left:10px}
+.mmws .headtab{position:relative;border:0;border-bottom:2px solid transparent;background:transparent;color:var(--tx3);font-size:11.5px;font-weight:600;padding:6px 14px 5px;border-radius:6px 6px 0 0;cursor:pointer;display:inline-flex;align-items:center;gap:6px;margin-bottom:-1px;transition:color .12s,background .12s,border-color .12s}
+.mmws .headtab:hover{color:var(--tx);background:rgba(255,255,255,.04)}
+.mmws .headtab.on{background:transparent;color:#fff;border-bottom-color:var(--wine2);box-shadow:none}
+.mmws .headtab.on.testing{background:transparent;color:var(--gold);border-bottom-color:var(--gold)}
 .mmws .bodywrap{flex:1 1 auto;min-height:0;display:flex;align-items:stretch;position:relative;overflow:hidden}
 .mmws .abarra{flex:none;padding:9px 0 8px;background:var(--bg2);border-bottom:1px solid var(--line);z-index:2}
 .mmws .ascroll{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;padding:8px 0 14px;scrollbar-width:none;-ms-overflow-style:none;overscroll-behavior:contain}
@@ -1325,13 +1344,9 @@ function App({ ctx }) {
   const [editModal, setEditModal] = useState(false)
   const [editVal, setEditVal] = useState('')
   const [vModal, setVModal] = useState(false)
-  const [activeTab, setActiveTab] = useState(() => {
-    try {
-      return localStorage.getItem('mmws_active_tab') || 'actual'
-    } catch (_) {
-      return 'actual'
-    }
-  })
+  // The panel always opens on the real session database. Testing is a deliberate
+  // step the user takes to preview a rename, so it is never restored on open.
+  const [activeTab, setActiveTab] = useState('actual')
   const [lastBackup, setLastBackup] = useState(null)
   const [canRevert, setCanRevert] = useState(false)
   const [isCommitting, setIsCommitting] = useState(false)
@@ -2238,7 +2253,7 @@ function App({ ctx }) {
     const keepLedger = Boolean(opts && opts.keepLedger)
     const list = sessionsList || sessions || []
     const entries = list
-      .filter((d) => !esCron(d) && !d.vacia && !esBorrada(d) && d.canonTitle && d.canonTitle !== d.raw)
+      .filter((d) => !esIntocable(d) && d.canonTitle && d.canonTitle !== d.raw)
       .map((d) => ({
         id: d.id,
         title_before: d.raw,
@@ -2273,9 +2288,6 @@ function App({ ctx }) {
 
   const switchTab = async (tab) => {
     setActiveTab(tab)
-    try {
-      localStorage.setItem('mmws_active_tab', tab)
-    } catch (_) {}
     if (tab === 'testing') {
       const pendingRevert = lastBackup && lastBackup.committed && !lastBackup.reverted
       await createCommitBackup(sessions, { keepLedger: pendingRevert })
@@ -2297,7 +2309,7 @@ function App({ ctx }) {
       curBackup = await createCommitBackup(sessions)
     }
     const targets = (curBackup && curBackup.entries) || []
-    const eligibleCount = sessions.filter((d) => !esCron(d) && !d.vacia && !esBorrada(d)).length
+    const eligibleCount = sessions.filter((d) => !esIntocable(d)).length
     const unchangedCount = eligibleCount - targets.length
 
     if (targets.length === 0) {
@@ -2436,18 +2448,28 @@ function App({ ctx }) {
 
   const handleUpdateRules = async () => {
     let idx = null
-    let fac = null
     const filesApi = (ctx && ctx.files) || (host && host.files)
     if (filesApi && typeof filesApi.readText === 'function') {
       try {
-        const [iRes, fRes] = await Promise.all([
-          filesApi.readText('data', 'index.json').catch(() => null),
-          filesApi.readText('data', 'facets.json').catch(() => null),
-        ])
+        const iRes = await filesApi.readText('data', 'index.json').catch(() => null)
         if (iRes && iRes.ok && iRes.text) idx = JSON.parse(iRes.text)
-        if (fRes && fRes.ok && fRes.text) fac = JSON.parse(fRes.text)
       } catch (_) {}
     }
+
+    // Re-read the catalogue from disk. This button exists to pick up new rules and
+    // a rebuilt index, so a count computed from the in-memory rows would be a lie.
+    let rows = sessions
+    try {
+      const res = await loadCatalogue(ctx)
+      if (res && Array.isArray(res.sessions)) {
+        rows = res.sessions
+        setSessions(rows)
+        setRpcErrors(Array.isArray(res.errors) ? res.errors : [])
+        setPendData(res.pendData || null)
+        setPendMap(res.pendMap || null)
+        setPendAttr(res.pendAttr || null)
+      }
+    } catch (_) {}
 
     let isStale = false
     if (idx && idx.generated) {
@@ -2457,33 +2479,14 @@ function App({ ctx }) {
       }
     }
 
-    let diffCount = 0
-    setSessions((prev) =>
-      prev.map((s) => {
-        const cTitle = canonicalTitle(s)
-        if (!esCron(s) && !s.vacia && !esBorrada(s) && cTitle !== s.raw) {
-          diffCount++
-        }
-        return { ...s, canonTitle: cTitle }
-      })
-    )
+    const diffCount = rows.filter(
+      (d) => !esIntocable(d) && d.canonTitle && d.canonTitle !== d.raw
+    ).length
 
-    if (isStale) {
-      setStaleNotice(t('updateStale'))
-      setBtnMsg((p) => ({
-        ...p,
-        update: `${diffCount} cambiarían`,
-        foot: `${diffCount} cambiarían · ${t('updateStale')}`,
-      }))
-    } else {
-      setStaleNotice('')
-      setBtnMsg((p) => ({
-        ...p,
-        update: `${diffCount} cambiarían`,
-        foot: t('updateDone', { count: diffCount }),
-      }))
-    }
-    setTimeout(() => setBtnMsg((p) => ({ ...p, update: '', foot: '' })), 6000)
+    setStaleNotice(isStale ? t('updateStale') : '')
+    const label = diffCount === 0 ? t('updateClean') : t('updateCount', { count: diffCount })
+    setBtnMsg((p) => ({ ...p, update: label, foot: isStale ? `${label} · ${t('updateStale')}` : label }))
+    setTimeout(() => setBtnMsg((p) => ({ ...p, update: '', foot: '' })), 8000)
   }
 
   const toggleFold = (b) => {
