@@ -502,6 +502,7 @@ const I18N = {
     tabTestingTitle: 'Simulación de nomenclatura canónica y herramientas de commit/revert',
     commitBtn: 'Commit Changes to Hermes DB',
     commitBtnCount: 'Commit Changes to Hermes DB ({n} sesiones por procesar)',
+    proposedTitle: 'Nombre que escribirá el commit',
     commitBtnTitle: 'Escribe los títulos canónicos simulados en state.db vía session.title',
     revertBtn: 'Revert',
     revertBtnTitle: 'Restaura los títulos anteriores desde el último backup',
@@ -655,6 +656,7 @@ const I18N = {
     tabTestingTitle: 'Canonical nomenclature simulation and commit/revert tools',
     commitBtn: 'Commit Changes to Hermes DB',
     commitBtnCount: 'Commit Changes to Hermes DB ({n} Sessions to Process)',
+    proposedTitle: 'Name the commit will write',
     commitBtnTitle: 'Write simulated canonical titles to state.db via session.title',
     revertBtn: 'Revert',
     revertBtnTitle: 'Restore previous titles from the last backup',
@@ -859,6 +861,7 @@ position:relative;display:flex;flex-direction:column;width:100%;height:100%;min-
 .mmws .pendorphtog{font-size:11px;font-weight:600;color:var(--tx3);cursor:pointer;display:flex;align-items:center;gap:4px}
 .mmws .pendorphtog:hover{color:var(--tx2)}
 .mmws .pname{font-family:ui-monospace,Menlo,monospace;font-size:17px;color:#f0dbe4;background:#1d1420;border:1px solid #3a2030;border-radius:8px;padding:9px 11px;margin:0 0 10px;line-height:1.5;word-break:break-word}
+.mmws .pproposed{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--gold);background:#1b1710;border:1px dashed #6b5716;border-radius:7px;padding:7px 11px;margin:-4px 0 10px;line-height:1.45;word-break:break-word}
 .mmws .pthead{display:flex;align-items:flex-start;gap:10px;margin:0 0 10px}
 .mmws .pthead .pname{flex:1 1 auto;min-width:0;margin:0;overflow:hidden;text-overflow:ellipsis}
 .mmws .pnaveg{flex:0 0 26px;width:26px;display:flex;flex-direction:column;gap:3px;justify-content:flex-start;padding-top:9px}
@@ -1996,7 +1999,10 @@ function App({ ctx }) {
       h(
         'div',
         { className: 'pthead' },
-        h('div', { className: 'pname', id: 'pname' }, activeTab === 'testing' ? (d.canonTitle || d.raw) : d.raw),
+        h('div', { className: 'pname', id: 'pname' }, d.raw),
+        activeTab === 'testing' && d.canonTitle && d.canonTitle !== d.raw
+          ? h('div', { className: 'pproposed', title: t('proposedTitle') }, `→ ${d.canonTitle}`)
+          : null,
         h(
           'div',
           { className: 'pnaveg' },
@@ -2845,7 +2851,10 @@ function App({ ctx }) {
 
   // Build two-line rows matching 2026-11-11_simulador-solo-codigo.html
   const tableRows = sorted.flatMap((d) => {
-    const rawToDisplay = (activeTab === 'testing' ? (d.canonTitle || d.raw) : d.raw) || ''
+    // The table always shows the title the session actually has. The proposed name
+    // is a proposal: it appears in the detail panel and only becomes real when the
+    // user presses Commit.
+    const rawToDisplay = d.raw || ''
     const cut = rawToDisplay.lastIndexOf(']')
     const head = (cut > 0 ? rawToDisplay.slice(0, cut + 1) : `[${d.sujeto}] ${String(d.mmm).padStart(3, '0')}`).replace(
       /^\d+\s+/,
