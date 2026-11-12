@@ -43,7 +43,7 @@ titles.
 Case 4 is what the density buys: *investigating a product on Amazon, possibly asking for an
 analysis of the reviews* becomes six words in the title plus three clickable filters underneath.
 
-## 3 · The nine tag slots
+## 3 · The nine axis slots
 
 Nine slots, so a new axis never forces a migration. Six in use, three reserved.
 
@@ -60,11 +60,11 @@ Nine slots, so a new axis never forces a migration. Six in use, three reserved.
 | **iq9** | *free* | reserved | no |
 
 **The date is `iq5`** — not part of `iq2`, and not part of the name. The name says *what*; the
-tags say *when, where and why*.
+axes say *when, where and why*.
 
 ## 4 · The code is still on the old axis order
 
-Both vocabularies are closed in code — a free-form tag is a filter that cannot be clicked twice —
+Both vocabularies are closed in code — a free-form axis is a filter that cannot be clicked twice —
 but **the axes are mapped the old way**, and that is the real work item:
 
 | In the new nomenclature (§3) | What `core/taxonomy.py` actually implements |
@@ -157,7 +157,7 @@ answerable.
 | Surface | State |
 |---|---|
 | `register(ctx)` + `on_session_end` hook | **built** — refreshes `index.json` with `build(with_messages=False)` |
-| `desktop/plugin.js` (catalogue page, nine tags) | **built** — `v0.25` |
+| `desktop/plugin.js` (catalogue page, nine axes) | **built** — `v0.25` |
 | Agent tools | **built** — 10 tools declared and functional |
 | Backend routes (`dashboard/plugin_api.py`) | **not built** — five routes, zero lines |
 | Validator | `hermes plugins validate .` → **passed**, no warnings |
@@ -179,7 +179,7 @@ The plugin provides a unified native interface with **Actual** and **Testing** t
 | **Actual** | Hermes Desktop (`desktop/plugin.js`) | the live session database (`state.db`) | Read-only |
 | **Testing** | Hermes Desktop (`desktop/plugin.js`) | simulated nomenclature over index/DB | Commit (`session.title`) with Revert |
 
-Both views provide the full feature set: the same row shape, the same nine tags, the same
+Both views provide the full feature set: the same row shape, the same nine axes, the same
 filters, the same search, the same detail card, the same copy/export. Testing mode enables safe
 simulation with automated backups before writing back to Hermes.
 

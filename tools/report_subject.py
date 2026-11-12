@@ -108,7 +108,7 @@ def _is_human(message: str) -> bool:
 
 def render_report(subject: str, sessions: list[dict]) -> str:
     first, last = sessions[0], sessions[-1]
-    tags = sorted({s["iq1"] for s in sessions if s["iq1"]})
+    platforms = sorted({s["iq1"] for s in sessions if s["iq1"]})
     families = sorted({s["iq2"] for s in sessions if s["iq2"]})
     posts = sum(s["posts"] or 0 for s in sessions)
     cost = sum(s["cost"] or 0 for s in sessions)
@@ -120,7 +120,7 @@ def render_report(subject: str, sessions: list[dict]) -> str:
         f"**{len(sessions)} sesiones** · {first['date'][:10]} → {last['date'][:10]}"
         f" · {posts} posts · ${cost:.2f} · {tokens/1e6:.1f}M tokens",
         "",
-        f"**Plataformas:** {', '.join(tags) if tags else '—'}  ",
+        f"**Plataformas:** {', '.join(platforms) if platforms else '—'}  ",
         f"**Familias:** {', '.join(families) if families else '—'}",
         "",
         "---",

@@ -9,7 +9,7 @@ This is NOT a migration. The old Iq2 (families, topics, intentions mixed in one
 field) is thrown away; the model reads what the user said and decides again.
 That is why some sessions will come out with an empty iq3: an empty field says
 nobody read an intention there, which is true. It is not filled with whatever
-the old tag happened to hold.
+the old axis happened to hold.
 
 The schema:
     iq1 = maker of the subject (adjective)   "DJI"

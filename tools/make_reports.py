@@ -24,7 +24,7 @@ from core.paths import data_dir
 
 OUT = Path.home() / "Documents" / "Reportes - [Lisa]" / datetime.now().strftime("%Y-%m-%d")
 
-# La paleta de los nueve tags: la misma que usa el simulador y el plugin.
+# La paleta de los nueve ejes: la misma que usa el simulador y el plugin.
 PALETTE = {
     "iq1": ("#f0d48a", "#2a2210", "plataforma"),
     "iq2": ("#d3e3f3", "#121d28", "familia"),
@@ -63,7 +63,7 @@ tr:last-child td{border-bottom:none}
 .kv div:nth-child(odd){color:#8b8095}
 ol,ul{margin:8px 0 14px;padding-left:22px}
 li{margin:4px 0}
-.tag{display:inline-block;background:#241d2b;color:#b5a9bf;border-radius:5px;padding:1px 6px;font-size:10.5px;margin-right:4px}
+.axis{display:inline-block;background:#241d2b;color:#b5a9bf;border-radius:5px;padding:1px 6px;font-size:10.5px;margin-right:4px}
 .id{color:#f0d48a}
 .rule{background:#141117;border:1px solid #2a2330;border-left:3px solid #5a2040;border-radius:0 8px 8px 0;padding:12px 16px;margin:10px 0}
 .rule .rid{font-family:ui-monospace,Menlo,monospace;font-size:11.5px;color:#f0d48a}
@@ -74,8 +74,8 @@ footer{margin-top:52px;padding-top:16px;border-top:1px solid #2a2330;color:#6f65
 """
 
 
-def pill(tag: str, text: str) -> str:
-    c, b, _ = PALETTE.get(tag, ("#b5a9bf", "#1c1721", ""))
+def pill(axis: str, text: str) -> str:
+    c, b, _ = PALETTE.get(axis, ("#b5a9bf", "#1c1721", ""))
     return f'<span class="pill" style="color:{c};background:{b};border-color:{c}44">{html.escape(str(text))}</span>'
 
 
@@ -123,7 +123,7 @@ def report_tree() -> str:
         )
 
     transversal = []
-    for key, label, tag in (
+    for key, label, axis in (
         ("motor", "Motor de IA", "iq7"),
         ("iq6", "Máquina", "iq6"),
         ("prof", "Perfil", "iq8"),
@@ -131,7 +131,7 @@ def report_tree() -> str:
         rows = Counter(s.get(key) or "—" for s in sessions).most_common(9)
         transversal.append(
             f"<tr><td>{label}</td><td>"
-            + " ".join(pill(tag, f"{k} {v}") for k, v in rows)
+            + " ".join(pill(axis, f"{k} {v}") for k, v in rows)
             + "</td></tr>"
         )
 
@@ -168,9 +168,9 @@ Sin fecha, sin costo, sin pilar. Límite duro de 100 caracteres.</p>
 <p class="lead">No parten de un pilar: cruzan todos. Son los que convierten el catálogo en un mapa.</p>
 <table><tbody>{"".join(transversal)}</tbody></table>
 
-<h2>4 · Los nueve tags</h2>
+<h2>4 · Los nueve ejes</h2>
 <p class="lead">Solo iq1 y iq2 llegan al nombre. Los otros siete existen para que ganar inteligencia después no cueste una migración.</p>
-<table><thead><tr><th>tag</th><th>eje</th><th>texto</th><th>fondo</th></tr></thead><tbody>{pal}</tbody></table>
+<table><thead><tr><th>clave</th><th>eje</th><th>texto</th><th>fondo</th></tr></thead><tbody>{pal}</tbody></table>
 
 <h2>5 · El algoritmo, en cuatro etapas</h2>
 <ol>

@@ -15,7 +15,7 @@ Hard limit: **100 characters**. Priority when space runs out:
 Subject  >  Iq1  >  Iq2  >  Date  >  Description  >  Verb
 ```
 
-The subject and the tags are never truncated. The description is compressed (telegram
+The subject and the axes are never truncated. The description is compressed (telegram
 mode) before it is cut. The verb is the first thing dropped.
 
 ## 2. NNN — the global sequence
@@ -129,16 +129,16 @@ The work front, with the subcategories of IT Manager: IA Bot, VPS, Data Backup,
 Hardware, MindMap, Network, OS. `Data Mining` and `Data Security` are themes, not
 families.
 
-## 7. The internal tags (filters only, never in the title)
+## 7. The internal axes (filters only, never in the title)
 
-| Tag | Question | Values |
+| Key | Question | Values |
 |---|---|---|
-| Tag 3 · Intention | what was asked | the seven above |
-| Tag 4 · Theme | which work front | IT Manager and its subcategories |
-| Tag 5 · Year | which edition | 2026, … |
+| iq3 · Intention | what was asked | the seven above |
+| iq4 · Theme | which work front | IT Manager and its subcategories |
+| iq5 · Year | which edition | 2026, … |
 
-**Tag 6 no longer means the machine** — the machine belongs in Iq2, next to the
-store and the country. Slots 6 to 9 are reserved: present in the model, empty in
+**iq6 no longer means the machine** — the machine belongs in Iq2, next to the
+store and the country. Slots 7 to 9 are reserved: present in the model, empty in
 the data, waiting for an axis that earns its place.
 
 None of these is written into the title except Iq1 and Iq2. Measured: adding the
@@ -146,7 +146,7 @@ theme leaves 877 of 884 titles with no description at all.
 
 ## 8. The date
 
-Short, lowercase, Spanish month: `19ago`, `07nov`. It sits between the tags and the
+Short, lowercase, Spanish month: `19ago`, `07nov`. It sits between the axes and the
 description so the eye can skip it.
 
 ## 9. The description — and its verb appendix
@@ -159,7 +159,7 @@ description so the eye can skip it.
 | If it does not fit | **Telegram mode** first: drop articles and prepositions, keep the first word |
 | If it still does not fit | Omit entirely — a cut phrase is worse than nothing |
 | Language | Spanish, telegraphic, no filler |
-| Content | only what subject + tags could not say |
+| Content | only what subject + axes could not say |
 | Ending | ` · Verb` — the action, as an appendix |
 
 **The verb appendix**
@@ -191,7 +191,7 @@ Description: `Compare the Fly More bundle`. Verb: `Comparar`.
 ## 10. When subject and Iq1 collide
 
 If they are nearly the same, **something is wrong**. The subject names a *thing or a
-problem*; the tag names the *platform*. 187 sessions were corrected on this rule alone.
+problem*; the axis names the *platform*. 187 sessions were corrected on this rule alone.
 
 Legitimate exceptions exist — `[Precios Amazon] [Amazon] [Comparación]` — where the
 subject is genuinely a topic, not a platform. Judge each case; do not apply the rule

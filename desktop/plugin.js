@@ -20,7 +20,7 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 const ID = 'make-it-smart'
 const NAME = 'Hermes, Make it Smart!'
 const APP_TITLE = 'Make It Smart'
-const VERSION = '0.27.0'
+const VERSION = '0.27.1'
 const ROUTE = '/smart'
 
 /** jsx-runtime helper: keeps uncompiled React code compact and readable. */
@@ -456,7 +456,7 @@ const I18N = {
     botsTitle: 'Mostrar u ocultar sesiones de bot (Bot Chat y subagentes)',
     showVacio: 'Vacío',
     hideVacio: 'Vacío',
-    buscar: 'Buscar sujeto, tema, tag…',
+    buscar: 'Buscar sujeto, tema, eje…',
     pilar: 'Pilar',
     frente: 'frente de trabajo',
     iq1: 'Marca',
@@ -471,11 +471,11 @@ const I18N = {
     rango: 'Rango',
     motor: 'Motor de IA',
     autor: 'Autor',
-    maquina: 'Tag 6 · Máquina',
+    maquina: 'iq6 · Máquina',
     colN: 'Nº',
     colFecha: 'Fecha',
     colSujeto: 'Sujeto · #',
-    colTags: 'Tags',
+    colIqs: 'Ejes',
     colCosto: 'Costo',
     colHoras: 'Horas',
     colTokens: 'Tokens',
@@ -563,7 +563,7 @@ const I18N = {
     vReg: 'REGLAS QUE APRENDIÓ',
     vCerrar: 'Cerrar',
     v1: 'Catálogo de sesiones · NNN [Sujeto] MMM [Iq1] [Iq2] Descripción · Verbo',
-    v2: 'Nueve tags declarados; iq1 y iq2 en el nombre, el resto filtros',
+    v2: 'Nueve ejes declarados; iq1 y iq2 en el nombre, el resto filtros',
     v3: 'El ordinal <b>MMM</b> fuera del corchete del sujeto',
     v4: 'Sin fecha en el título; la fecha es columna y filtro',
     v5: 'Buscador numérico: <span class="mono">126,305</span> y <span class="mono">50-75</span>',
@@ -614,7 +614,7 @@ const I18N = {
     botsTitle: 'Show or hide bot sessions (Bot Chat and subagent transcripts)',
     showVacio: 'Empty',
     hideVacio: 'Empty',
-    buscar: 'Search subject, topic, tag…',
+    buscar: 'Search subject, topic, axis…',
     pilar: 'Pillar',
     frente: 'work front',
     iq1: 'Maker',
@@ -629,11 +629,11 @@ const I18N = {
     rango: 'Range',
     motor: 'AI engine',
     autor: 'Author',
-    maquina: 'Tag 6 · Machine',
+    maquina: 'iq6 · Machine',
     colN: 'No.',
     colFecha: 'Date',
     colSujeto: 'Subject · #',
-    colTags: 'Tags',
+    colIqs: 'Axes',
     colCosto: 'Cost',
     colHoras: 'Hours',
     colTokens: 'Tokens',
@@ -721,7 +721,7 @@ const I18N = {
     vReg: 'REGLAS QUE APRENDIÓ',
     vCerrar: 'Close',
     v1: 'Session catalogue · NNN [Subject] MMM [Iq1] [Iq2] Description · Verb',
-    v2: 'Nine tags declared; iq1 and iq2 in the name, the rest are filters',
+    v2: 'Nine axes declared; iq1 and iq2 in the name, the rest are filters',
     v3: 'The <b>MMM</b> ordinal sits outside the subject bracket',
     v4: 'No date in the title; the date is a column and a filter',
     v5: 'Numeric search: <span class="mono">126,305</span> and <span class="mono">50-75</span>',
@@ -1961,10 +1961,10 @@ function App({ ctx }) {
     } catch (_) {
       /* ignore */
     }
-    const tag = '[' + String(nExp).padStart(4, '0') + ']'
+    const pref = '[' + String(nExp).padStart(4, '0') + ']'
     const now = new Date()
     const z = (x) => String(x).padStart(2, '0')
-    const fname = `${tag} ${now.getFullYear()}${z(now.getMonth() + 1)}${z(now.getDate())}_${z(now.getHours())}${z(now.getMinutes())}_${vis.length}sesiones.csv`
+    const fname = `${pref} ${now.getFullYear()}${z(now.getMonth() + 1)}${z(now.getDate())}_${z(now.getHours())}${z(now.getMinutes())}_${vis.length}sesiones.csv`
 
     if (ctx && ctx.files && typeof ctx.files.writeText === 'function') {
       try {
@@ -1982,7 +1982,7 @@ function App({ ctx }) {
     } catch (_) {
       /* headless test fallback */
     }
-    setBtnMsg((p) => ({ ...p, expc: `✔ ${tag} · ${vis.length}` }))
+    setBtnMsg((p) => ({ ...p, expc: `✔ ${pref} · ${vis.length}` }))
     setTimeout(() => setBtnMsg((p) => ({ ...p, expc: '' })), 3000)
   }
 

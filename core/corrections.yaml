@@ -143,7 +143,7 @@
     When the session evaluates a product, Iq1 is the brand and Iq2 is the
     marketplace. Subject is the product itself.
   examples:
-  control_question: "Does the tag tell me who makes it, or where we looked?"
+  control_question: "Does the axis tell me who makes it, or where we looked?"
 
 - id: product-shape
   taught: 2026-11-09
@@ -152,10 +152,10 @@
     subject is the generic thing ("Teclado"), Iq1 is the brand ("Steren"),
     the MODEL ("COM-6900") trails the subject in the description, and the theme is
     "Productos". The model is
-    not part of the subject — it is the second tag, which is what distinguishes
+    not part of the subject — it is the second axis, which is what distinguishes
     two otherwise identical items.
   examples:
-  control_question: "Is this a thing someone buys? Then brand and model are tags."
+  control_question: "Is this a thing someone buys? Then brand and model are axes."
 
 - id: spec-belongs-to-its-machine
   taught: 2026-11-09
@@ -186,7 +186,7 @@
   taught: 2026-11-09
   rule: >
     For laws, decrees, the Official Gazette and constitutions, the country goes
-    in the country tag, never in the subject. The subject stays "Constitución"
+    in the country axis, never in the subject. The subject stays "Constitución"
     so the concept can be filtered across countries.
   examples:
 
@@ -200,9 +200,9 @@
   taught: 2026-11-09
   rule: >
     If Iq2 only repeats what the subject or Iq1 already says, leave it empty.
-    A tag that adds nothing is noise in the filter list.
+    An axis that adds nothing is noise in the filter list.
   examples:
-  control_question: "Does this tag tell me something the subject and Iq1 did not?"
+  control_question: "Does this axis tell me something the subject and Iq1 did not?"
 
 - id: subject-does-not-repeat-iq1
   taught: 2026-11-08
@@ -513,7 +513,7 @@
     whether two things work together; "Troubleshooting" when something is
     broken, misconfigured or unbacked. The older names (Update, Version,
     Feature, Costo, Administrar, Respaldar, Comparación, Diagnosticar) are not
-    tags: each is a signal of the canonical intention it belongs to.
+    axes: each is a signal of the canonical intention it belongs to.
     A generic family ("Electronica", "IA") is what Iq2 says when the intent was
     never read — not what it says when the intent is obvious.
   examples:
@@ -523,7 +523,7 @@
   taught: 2026-11-10
   rule: >
     Analysis runs in two layers, and the cheap one goes first. The script reads
-    the title, the tags and the batería and resolves everything it can match —
+    the title, the axes and the batería and resolves everything it can match —
     a known brand, a known product, a known intent. Only what is still unknown
     is handed to the model, and it is handed a QUESTION ("which company owns
     devonthink.com? is RayNeo one word?") rather than the whole transcript.
@@ -567,19 +567,21 @@
   rule: >
     Iq3 is the verb, never the shelf. "Electronica" is where the object would
     sit in a shop; "Instalar" is what the user did with it. When a Iq2 could
-    describe a hundred unrelated sessions, it is not a tag — it is a category
+    describe a hundred unrelated sessions, it is not an axis — it is a category
     that escaped.
   examples:
   control_question: "Could this same Iq2 label a session about something completely different?"
 
 # --------------------------------------------------------------------------- #
-# THE STRUCTURE (2026-11-10). This rule outranks every older tag rule.
+# THE STRUCTURE (2026-11-10). This rule outranks every older axis rule.
 # --------------------------------------------------------------------------- #
 
+# The id keeps the word 'tag' on purpose: it is a stable key referenced by docs and by
+# the owner's personal overrides. Since v0.27.0 the axes are iq1…iq9.
 - id: tag-structure-2026-11-10
   taught: 2026-11-10
   rule: >
-    The five tags have ONE meaning each, and an older rule that says otherwise
+    The five axes have ONE meaning each, and an older rule that says otherwise
     is superseded. iq1 is the maker of the subject, an adjective, never the
     assistant. iq2 is CONTEXT and only context: a store ("Ebay", "Amazon"), a
     country ("Panamá") or a machine ("Mac mini M4"). iq3 is the INTENTION and

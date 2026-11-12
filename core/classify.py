@@ -27,7 +27,7 @@ from .bateria import load_bateria, strip_brand
 from .taxonomy import (
     DEFAULT_PLATFORM,
     apply_abbreviation,
-    is_redundant_tag,
+    is_redundant_axis,
     normalize_family,
     normalize_intention,
     normalize_context,
@@ -199,8 +199,8 @@ def to_facets(
             if brand_tag.lower() != "hermes agent":
                 iq1 = brand_tag
 
-    # A tag that only repeats the subject or Iq1 is noise in the filter list.
-    if is_redundant_tag(subject, iq2):
+    # An axis that only repeats the subject or Iq1 is noise in the filter list.
+    if is_redundant_axis(subject, iq2):
         iq2 = ""
 
     return Facets(
@@ -228,7 +228,7 @@ def problems_with(facets: Facets) -> list[str]:
         out.append("subject too long")
     if facets.iq2 and facets.iq2 == facets.iq1:
         out.append("iq2 repeats iq1")
-    if facets.iq2 and is_redundant_tag(facets.subject, facets.iq2):
+    if facets.iq2 and is_redundant_axis(facets.subject, facets.iq2):
         out.append("iq2 repeats the subject")
     if facets.subject and facets.verb and facets.verb.lower() in facets.subject.lower():
         out.append("verb repeated inside the subject")

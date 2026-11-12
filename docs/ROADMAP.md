@@ -2,9 +2,9 @@
 
 Decisions taken on 2026-11-09, recorded so they are not re-argued later.
 
-## 1 · Nine tags, and the numbering was settled on 2026-11-10
+## 1 · Nine axes, and the numbering was settled on 2026-11-10
 
-The session title shows two tags, but the **data model carries nine**. The owner
+The session title shows two axes, but the **data model carries nine**. The owner
 reorganised what each slot means on 2026-11-10; the 2026-11-09 meanings are dead.
 
 ```
@@ -19,7 +19,7 @@ Only `iq1` and `iq2` reach the name. `iq3`, `iq4` and `iq5` are filters.
 
 Why nine and not five: gaining intelligence later must not cost a schema
 migration. A new axis is a column already present, not a rewrite of 909 titles
-and every query. An unused tag is not waste; it is a socket.
+and every query. An unused axis is not waste; it is a socket.
 
 Why the meanings changed: iq2 had become a sack — it held work families, themes
 and intentions in one column, so no filter built on it could be trusted, and the
@@ -65,7 +65,7 @@ the contract does not:
 | id | `session_id` | `video_id` |
 | title | `sessions.title` | the video's title |
 | body | `messages` | **transcript** |
-| facets | out: subject, tags, pillar | the same |
+| facets | out: subject, axes, pillar | the same |
 
 Video titles are frequently bad at saying what the video is about, so the
 engine proposes a better one from the transcript. This is not a separate
@@ -122,7 +122,7 @@ cheap. That is what makes it safe to press.
 ## 6 · What is deliberately not done
 
 - **No auto-renaming on session close.** The owner reviews; the machine proposes.
-- **No schema for the seven unused tags yet.** They exist as fields; their
+- **No schema for the seven unused axes yet.** They exist as fields; their
   semantics get decided when a real axis needs one.
 - **No write to `state.db` outside `set_session_title`.** Reading is free;
   every write goes through the host's own API.

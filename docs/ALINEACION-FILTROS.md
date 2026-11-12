@@ -6,7 +6,7 @@ Date: 2026-11-10 · base: 884 sessions · 50 rules · 13 intents
 
 ## 1 · The structure, as it stands
 
-| Tag | Axis | Answers | Example |
+| Key | Axis | Answers | Example |
 |---|---|---|---|
 | **iq1** | **Brand** | whose is the subject? — an adjective | `DJI` |
 | **iq2** | **Context** | where, or inside what frame? | `Amazon` · `Ebay` · `Panamá` |

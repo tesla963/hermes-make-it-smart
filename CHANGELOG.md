@@ -1,5 +1,49 @@
 # Changelog
 
+## 0.27.1 — 12-nov-2026 · sub-sessions hang from their mother, and the rename finishes
+
+### Added
+- **Sub-sessions are drawn as children.** The index carries `parent`, read from
+  `sessions.parent_session_id`, and the table reorders a subagent row right under the session
+  it came from, indented with a gold `↳` and a tooltip in both languages. The measurement
+  changed the design: 158 sessions across all profiles carry that column, but only **7** are
+  subagents — the rest are desktop sessions continuing one reaped at startup
+  (`end_reason *_orphan_reap`). Indenting on the field alone would have bled 151 normal rows,
+  so the index writes `parent` for subagents only *and* `isChildRow()` requires `esBot` and
+  rejects a self-parent. A child whose mother is filtered out is drawn as a root; a cycle
+  (a→b→a) is drawn as one root and never loops.
+
+### Fixed
+- **Axis filtering through the tool layer was broken both ways.** `cellar_tools` validated
+  axis names with the regex `^tag[1-9]$`, which the v0.27.0 rename could not see: a filter
+  using `iq3` was silently ignored (770 rows returned as if unfiltered) and one using `tag3`
+  matched nothing. `cellar_tag`, the tool that writes axis values, rejected `iqN` outright
+  with "No valid tag keys". `_axis_key()` now normalises `tagN` and `iqN` to `iqN`, the
+  argument is `iqs` with `tags` still accepted as an alias, and `empty_counts` reports on
+  `iqN`. Measured: `iqs={iq3: Investigar}` returns 209 rows instead of 770.
+- **22 identifiers the first rename could not see** (`tag1_nuevo`/`tag2_nuevo` in the title
+  CSV, `_known_tag1_set`, `tag3_vocabulary`, `tag3i`, one test name) and a real crash:
+  renaming `--tag2-only` to `--iq2-only` changed argparse's dest while the body still read
+  `args.tag2_only`, so `tools/apply_protocol.py` died with `AttributeError`. The dry run now
+  ends in "dry run — nada escrito".
+
+### Changed
+- **The word "tag" is gone from the product and the documentation.** The panel no longer says
+  `Tag 6 · Máquina` or `Tags`; the docs say *axes*; the classifier prompt, the batteries and
+  the rule prose speak of axes. `is_redundant_tag()` became `is_redundant_axis()`.
+- **`desktop/_desactivado_plugin.js` removed** — the disabled copy of the panel, dead code
+  carrying 16 old axis keys.
+- **`SPEC-BATCH.md` now opens with a historical banner**: it is the week's internal spec,
+  written when the axes were `tagN` and a rename to `dnaN` was being considered. That rename
+  was cancelled; the banner says so and points at `tools/migrate_axes.py`.
+
+### Where the word survives, on purpose
+`CHANGELOG.md` (it records the rename), `tools/migrate_axes.py` and its test (they must name
+both schemas), the `iqs`/`tags` alias in `cellar_tools`, the `tag{n}` fallback in
+`build_index`, and the stable rule id `tag-structure-2026-11-10`, which docs and the owner's
+personal overrides reference — renaming a key would break them, so the id stays and carries a
+comment saying so.
+
 ## 0.27.0 — 12-nov-2026 · the nine axes are called iq0…iq9
 
 ### Changed
