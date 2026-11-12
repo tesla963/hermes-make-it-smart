@@ -890,7 +890,7 @@ position:relative;display:flex;flex-direction:column;width:100%;height:100%;min-
 .mmws .updatebtn:hover:not(:disabled){border-color:var(--wine);color:#fff}
 .mmws .updatebtn:disabled{opacity:.5;cursor:default}
 .mmws .footmsg{font-size:11px;color:var(--tx2);margin-left:6px;white-space:nowrap}
-.mmws .footmsg.nopending{color:var(--tx3);font-style:italic;margin-left:0;margin-right:8px}
+.mmws .footmsg.nopending{color:var(--tx);font-weight:700;font-size:11.5px;font-style:normal;margin-left:0;margin-right:10px}
 .mmws .kbar{flex:1 1 auto;display:flex;align-items:stretch;justify-content:flex-end;gap:0;padding:0 4px}
 .mmws .kbar .kpi{flex:1 1 0;position:relative;display:flex;flex-direction:row;align-items:flex-end;justify-content:flex-start;gap:6px;padding:7px 10px 8px}
 .mmws .kbar .kpi+.kpi::before{content:"";position:absolute;left:0;top:6px;bottom:6px;width:1px;background:linear-gradient(180deg,transparent,#4a3d5e 22%,#4a3d5e 78%,transparent)}
