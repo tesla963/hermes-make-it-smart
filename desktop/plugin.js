@@ -2283,6 +2283,32 @@ function App({ ctx }) {
     }
   }
 
+  // index.json is a snapshot. After this panel writes titles it must patch the
+  // snapshot's raw values, or the next load resurrects the old ones (making already
+  // renamed sessions look pending) or hides real work (making unrenamed sessions
+  // disappear from Testing while the left panel still shows them).
+  const syncIndexRaw = async (updates) => {
+    if (!updates || typeof updates.size !== 'number' || updates.size === 0) return 0
+    const filesApi = (ctx && ctx.files) || (host && host.files)
+    if (!filesApi || typeof filesApi.writeText !== 'function') return 0
+    try {
+      const res = await filesApi.readText('data', 'index.json')
+      if (!res || !res.ok || !res.text) return 0
+      const idx = JSON.parse(res.text)
+      let touched = 0
+      for (const s of idx.sessions || []) {
+        if (updates.has(s.id)) {
+          s.raw = updates.get(s.id)
+          touched += 1
+        }
+      }
+      if (touched) await filesApi.writeText('data', 'index.json', JSON.stringify(idx))
+      return touched
+    } catch (_) {
+      return 0
+    }
+  }
+
   const createCommitBackup = async (sessionsList, opts) => {
     const keepLedger = Boolean(opts && opts.keepLedger)
     const list = sessionsList || sessions || []
@@ -2386,6 +2412,7 @@ function App({ ctx }) {
     setSessions((prev) =>
       prev.map((s) => (idMap.has(s.id) ? { ...s, raw: idMap.get(s.id) } : s))
     )
+    await syncIndexRaw(idMap)
 
     const updatedBackup = {
       ...curBackup,
@@ -2452,6 +2479,7 @@ function App({ ctx }) {
     setSessions((prev) =>
       prev.map((s) => (revMap.has(s.id) ? { ...s, raw: revMap.get(s.id) } : s))
     )
+    await syncIndexRaw(revMap)
 
     const updatedBackup = {
       ...lastBackup,
