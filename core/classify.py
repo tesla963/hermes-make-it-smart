@@ -313,18 +313,20 @@ def classify_one(
         agent_name=config.agent_name,
         language=config.language,
     )
+    conversation: list[dict[str, Any]] = list(payload_messages)
     base_payload: dict[str, Any] = {
         "model": config.model,
         "temperature": config.temperature,
         "max_tokens": config.max_tokens,
         "response_format": {"type": "json_object"},
-        "messages": payload_messages,
+        "messages": conversation,
     }
 
     attempts = 0
     last_error = ""
     for attempt in range(config.retries + 1):
         attempts = attempt + 1
+        base_payload["messages"] = conversation
         try:
             raw = caller(config, base_payload)
             obj = parse_json_object(raw)
@@ -332,15 +334,22 @@ def classify_one(
             bad = problems_with(facets)
             if bad:
                 last_error = "; ".join(bad)
-                base_payload["messages"] = payload_messages + [
-                    {"role": "user", "content": f"That answer was rejected: {last_error}. Return corrected JSON."}
+                conversation = conversation + [
+                    {"role": "assistant", "content": raw},
+                    {
+                        "role": "user",
+                        "content": f"That answer was rejected: {last_error}. Return corrected JSON.",
+                    },
                 ]
                 continue
             return ClassifyResult(facets=facets, raw=raw, attempts=attempts, ok=True)
         except Exception as exc:  # noqa: BLE001
             last_error = f"{type(exc).__name__}: {exc}"
-            base_payload["messages"] = payload_messages + [
-                {"role": "user", "content": f"Your previous reply was invalid ({last_error}). Return ONLY the JSON object."}
+            conversation = conversation + [
+                {
+                    "role": "user",
+                    "content": f"Your previous reply was invalid ({last_error}). Return ONLY the JSON object.",
+                }
             ]
 
     return ClassifyResult(
