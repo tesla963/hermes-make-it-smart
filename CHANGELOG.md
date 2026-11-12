@@ -1,11 +1,30 @@
 # Changelog
 
-## Unreleased — tab silhouette without the grey hairline
+## 0.26.0 — 12-nov-2026 · window tabs, an honest Testing tab, classifier alignment
+
+### Added
+- **Window tabs**: `Actual Hermes DB Sessions` and `Testing` are real tabs now — a 2px bar on each side plus the bottom underline in the tab's own colour (`--ok` green, `--gold` gold), 40% opacity when idle, 75% on hover, full when selected. The panel always opens on the real database; Testing is a deliberate step and is never restored from `localStorage`.
+- **Testing lists only real work**: the tab shows just the sessions a commit would change. Cron, empty, deleted, Bot Chat and subagent transcripts are never renamed and never counted (`esIntocable`).
+- **The commit button states the work**: `Commit Changes to Hermes DB (N Sessions to Process)`, disabled at 0.
+- **Testing is the refresh moment**: entering the tab re-reads the catalogue and picks up gateway sessions the snapshot does not contain yet. The index stays a cache everywhere else.
 
 ### Fixed
+- **Renamed titles came back as pending**: `loadCatalogue` preferred `index.json`'s snapshot over the live gateway title, so 117 already-renamed sessions reappeared as work after a commit. The live title now wins, and the commit ledger stands in for sessions the gateway no longer lists.
+- **Zero pending while the sidebar showed unrenamed sessions**: after a revert the snapshot kept the canonical titles. `syncIndexRaw()` patches the snapshot right after a commit **and** after a revert, so panel and `state.db` cannot disagree.
+- **A canonical title became its own description**: `925 [Sin título] 001` was written as `925 [Sin título] 001 925 [Sin título] 001`. A title that parses as canonical no longer contributes a description.
+- **Invented number, subject and ordinal**: rows without a canonical title printed `[<36-char slice>] 001` before them. They now print the title exactly as Hermes wrote it, with no subject pill and no `MMM`.
+- **Entering Testing looked like the rename had happened**: the table swapped every title for the proposal on entry. The table always shows the real title; renamed names appear only after Commit.
+- **Tab borders repainted red**: the generic `.mmws button:hover{border-color:var(--wine)}` and `.mmws button.on` outranked the tab selector, and the OS focus ring (pink on some Macs) was never reset. The tab now owns its border in every state with `!important`, scoped to the tab.
 - **Grey hairline under the idle tab**: `.headtabs` painted a 1px `--line2` baseline that showed through the 2px *transparent* bottom border of any tab that was not selected, so both idle tabs (green and gold) carried a thin grey thread along their bottom edge, breaking the window-tab silhouette. Root cause: the coloured side bars (`.headtab::before/::after`) close the tab on the left and right, but the bottom stayed transparent and let the container rule through.
 - **Fix**: the tab strip no longer paints a baseline (`border-bottom:1px solid transparent` keeps the geometry), and each tab closes its bottom edge in its own hue — `--ok40` / `--gold40` (40% alpha) when idle, full `--ok` / `--gold` on hover and when selected. Because the grey rule is gone, the attenuated border composites over one single background and no longer renders half-over-grey / half-over-black.
 - Verified by pixel measurement at DPR 2 (static page, real stylesheet, four states): zero `#3a3040` pixels in the border rows and a uniform 2px line per state.
+
+### Changed
+- **"New Rules Update" removed**: teaching rules is the user's conversation with Hermes, not a button in the panel. The handler and its i18n keys are gone.
+- **Retry conversation accumulates** (`core/classify.py`): the model now sees its rejected answer plus the rejection, instead of the same prompt every attempt.
+- **Intention vocabulary aligned** (`core/intent.py`): the seven of `tag-structure-2026-11-10`; the retired names survive as signals (`Update`+`Version`+`Feature` → Instalar, `Costo` → Cotizar, `Administrar`+`Respaldar` → Troubleshooting).
+- **The owner's battery is merged** (`core/bateria.py`): `load_bateria(path=None, merge_personal=True)` deep-merges `bateria.personal.yaml` by key and skips empty sections, so the contract in its header is finally kept. `to_facets()` passes the merged sheet to `strip_brand()`.
+- **Duplicate `google:` key merged** (`core/bateria.yaml`): the second definition silently dropped Chrome, Chromium and Gemini Desktop.
 
 ## 0.25.0 — 11-nov-2026 · data paths architecture, tag0/tag8/tag9 axes, Actual/Testing tabs, commit/revert and removal of the simulator
 
