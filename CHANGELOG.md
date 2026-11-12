@@ -1,5 +1,42 @@
 # Changelog
 
+## 0.27.4 — 12-nov-2026 · what the code review found, and what it cost us
+
+The migration and restore paths went through an independent code review (Antigravity, now
+credited in the README). It found one real bug and three genuine risks. All of them are fixed
+here, and the review itself is the reason this release exists.
+
+### Fixed
+- **The restore button undid itself.** `restoreOriginals` wrote the old titles through the
+  host API but never synced `index.json` and never marked the commit ledger. On the refresh
+  that followed, `loadCatalogue` re-applied `title_after` from `commit-last.json` for every
+  session that was not live, painting the renamed titles straight back over the restored ones.
+  It now syncs the index, marks the ledger `reverted` and reports how many sessions it had to
+  leave alone.
+- **A migration that failed halfway left the catalogue split.** `index.json` was written before
+  `facets.json` was even parsed, so a failure on the second write left axes in `iqN` and facets
+  in `tagN` — an empty filter sidebar with nothing to explain it. Both payloads are now computed
+  and both backups written *before* either file changes, and a failed second write restores the
+  first from its original text.
+- **Committing with a stale panel.** If the index was rebuilt from another terminal while the
+  window was open, `Commit` used the in-memory rows and wrote old titles over the fresh index.
+  It now compares the index's `generated` stamp and, if it moved, reloads and asks for a fresh
+  review instead of committing.
+- **A stale canonical file could overwrite a migrated mirror.** `build_index.py` copies the
+  canonical artefacts into the panel's mirror. It now refuses to copy one that is on an older
+  schema than the mirror, and `ensure_current()` no longer swallows its failure silently.
+
+### Added
+- **The journal records where each change came from**: `source` is `testing_commit`,
+  `restore_origin` or `revert`. Without it the journal could undo a change but could not say
+  who made it.
+- **Restoring respects later edits.** If a session's title is no longer the one our own commit
+  wrote, someone changed it afterwards — the user in Hermes, or another agent. That session is
+  skipped and counted, never overwritten.
+
+### Credits
+README now names the three of us: Jorge, Lisa and Antigravity.
+
 ## 0.27.3 — 12-nov-2026 · the panel migrates its own data, and remembers every rename
 
 ### Added

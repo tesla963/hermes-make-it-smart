@@ -20,7 +20,7 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 const ID = 'make-it-smart'
 const NAME = 'Hermes, Make it Smart!'
 const APP_TITLE = 'Make It Smart'
-const VERSION = '0.27.3'
+const VERSION = '0.27.4'
 const ROUTE = '/smart'
 
 /** jsx-runtime helper: keeps uncompiled React code compact and readable. */
@@ -412,7 +412,7 @@ function contarEjes(data) {
  * Nunca lanza: si el journal falla, el commit de los títulos ya está hecho y no
  * se debe deshacer por un problema de registro.
  */
-async function appendRenameJournal(filesApi, entries) {
+async function appendRenameJournal(filesApi, entries, source) {
   if (!filesApi || typeof filesApi.writeText !== 'function') return false
   const lista = Array.isArray(entries) ? entries.filter((e) => e && e.id) : []
   if (!lista.length) return false
@@ -434,6 +434,9 @@ async function appendRenameJournal(filesApi, entries) {
 
     const linea = JSON.stringify({
       ts,
+      // De dónde vino el cambio: sin esto el journal sirve para deshacer, pero no
+      // para auditar (¿lo hizo un commit, un revert o una restauración?).
+      source: source || 'testing_commit',
       count: lista.length,
       changes: lista.map((e) => ({ id: e.id, before: e.title_before, after: e.title_after })),
     })
@@ -712,9 +715,10 @@ const I18N = {
     migConfirm: '¿Actualizar la base de sesiones a la nomenclatura nueva?\n\nSe guardará un backup de index.json y facets.json antes de escribir.',
     migDone: 'Actualizado: {n} claves migradas · backup: {f}',
     migFail: 'No se pudo actualizar: {e}',
+    commitStale: 'El índice cambió en disco: recargado, revisá de nuevo antes de confirmar',
     restTitle: 'Restaurar títulos originales',
     restConfirm: '¿Devolver {n} sesiones a su título original?\n\nÚtil antes de desinstalar el plugin.',
-    restDone: 'Restauradas: {n}',
+    restDone: 'Restauradas: {n} · respetadas por cambios externos: {s}',
     restNone: 'Todavía no hay títulos originales guardados',
     subSesion: 'Sub-sesión de subagente: cuelga de la sesión de arriba',
   },
@@ -881,9 +885,10 @@ const I18N = {
     migConfirm: 'Update the session database to the new axis names?\n\nindex.json and facets.json will be backed up first.',
     migDone: 'Updated: {n} keys migrated · backup: {f}',
     migFail: 'Could not update: {e}',
+    commitStale: 'The index changed on disk: reloaded, review again before confirming',
     restTitle: 'Restore original titles',
     restConfirm: 'Return {n} sessions to their original title?\n\nUseful before uninstalling the plugin.',
-    restDone: 'Restored: {n}',
+    restDone: 'Restored: {n} · left alone after external changes: {s}',
     restNone: 'No original titles saved yet',
     subSesion: 'Subagent sub-session: hangs from the session above',
   },
@@ -1550,6 +1555,7 @@ async function loadCatalogue(ctx) {
     cronInfo: { vacias: vaciasCron, jobs_activos: jobsActivos },
     // Solo un usuario que venga de una versión anterior a 0.27.0 trae datos v1.
     esquemaViejo: esEsquemaViejo(idxData) || esEsquemaViejo(facetsMap),
+    generado: (idxData && idxData.generated) || '',
     errors,
     pendData,
     pendMap,
@@ -1613,6 +1619,7 @@ function App({ ctx }) {
   const [isReverting, setIsReverting] = useState(false)
   const [staleNotice, setStaleNotice] = useState('')
   const [esqViejo, setEsqViejo] = useState(false)
+  const [indiceGenerado, setIndiceGenerado] = useState('')
   const [migrando, setMigrando] = useState(false)
   const [btnMsg, setBtnMsg] = useState({
     copia: '',
@@ -1666,6 +1673,7 @@ function App({ ctx }) {
     setPendMap(res.pendMap || null)
     setPendAttr(res.pendAttr || null)
     setEsqViejo(Boolean(res.esquemaViejo))
+    setIndiceGenerado(res.generado || '')
     setLoading(false)
     // Open the newest year node in Fecha tree automatically
     const years = [...new Set(res.sessions.map((d) => (d.mes || '').slice(0, 4)).filter(Boolean))].sort().reverse()
@@ -2644,19 +2652,40 @@ function App({ ctx }) {
       const idxTxt = await lee('index.json')
       const facTxt = await lee('facets.json')
       if (!idxTxt && !facTxt) throw new Error('no hay index.json ni facets.json')
-      let claves = 0
+      // Dos fases: primero se calcula y respalda TODO, después se escribe. Si la
+      // segunda escritura falla, se devuelve la primera a su estado original: medio
+      // índice en v2 con medio facets en v1 deja los filtros vacíos y no hay quien lo
+      // explique. (Señalado por Antigravity en la revisión de v0.27.3.)
       const nombreBackup = `index.pre-iq_${stamp}.json`
-      if (idxTxt) {
-        await filesApi.writeText('data', nombreBackup, idxTxt)
-        const m = migrarEjes(JSON.parse(idxTxt))
-        claves += m.renamed
-        await filesApi.writeText('data', 'index.json', JSON.stringify(m.data))
-      }
-      if (facTxt) {
-        await filesApi.writeText('data', `facets.pre-iq_${stamp}.json`, facTxt)
-        const m = migrarEjes(JSON.parse(facTxt))
-        claves += m.renamed
-        await filesApi.writeText('data', 'facets.json', JSON.stringify(m.data))
+      const nombreBackupFac = `facets.pre-iq_${stamp}.json`
+      let claves = 0
+      const idxMig = idxTxt ? migrarEjes(JSON.parse(idxTxt)) : null
+      const facMig = facTxt ? migrarEjes(JSON.parse(facTxt)) : null
+      if (idxMig) claves += idxMig.renamed
+      if (facMig) claves += facMig.renamed
+
+      if (idxTxt) await filesApi.writeText('data', nombreBackup, idxTxt)
+      if (facTxt) await filesApi.writeText('data', nombreBackupFac, facTxt)
+
+      let escrito = null
+      try {
+        if (idxMig) {
+          escrito = 'index.json'
+          await filesApi.writeText('data', 'index.json', JSON.stringify(idxMig.data))
+        }
+        if (facMig) {
+          escrito = 'facets.json'
+          await filesApi.writeText('data', 'facets.json', JSON.stringify(facMig.data))
+        }
+      } catch (err) {
+        // Vuelta atrás: el archivo que sí se escribió recupera su texto original.
+        if (escrito === 'index.json' && idxTxt) {
+          await filesApi.writeText('data', 'index.json', idxTxt).catch(() => {})
+        }
+        if (escrito === 'facets.json' && facTxt) {
+          await filesApi.writeText('data', 'facets.json', facTxt).catch(() => {})
+        }
+        throw err
       }
       setEsqViejo(false)
       setBtnMsg((p2) => ({ ...p2, mig: t('migDone', { n: claves, f: nombreBackup }) }))
@@ -2676,30 +2705,75 @@ function App({ ctx }) {
   const restaurarOriginales = async () => {
     const filesApi = (ctx && ctx.files) || (host && host.files)
     if (!filesApi) return
-    const res = await filesApi.readText('data', 'titles-origin.json').catch(() => null)
-    if (!res || !res.ok || !res.text) {
+    const leer = async (nombre) => {
+      const r = await filesApi.readText('data', nombre).catch(() => null)
+      if (!r || !r.ok || !r.text) return null
+      try { return JSON.parse(r.text) } catch (_) { return null }
+    }
+    const origen = await leer('titles-origin.json')
+    if (!origen || !Object.keys(origen).length) {
       setBtnMsg((p2) => ({ ...p2, resto: t('restNone') }))
       return
     }
-    let origen = {}
-    try { origen = JSON.parse(res.text) || {} } catch (_) { origen = {} }
     const ids = Object.keys(origen)
-    if (!ids.length) {
-      setBtnMsg((p2) => ({ ...p2, resto: t('restNone') }))
-      return
-    }
     if (!window.confirm(t('restConfirm', { n: ids.length }))) return
+
+    // El ledger guarda el título que NUESTRO commit escribió. Si el que hay ahora
+    // no coincide, alguien lo cambió después (el usuario en Hermes, u otro agente):
+    // esa sesión se respeta y no se toca.
+    const ledger = await leer('commit-last.json')
+    const escritoPorNosotros = new Map(
+      ((ledger && ledger.entries) || []).map((e) => [e.id, e.title_after])
+    )
+    const ahora = new Map(sessions.map((d) => [d.id, d]))
+
     setIsCommitting(true)
     let ok = 0
+    let respetadas = 0
+    const restaurados = new Map()
     for (const id of ids) {
+      const fila = ahora.get(id)
+      const esperado = escritoPorNosotros.get(id)
+      if (esperado && fila && fila.raw && fila.raw !== esperado) {
+        respetadas += 1
+        continue
+      }
       try {
         const r = await callRpc(ctx, 'session.resume', { session_id: id, lazy: true, omit_messages: true })
         const sid = (r && r.session_id) || id
         await callRpc(ctx, 'session.title', { session_id: sid, title: origen[id].title })
+        restaurados.set(id, origen[id].title)
         ok += 1
       } catch (_) {}
     }
-    setBtnMsg((p2) => ({ ...p2, resto: t('restDone', { n: ok }) }))
+
+    // Sin esto, el índice sigue diciendo el nombre renombrado y el panel lo pinta.
+    if (restaurados.size) await syncIndexRaw(restaurados)
+
+    // Y sin esto, loadCatalogue reaplica el ledger y vuelve a pintar title_after.
+    if (ledger && ledger.committed && !ledger.reverted) {
+      try {
+        await filesApi.writeText(
+          'data',
+          'commit-last.json',
+          JSON.stringify({ ...ledger, reverted: true, restoredAt: new Date().toISOString() }, null, 2)
+        )
+      } catch (_) {}
+    }
+
+    if (restaurados.size) {
+      await appendRenameJournal(
+        filesApi,
+        ids.filter((id) => restaurados.has(id)).map((id) => ({
+          id,
+          title_before: escritoPorNosotros.has(id) ? escritoPorNosotros.get(id) : '',
+          title_after: restaurados.get(id),
+        })),
+        'restore_origin'
+      )
+    }
+
+    setBtnMsg((p2) => ({ ...p2, resto: t('restDone', { n: ok, s: respetadas }) }))
     setIsCommitting(false)
     await refreshData()
   }
@@ -2730,6 +2804,22 @@ function App({ ctx }) {
       setTimeout(() => setBtnMsg((p) => ({ ...p, commit: '' })), 4000)
       return
     }
+
+    // Si el índice se reconstruyó por debajo (build_index.py en otra terminal),
+    // el estado en memoria ya no es el del disco y Commit escribiría títulos viejos
+    // sobre un índice nuevo. Se detecta por el sello `generated`.
+    try {
+      const filesApi = (ctx && ctx.files) || (host && host.files)
+      const fresco = filesApi ? await filesApi.readText('data', 'index.json').catch(() => null) : null
+      if (fresco && fresco.ok && fresco.text) {
+        const gen = JSON.parse(fresco.text).generated
+        if (gen && gen !== indiceGenerado) {
+          setBtnMsg((p2) => ({ ...p2, commit: t('commitStale') }))
+          await refreshData()
+          return
+        }
+      }
+    } catch (_) {}
 
     const ok = window.confirm(t('confirmCommit', { n: targets.length }))
     if (!ok) return
