@@ -2885,21 +2885,27 @@ function App({ ctx }) {
         h(
           'td',
           { className: 'tight' },
-          h(
-            'span',
-            {
-              className: 'pill s pick' + (isDel ? ' del' : ''),
-              title: 'Filtrar por este sujeto',
-              onClick: (e) => {
-                e.stopPropagation()
-                setF((p) => ({ ...p, sujeto: p.sujeto === d.sujeto ? null : d.sujeto }))
-                setSel(null)
-              },
-            },
-            d.sujeto
-          ),
-          ' ',
-          h('span', { className: 'mono', style: { color: 'var(--tx3)' } }, String(d.mmm || 1).padStart(3, '0')),
+          // A row without a canonical title has no subject of its own: the subject and
+          // the ordinal would be inventions of the panel, so they are not printed.
+          isCanon
+            ? h(
+                'span',
+                {
+                  className: 'pill s pick' + (isDel ? ' del' : ''),
+                  title: 'Filtrar por este sujeto',
+                  onClick: (e) => {
+                    e.stopPropagation()
+                    setF((p) => ({ ...p, sujeto: p.sujeto === d.sujeto ? null : d.sujeto }))
+                    setSel(null)
+                  },
+                },
+                d.sujeto
+              )
+            : null,
+          isCanon ? ' ' : null,
+          isCanon
+            ? h('span', { className: 'mono', style: { color: 'var(--tx3)' } }, String(d.mmm || 1).padStart(3, '0'))
+            : null,
           d.tag1
             ? h(
                 'span',
