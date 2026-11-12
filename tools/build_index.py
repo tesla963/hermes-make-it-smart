@@ -151,6 +151,14 @@ def build(with_messages: bool = True) -> dict:
                     # delegate_task spawns. The panel hides them behind the Bots chip.
                     "esBot": (rec.source or "").lower() in {"subagent", "bot"},
                     "source": rec.source or "",
+                    # Mother session of a subagent transcript, "" for a root session. The
+                    # panel indents the row under it; it is still one row, counted once.
+                    # Only subagents: the host also sets parent_session_id on a desktop
+                    # session that continues one reaped at startup (end_reason
+                    # *_orphan_reap). That is a continuation, not delegated work.
+                    "parent": (rec.parent_session_id or "")
+                    if (rec.source or "").lower() == "subagent"
+                    else "",
                     "pilar": extra.get(rec.id, {}).get("pilar", ""),
                     "motor": extra.get(rec.id, {}).get("motor", ""),
                     "mc": extra.get(rec.id, {}).get("mc", rec.posts or 0),

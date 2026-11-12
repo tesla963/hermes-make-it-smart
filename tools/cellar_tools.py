@@ -1057,7 +1057,7 @@ def handle_cellar_index(args: dict[str, Any], **_kwargs: Any) -> str:
 # --------------------------------------------------------------------------- #
 
 
-def _known_tag1_set() -> set[str]:
+def _known_iq1_set() -> set[str]:
     known = {p.lower() for p in PLATFORMS if p}
     known.update({"bot", "cron"})
     for b in (load_bateria(), _load_personal_bateria()):
@@ -1088,7 +1088,7 @@ def handle_cellar_verify(args: dict[str, Any], **_kwargs: Any) -> str:
         by_rule[rule] += 1
         offenders.append({"n": c["n"], "id": c["id"], "rule": rule, "detail": detail})
 
-    known_iq1 = _known_tag1_set()
+    known_iq1 = _known_iq1_set()
     valid_iq3 = {x.lower() for x in INTENTIONS}
     valid_iq4 = {x.lower() for x in (*THEMES, *IT_SUBCATEGORIES, *PILLARS)}
 
@@ -1113,15 +1113,15 @@ def handle_cellar_verify(args: dict[str, Any], **_kwargs: Any) -> str:
 
         # 4. iq3 inside the 7 intentions
         if c["iq3"] and c["iq3"].lower() not in valid_iq3:
-            flag(c, "tag3_vocabulary", f"iq3={c['iq3']!r} not in 7 intentions")
+            flag(c, "iq3_vocabulary", f"iq3={c['iq3']!r} not in 7 intentions")
 
         # 5. iq4 inside themes
         if c["iq4"] and c["iq4"].lower() not in valid_iq4:
-            flag(c, "tag4_vocabulary", f"iq4={c['iq4']!r} not in closed themes")
+            flag(c, "iq4_vocabulary", f"iq4={c['iq4']!r} not in closed themes")
 
         # 6. iq1 present in bateria or empty
         if c["iq1"] and c["iq1"].lower() not in known_iq1:
-            flag(c, "tag1_bateria", f"iq1={c['iq1']!r} not in bateria")
+            flag(c, "iq1_bateria", f"iq1={c['iq1']!r} not in bateria")
 
         # 7. Subject not equal to iq1 (unless subject has a version suffix)
         if c["sujeto"] and c["iq1"]:
@@ -1669,9 +1669,9 @@ def handle_cellar_bateria(args: dict[str, Any], **kwargs: Any) -> str:
                     "iq9": {"name": "Pending (authorization requests)", "in_title": False},
                 },
                 "vocabularies": {
-                    "tag3_intentions": list(INTENTIONS),
-                    "tag4_themes": list(THEMES),
-                    "tag4_it_subcategories": list(IT_SUBCATEGORIES),
+                    "iq3_intentions": list(INTENTIONS),
+                    "iq4_themes": list(THEMES),
+                    "iq4_it_subcategories": list(IT_SUBCATEGORIES),
                     "verbs": list(VERBS),
                 },
                 "bateria_sections": sec_counts,
@@ -1811,8 +1811,8 @@ _TITLE_EXPORT_COLS = [
     "descripcion",
     "verbo",
     "sujeto_nuevo",
-    "tag1_nuevo",
-    "tag2_nuevo",
+    "iq1_nuevo",
+    "iq2_nuevo",
     "descripcion_nueva",
     "verbo_nuevo",
     "observaciones",
@@ -1844,8 +1844,8 @@ def handle_cellar_export(args: dict[str, Any], **_kwargs: Any) -> str:
                 "descripcion": c["desc"],
                 "verbo": c["verb"],
                 "sujeto_nuevo": "",
-                "tag1_nuevo": "",
-                "tag2_nuevo": "",
+                "iq1_nuevo": "",
+                "iq2_nuevo": "",
                 "descripcion_nueva": "",
                 "verbo_nuevo": "",
                 "observaciones": "",

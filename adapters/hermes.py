@@ -41,6 +41,8 @@ class SessionRecord:
     profile: str = "default"
     hidden: bool = False
     source: str | None = None
+    # Mother session of a subagent transcript (delegate_task). None for a root session.
+    parent_session_id: str | None = None
 
 
 # --------------------------------------------------------------------------- #
@@ -140,9 +142,14 @@ def read_sessions(profile: str, path: Path, limit: int | None = None) -> list[Se
     out: list[SessionRecord] = []
     conn = _connect_ro(path)
     try:
+        # parent_session_id exists in current hosts; an older state.db without it must
+        # still read, so the column is selected only when the table has it.
+        cols = {r[1] for r in conn.execute("PRAGMA table_info(sessions)")}
+        parent_col = "parent_session_id" if "parent_session_id" in cols else "NULL AS parent_session_id"
         sql = (
             "SELECT id, title, title_source, started_at, message_count, "
-            "input_tokens, output_tokens, estimated_cost_usd, actual_cost_usd, hidden, source "
+            "input_tokens, output_tokens, estimated_cost_usd, actual_cost_usd, hidden, source, "
+            f"{parent_col} "
             "FROM sessions ORDER BY started_at"
         )
         if limit:
@@ -168,6 +175,7 @@ def read_sessions(profile: str, path: Path, limit: int | None = None) -> list[Se
                     profile=profile,
                     hidden=bool(row["hidden"]) if "hidden" in keys else False,
                     source=row["source"] if "source" in keys else None,
+                    parent_session_id=(row["parent_session_id"] or None) if "parent_session_id" in keys else None,
                 )
             )
     finally:

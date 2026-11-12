@@ -96,5 +96,49 @@ if (typeof fmtN === 'function') {
   ok(fmtN(1500) === '1.5k', 'fmtN scales to thousands')
 }
 
+console.log('\n§ sub-sesiones')
+const { jerarquia, isChildRow } = mod
+if (typeof jerarquia === 'function') {
+  // La madre no está entre las filas (oculta, filtrada o desaparecida): la hija es raíz.
+  const huerfana = jerarquia([{ id: 'a' }, { id: 'b', parent: 'no-existe', esBot: true }])
+  ok(!huerfana.sub.has('b'), 'una fila cuyo padre no está se dibuja como raíz')
+  ok(huerfana.rows.length === 2, 'no se añade ni se pierde ninguna fila (los KPI cuentan una vez)')
+
+  // Control: con la madre visible, la hija cuelga justo debajo de ella.
+  const arbol = jerarquia([
+    { id: 'b', parent: 'a', esBot: true },
+    { id: 'x' },
+    { id: 'a' },
+  ])
+  ok(arbol.sub.has('b') && arbol.rows.map((d) => d.id).join() === 'x,a,b', 'la hija cuelga debajo de la madre visible')
+
+  // Una continuación no es jerarquía: el host también pone parent_session_id ahí.
+  const continuacion = jerarquia([{ id: 'a' }, { id: 'b', parent: 'a' }])
+  ok(!continuacion.sub.has('b'), 'una continuación (sin esBot) no se indenta')
+
+  // Una fila que se apunta a sí misma es raíz.
+  const suelta = jerarquia([{ id: 'a', parent: 'a', esBot: true }])
+  ok(!suelta.sub.has('a'), 'una sesión que se apunta a sí misma es raíz')
+
+  // Ciclo a→b→a: no entra en bucle y no duplica filas.
+  const ciclo = jerarquia([
+    { id: 'a', parent: 'b', esBot: true },
+    { id: 'b', parent: 'a', esBot: true },
+  ])
+  ok(ciclo.rows.length === 2, 'un ciclo de padres no duplica ni pierde filas')
+
+  // El orden se conserva para las filas sin jerarquía.
+  const plano = jerarquia([{ id: 'a' }, { id: 'b' }, { id: 'c' }])
+  ok(plano.rows.map((d) => d.id).join() === 'a,b,c', 'sin jerarquía el orden no cambia')
+} else ok(false, 'jerarquia se exporta')
+
+if (typeof isChildRow === 'function') {
+  const vis = new Set(['madre'])
+  ok(isChildRow({ id: 'h', parent: 'madre', esBot: true }, vis), 'subagente con madre en pantalla: sí')
+  ok(!isChildRow({ id: 'h', parent: 'madre' }, vis), 'sin esBot: no')
+  ok(!isChildRow({ id: 'h', parent: 'h', esBot: true }, vis), 'auto-padre: no')
+  ok(!isChildRow({ id: 'h', parent: 'madre', esBot: true }, null), 'sin conjunto visible: no adivina')
+} else ok(false, 'isChildRow se exporta')
+
 console.log(failures ? `\n${failures} fallo(s)` : '\nTODO OK')
 process.exit(failures ? 1 : 0)
