@@ -92,6 +92,29 @@ def load_facets() -> dict:
     return data
 
 
+def _schema_of(path: Path) -> int:
+    """Esquema que declara un artefacto: el sello `schema`, o 1 si no lleva ninguno."""
+    try:
+        data = json.loads(Path(path).read_text(encoding="utf-8"))
+    except Exception:  # noqa: BLE001
+        return 0
+    if isinstance(data, dict) and isinstance(data.get("schema"), int):
+        return int(data["schema"])
+    return 1
+
+
+def _pisa_espejo(canonico: Path, espejo: Path) -> bool:
+    """¿Se puede copiar el canónico sobre el espejo?
+
+    No si el espejo ya está en un esquema MÁS NUEVO: el panel migró sus datos y el
+    canónico se quedó atrás (o su migración falló). Copiar encima devolvería el
+    espejo al esquema viejo y el panel volvería a pedir la migración.
+    """
+    if not Path(espejo).exists():
+        return True
+    return _schema_of(canonico) >= _schema_of(espejo)
+
+
 def build(with_messages: bool = True) -> dict:
     # Bring any older artefact to the iqN schema before reading it. A failure here is
     # not fatal: load_facets() accepts both key sets.
@@ -101,8 +124,10 @@ def build(with_messages: bool = True) -> dict:
         from migrate_axes import ensure_current  # noqa: PLC0415
 
         ensure_current()
-    except Exception:  # noqa: BLE001
-        pass
+    except Exception as exc:  # noqa: BLE001
+        # No es fatal (el lector acepta ambos esquemas), pero callarlo dejaba que el
+        # canónico viejo se copiara sobre el espejo sin que nadie se enterara.
+        print(f"aviso: no se pudo migrar el canónico antes de reconstruir: {exc}", file=sys.stderr)
     extra = load_facets()
     rows: list[dict] = []
     for profile, path in discover_databases():
@@ -204,7 +229,8 @@ def main() -> int:
         try:
             ui_out = ui_data_dir() / "index.json"
             ui_out.parent.mkdir(parents=True, exist_ok=True)
-            ui_out.write_text(content, encoding="utf-8")
+            if _pisa_espejo(data_dir() / "index.json", ui_out):
+                ui_out.write_text(content, encoding="utf-8")
         except Exception:
             pass
         try:
@@ -212,7 +238,8 @@ def main() -> int:
             if can_facets.exists():
                 ui_facets = ui_data_dir() / "facets.json"
                 ui_facets.parent.mkdir(parents=True, exist_ok=True)
-                ui_facets.write_text(can_facets.read_text(encoding="utf-8"), encoding="utf-8")
+                if _pisa_espejo(can_facets, ui_facets):
+                    ui_facets.write_text(can_facets.read_text(encoding="utf-8"), encoding="utf-8")
         except Exception:
             pass
         try:
