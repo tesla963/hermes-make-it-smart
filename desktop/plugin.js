@@ -707,6 +707,12 @@ position:relative;display:flex;flex-direction:column;width:100%;height:100%;min-
 .mmws .headtab.on::before,.mmws .headtab.on::after{opacity:1}
 .mmws .headtab.on.testing{background:transparent;color:var(--gold);border-bottom-color:var(--gold)}
 .mmws .headtab.on.testing::before,.mmws .headtab.on.testing::after{background:var(--gold);opacity:1}
+/* La regla genérica .mmws button:hover{border-color:var(--wine)} pintaba de rojo
+   el borde inferior de la pestaña al pasar el ratón. Estas tres la anulan para los
+   tabs: el color de la pestaña lo decide su propio color, nunca el vino genérico. */
+.mmws .headtabs .headtab:hover{border-color:transparent;border-bottom-color:transparent}
+.mmws .headtabs .headtab.on:hover{border-bottom-color:var(--ok)}
+.mmws .headtabs .headtab.on.testing:hover{border-bottom-color:var(--gold)}
 .mmws .bodywrap{flex:1 1 auto;min-height:0;display:flex;align-items:stretch;position:relative;overflow:hidden}
 .mmws .abarra{flex:none;padding:9px 0 8px;background:var(--bg2);border-bottom:1px solid var(--line);z-index:2}
 .mmws .ascroll{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;padding:8px 0 14px;scrollbar-width:none;-ms-overflow-style:none;overscroll-behavior:contain}
