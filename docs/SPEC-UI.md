@@ -21,21 +21,21 @@ The row is two lines, and each line has a job:
 | **1 — the name** | the whole title, unadorned: `NNN` · `[Sujeto] MMM` · `[iq1]` · `[iq2]` · description in bold. **No pills here.** |
 | **2 — the data** | date · subject pill with its `MMM` · **iq1 and iq2 as coloured pills right after the MMM** · cost · hours · tokens · posts |
 
-**There is no TAGS column.** The pills live inside the subject cell of the
-second line, after the `MMM`, so the two tags stay readable as colour without
+**There is no AXES column.** The pills live inside the subject cell of the
+second line, after the `MMM`, so the two axes stay readable as colour without
 polluting the name. Anything that does not appear in the name —pillar (iq3),
-country, year, machine, tags 7-9— lives in the detail card and in the filters,
+country, year, machine, iq7–iq9 — lives in the detail card and in the filters,
 never in the list.
 
 Sizing: `tr.t` fills 2 cells (number + title/colspan 6), `tr.r` fills 7. The
 `<th>` for Nº stays as scaffolding so the date lines up under the first bracket.
 
-## 2 · The nine tags and their colours
+## 2 · The nine axes and their colours
 
 Same lightness and saturation across the set: one hue each, none shouts on
-`#0d0b0e`. The order runs cool → warm so two adjacent tags never compete.
+`#0d0b0e`. The order runs cool → warm so two adjacent axes never compete.
 
-| Tag | Axis | Text | Background | Border |
+| Key | Axis | Text | Background | Border |
 |---|---|---|---|---|
 | **iq1** | platform | `#f0d48a` amber | `#2a2210` | `#55461f` |
 | **iq2** | family | `#d3e3f3` pale blue | `#121d28` | `#24404f` |
@@ -51,7 +51,7 @@ Same lightness and saturation across the set: one hue each, none shouts on
 is the heaviest word in the row and deserves the strongest colour. iq2 keeps a
 paler blue so it reads as related but subordinate.
 
-Tags 7, 8 and 9 have a colour reserved and no meaning yet: the slots exist so
+iq7, iq8 and iq9 have a colour reserved and no meaning yet: the slots exist so
 gaining an axis later costs no migration.
 
 ## 3 · The interface language is not the classifier's language
@@ -106,7 +106,7 @@ Never one button visibly larger than its neighbour.
 ## 7 · The detail card
 
 Title at 1.5× the list size, wrapped in its own bordered block. Below it the
-nine tags with their **internal name** (`iq1 · platform`, `iq3 · pillar`,
+nine axes with their **internal name** (`iq1 · platform`, `iq3 · pillar`,
 `iq7 · free`…), so it is visible at a glance which axes exist and which are
 still empty.
 

@@ -35,7 +35,7 @@ With the Card open, `⌥↓` / `⌥↑` walk to the previous/next visible sessio
 | Double click on a row | opens the session |
 | **Right click on a row** | **opens the session** — the same as `Enter`, without a menu |
 | `⌥` + right click | context menu: *Abrir sesión*, *Copiar título*, *Copiar ficha*, *Ver la serie*, *Limpiar filtros* |
-| Click on a pill | filters by that tag value (the pill becomes a chip) |
+| Click on a pill | filters by that axis value (the pill becomes a chip) |
 | Drag the divider | resizes the Card (already specified in SPEC-UI) |
 
 Right click opening the session directly is deliberate: it is the fastest path from "that's the one"

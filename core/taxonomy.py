@@ -12,7 +12,7 @@ from __future__ import annotations
 from typing import Final
 
 # --------------------------------------------------------------------------- #
-# Tag 3 — pillars (work fronts). Order matters for display.
+# iq3 — pillars (work fronts). Order matters for display.
 # --------------------------------------------------------------------------- #
 
 PILLARS: Final[tuple[str, ...]] = (
@@ -33,7 +33,7 @@ PILLARS: Final[tuple[str, ...]] = (
 PILLAR_LAST: Final[str] = "Temas Varios"
 
 # --------------------------------------------------------------------------- #
-# Tag 1 — platforms. The protagonist of the session.
+# iq1 — platforms. The protagonist of the session.
 # --------------------------------------------------------------------------- #
 
 PLATFORMS: Final[tuple[str, ...]] = (
@@ -95,7 +95,7 @@ PLATFORMS: Final[tuple[str, ...]] = (
 DEFAULT_PLATFORM: Final[str] = ""
 
 # --------------------------------------------------------------------------- #
-# Tag 2 — work families
+# iq2 — work families
 # --------------------------------------------------------------------------- #
 
 IT_FAMILIES: Final[tuple[str, ...]] = (
@@ -132,7 +132,7 @@ NON_IT_FAMILIES: Final[tuple[str, ...]] = (
 MARKET_FAMILIES: Final[tuple[str, ...]] = ("Ebay", "Amazon", "Comparación")
 
 # --------------------------------------------------------------------------- #
-# Tag 4 / 5 / 6
+# iq4 / iq5 / iq6
 # --------------------------------------------------------------------------- #
 
 COUNTRIES: Final[tuple[str, ...]] = (
@@ -256,12 +256,12 @@ def apply_abbreviation(text: str) -> str:
     return text.strip()
 
 
-def is_redundant_tag(subject: str, tag: str) -> bool:
-    """True when the tag only repeats what the subject already says."""
-    if not tag:
+def is_redundant_axis(subject: str, axis: str) -> bool:
+    """True when the axis only repeats what the subject already says."""
+    if not axis:
         return False
     s = subject.strip().lower()
-    t = tag.strip().lower()
+    t = axis.strip().lower()
     if not s or not t:
         return False
     if s == t:
@@ -302,7 +302,7 @@ __all__ = [
     "normalize_family",
     "normalize_verb",
     "apply_abbreviation",
-    "is_redundant_tag",
+    "is_redundant_axis",
     "ABBREVIATIONS",
     "KEEP_FULL",
 ]

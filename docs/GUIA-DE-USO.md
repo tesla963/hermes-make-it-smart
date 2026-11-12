@@ -163,7 +163,7 @@ columns for whatever you want to change:
 
 ```
 n, id, fecha, titulo_actual, sujeto, iq1, iq2, descripcion,
-sujeto_nuevo, tag1_nuevo, tag2_nuevo, descripcion_nueva, observaciones
+sujeto_nuevo, iq1_nuevo, iq2_nuevo, descripcion_nueva, observaciones
 ```
 
 You fill in only what's wrong and let it come back. **Nothing is applied until

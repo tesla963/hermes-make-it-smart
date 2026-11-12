@@ -32,7 +32,7 @@ The id was unified to `make-all-my-work-smart` in this step. **Superseded the sa
 day:** the final rename (v0.25.0, 2026-11-11) settled on the manifest name
 `hermes-make-it-smart` and the internal id `make-it-smart`, so the data now lives at
 `~/.hermes/plugin-data/make-it-smart/index.json`. Measured at the time: **910 sessions**,
-460 subjects, tag3 in 570 and tag4 in 854. The `Now` column below is the intermediate
+460 subjects, iq3 in 570 and iq4 in 854. The `Now` column below is the intermediate
 id from this step, not the final one.
 
 | File | Before | Now |
@@ -53,16 +53,16 @@ in place: it is only deleted after restarting Desktop and seeing that it loads.
 ```
 
 They are pasted into the plugin's search box as is. The rule: the brand goes in
-tag1 and the subject describes what was done with it. Watch out for the two
+iq1 and the subject describes what was done with it. Watch out for the two
 cases that Jorge himself already resolved earlier:
 
-- **365 Pinokio** → tag1 `Pinokio`, subject `Control CLI`.
+- **365 Pinokio** → iq1 `Pinokio`, subject `Control CLI`.
 - **93** → the correct subject is `Unsloth Studio` (the one compared), not Ollama.
 
 And the saved exception: if removing the brand leaves the subject meaningless (`Bot`,
 `3.8 27B`), **it is not removed** — an empty subject is worse than a repeated one.
 
-## 4 · Refine the tag rules
+## 4 · Refine the axis rules
 
 Jorge left it for tomorrow. Useful context: out of **460 subjects**, **369 appear
 only once**; four of them concentrate 206 sessions. The full map is in

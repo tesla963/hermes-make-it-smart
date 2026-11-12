@@ -341,6 +341,34 @@ def _paginate(items: list[Any], limit: Any = DEFAULT_LIMIT, offset: Any = 0) -> 
     return sliced, total, truncated, lim, off
 
 
+_AXIS_RE = re.compile(r"^(?:(?:tag|iq))([1-9])$")
+
+
+def _axis_key(name: Any) -> str | None:
+    """Normalise an axis name to `iqN`, or None when it is not an axis.
+
+    Accepts the v0.27 names (`iq1`…`iq9`) and the `tagN` they replaced, so a prompt,
+    script or saved filter written before the rename keeps working instead of silently
+    matching nothing. Callers must always use the returned name to read or write a row.
+    """
+    match = _AXIS_RE.match(str(name).strip().lower())
+    return "iq%s" % match.group(1) if match else None
+
+
+def _axis_args(args: dict[str, Any]) -> dict[str, Any]:
+    """Axis filters from the tool arguments.
+
+    `iqs` is the v0.27 name; `tags` is accepted because prompts, saved filters and a
+    couple of internal callers still use it, and breaking them silently is worse than
+    an alias that costs one lookup.
+    """
+    for name in ("iqs", "tags"):
+        value = args.get(name)
+        if isinstance(value, dict):
+            return value
+    return {}
+
+
 def _parse_num_query(q: str) -> set[int] | None:
     s = (q or "").strip()
     if not s or not re.match(r"^\d+(?:\s*[-,]\s*\d+)*$", s):
@@ -363,7 +391,7 @@ def _filter_rows(rows: list[dict[str, Any]], args: dict[str, Any]) -> list[dict[
     q = str(args.get("q") or "").strip()
     num_set = _parse_num_query(q)
     q_norm = "" if num_set else _norm(q)
-    tags = args.get("tags") if isinstance(args.get("tags"), dict) else {}
+    axis_filters = _axis_args(args)
     date_from = str(args.get("date_from") or "").strip()[:10]
     date_to = str(args.get("date_to") or "").strip()[:10]
     prof = str(args.get("prof") or "").strip().lower()
@@ -401,17 +429,18 @@ def _filter_rows(rows: list[dict[str, Any]], args: dict[str, Any]) -> list[dict[
         if date_to and (not c["fecha"] or c["fecha"] > date_to):
             continue
 
-        # Partial tag map filter
+        # Partial axis map filter: keys may be iqN or the tagN they replaced.
         tag_ok = True
-        for tk, tv in tags.items():
-            if not re.match(r"^tag[1-9]$", str(tk)):
+        for tk, tv in axis_filters.items():
+            key = _axis_key(tk)
+            if not key:
                 continue
             if tv is None or tv == "":
-                if c.get(tk):
+                if c.get(key):
                     tag_ok = False
                     break
             else:
-                if _norm(c.get(tk, "")) != _norm(tv):
+                if _norm(c.get(key, "")) != _norm(tv):
                     tag_ok = False
                     break
         if not tag_ok:
@@ -575,7 +604,7 @@ def handle_cellar_search(args: dict[str, Any], **_kwargs: Any) -> str:
             "offset": off,
             "query_echo": {
                 "q": args.get("q") or "",
-                "tags": args.get("tags") or {},
+                "iqs": _axis_args(args),
                 "date_from": args.get("date_from") or "",
                 "date_to": args.get("date_to") or "",
                 "prof": args.get("prof") or "",
@@ -685,7 +714,7 @@ def handle_cellar_stats(args: dict[str, Any], **_kwargs: Any) -> str:
     all_axes = ("iq1", "iq2", "iq3", "iq4", "fecha_year", "prof")
     requested_facets = args.get("facets")
     if isinstance(requested_facets, list) and requested_facets:
-        axes = [str(a) for a in requested_facets if str(a) in all_axes or re.match(r"^tag[1-9]$", str(a))]
+        axes = [str(a) for a in requested_facets if str(a) in all_axes or _axis_key(a)]
     else:
         axes = list(all_axes)
 
@@ -702,7 +731,7 @@ def handle_cellar_stats(args: dict[str, Any], **_kwargs: Any) -> str:
         by_facet[ax] = dict(cnt.most_common())
 
     empty_counts = {
-        f"tag{i}": sum(1 for r in matched if not r.get(f"tag{i}"))
+        f"iq{i}": sum(1 for r in matched if not r.get(f"iq{i}"))
         for i in range(1, 10)
     }
 
@@ -1057,7 +1086,7 @@ def handle_cellar_index(args: dict[str, Any], **_kwargs: Any) -> str:
 # --------------------------------------------------------------------------- #
 
 
-def _known_tag1_set() -> set[str]:
+def _known_iq1_set() -> set[str]:
     known = {p.lower() for p in PLATFORMS if p}
     known.update({"bot", "cron"})
     for b in (load_bateria(), _load_personal_bateria()):
@@ -1078,7 +1107,7 @@ def _known_tag1_set() -> set[str]:
 
 def handle_cellar_verify(args: dict[str, Any], **_kwargs: Any) -> str:
     rows, _gen = _load_merged_rows()
-    if any(k in args for k in ("q", "tags", "date_from", "date_to", "prof", "motor", "state")):
+    if any(k in args for k in ("q", "iqs", "tags", "date_from", "date_to", "prof", "motor", "state")):
         rows = _filter_rows(rows, {**args, "state": args.get("state") or "all"})
 
     offenders: list[dict[str, Any]] = []
@@ -1088,7 +1117,7 @@ def handle_cellar_verify(args: dict[str, Any], **_kwargs: Any) -> str:
         by_rule[rule] += 1
         offenders.append({"n": c["n"], "id": c["id"], "rule": rule, "detail": detail})
 
-    known_iq1 = _known_tag1_set()
+    known_iq1 = _known_iq1_set()
     valid_iq3 = {x.lower() for x in INTENTIONS}
     valid_iq4 = {x.lower() for x in (*THEMES, *IT_SUBCATEGORIES, *PILLARS)}
 
@@ -1113,15 +1142,15 @@ def handle_cellar_verify(args: dict[str, Any], **_kwargs: Any) -> str:
 
         # 4. iq3 inside the 7 intentions
         if c["iq3"] and c["iq3"].lower() not in valid_iq3:
-            flag(c, "tag3_vocabulary", f"iq3={c['iq3']!r} not in 7 intentions")
+            flag(c, "iq3_vocabulary", f"iq3={c['iq3']!r} not in 7 intentions")
 
         # 5. iq4 inside themes
         if c["iq4"] and c["iq4"].lower() not in valid_iq4:
-            flag(c, "tag4_vocabulary", f"iq4={c['iq4']!r} not in closed themes")
+            flag(c, "iq4_vocabulary", f"iq4={c['iq4']!r} not in closed themes")
 
         # 6. iq1 present in bateria or empty
         if c["iq1"] and c["iq1"].lower() not in known_iq1:
-            flag(c, "tag1_bateria", f"iq1={c['iq1']!r} not in bateria")
+            flag(c, "iq1_bateria", f"iq1={c['iq1']!r} not in bateria")
 
         # 7. Subject not equal to iq1 (unless subject has a version suffix)
         if c["sujeto"] and c["iq1"]:
@@ -1416,15 +1445,16 @@ def handle_cellar_tag(args: dict[str, Any], **kwargs: Any) -> str:
     confirm = bool(args.get("confirm", False))
     tag_set = args.get("set")
     if not isinstance(tag_set, dict) or not tag_set:
-        return _json({"ok": False, "error": "Provide a non-empty 'set' mapping of tags (iq1..iq9)."})
+        return _json({"ok": False, "error": "Provide a non-empty 'set' mapping of axes (iq1..iq9)."})
 
     valid_changes: dict[str, str] = {}
     for k, v in tag_set.items():
-        if re.match(r"^tag[1-9]$", str(k)):
-            valid_changes[str(k)] = "" if v is None else str(v).strip()
+        key = _axis_key(k)
+        if key:
+            valid_changes[key] = "" if v is None else str(v).strip()
 
     if not valid_changes:
-        return _json({"ok": False, "error": "No valid tag keys (iq1..iq9) found in 'set'."})
+        return _json({"ok": False, "error": "No valid axis keys (iq1..iq9) found in 'set'."})
 
     rows, gen_before = _load_merged_rows()
     targets, sel_err = _resolve_target_rows(rows, args)
@@ -1536,8 +1566,8 @@ def handle_cellar_tag(args: dict[str, Any], **kwargs: Any) -> str:
             if new_title is not None:
                 ir["raw"] = new_title
 
-        applied_before.append({"n": c["n"], "id": c["id"], "tags": before_tags})
-        applied_after.append({"n": c["n"], "id": c["id"], "tags": after_tags})
+        applied_before.append({"n": c["n"], "id": c["id"], "iqs": before_tags})
+        applied_after.append({"n": c["n"], "id": c["id"], "iqs": after_tags})
 
     gen_after = datetime.now().isoformat(timespec="seconds")
     idx_data["generated"] = gen_after
@@ -1669,9 +1699,9 @@ def handle_cellar_bateria(args: dict[str, Any], **kwargs: Any) -> str:
                     "iq9": {"name": "Pending (authorization requests)", "in_title": False},
                 },
                 "vocabularies": {
-                    "tag3_intentions": list(INTENTIONS),
-                    "tag4_themes": list(THEMES),
-                    "tag4_it_subcategories": list(IT_SUBCATEGORIES),
+                    "iq3_intentions": list(INTENTIONS),
+                    "iq4_themes": list(THEMES),
+                    "iq4_it_subcategories": list(IT_SUBCATEGORIES),
                     "verbs": list(VERBS),
                 },
                 "bateria_sections": sec_counts,
@@ -1811,8 +1841,8 @@ _TITLE_EXPORT_COLS = [
     "descripcion",
     "verbo",
     "sujeto_nuevo",
-    "tag1_nuevo",
-    "tag2_nuevo",
+    "iq1_nuevo",
+    "iq2_nuevo",
     "descripcion_nueva",
     "verbo_nuevo",
     "observaciones",
@@ -1844,8 +1874,8 @@ def handle_cellar_export(args: dict[str, Any], **_kwargs: Any) -> str:
                 "descripcion": c["desc"],
                 "verbo": c["verb"],
                 "sujeto_nuevo": "",
-                "tag1_nuevo": "",
-                "tag2_nuevo": "",
+                "iq1_nuevo": "",
+                "iq2_nuevo": "",
                 "descripcion_nueva": "",
                 "verbo_nuevo": "",
                 "observaciones": "",
@@ -1945,9 +1975,9 @@ def _schema(
 
 _FILTER_PROPS: dict[str, Any] = {
     "q": {"type": "string", "description": "Free-text search (title, sujeto, desc, raw, resumen) or numeric NNN list/range."},
-    "tags": {
+    "iqs": {
         "type": "object",
-        "description": "Partial tag map, e.g. {'iq1': 'CyberPanel', 'iq3': 'Troubleshooting'}.",
+        "description": "Partial axis map, e.g. {'iq1': 'CyberPanel', 'iq3': 'Troubleshooting'}.",
     },
     "date_from": {"type": "string", "description": "Start date YYYY-MM-DD (inclusive)."},
     "date_to": {"type": "string", "description": "End date YYYY-MM-DD (inclusive)."},
@@ -1969,7 +1999,7 @@ _FILTER_PROPS: dict[str, Any] = {
 
 CELLAR_SEARCH_SCHEMA = _schema(
     "cellar_search",
-    "Search the session catalogue by text, nine-slot tags, date range, profile, engine, or state.",
+    "Search the session catalogue by text, the nine axis slots, date range, profile, engine, or state.",
     _FILTER_PROPS,
 )
 
@@ -1987,7 +2017,7 @@ CELLAR_SESSION_SCHEMA = _schema(
 
 CELLAR_STATS_SCHEMA = _schema(
     "cellar_stats",
-    "Compute aggregate counts, cost/hours/tokens/posts sums, facet breakdowns, and empty-tag counts for any cellar_search filter.",
+    "Compute aggregate counts, cost/hours/tokens/posts sums, facet breakdowns, and empty-axis counts for any cellar_search filter.",
     {
         **_FILTER_PROPS,
         "facets": {
@@ -2030,7 +2060,7 @@ CELLAR_RENAME_SCHEMA = _schema(
 
 CELLAR_TAG_SCHEMA = _schema(
     "cellar_tag",
-    "Set or clear (null) individual tags (iq1..iq9) on one session or a batch without losing the rest of the title. Gated by dry_run (default true) and confirm=true.",
+    "Set or clear (null) individual axes (iq1..iq9) on one session or a batch without losing the rest of the title. Gated by dry_run (default true) and confirm=true.",
     {
         "n": {"type": ["integer", "array"], "description": "Session NNN or list of NNNs."},
         "id": {"type": ["string", "array"], "description": "Session ID or list of IDs."},
@@ -2038,7 +2068,7 @@ CELLAR_TAG_SCHEMA = _schema(
         "selector": {"type": "object", "description": "Optional selector wrapper {'n', 'id', or 'filter'}."},
         "set": {
             "type": "object",
-            "description": "Tag map to set or clear, e.g. {'iq1': 'CyberPanel', 'iq5': null}.",
+            "description": "Axis map to set or clear, e.g. {'iq1': 'CyberPanel', 'iq5': null}.",
         },
         "dry_run": {"type": "boolean", "description": "Preview only without writing (default true)."},
         "confirm": {"type": "boolean", "description": "Must be true to execute a write."},

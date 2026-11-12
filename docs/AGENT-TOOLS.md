@@ -16,7 +16,7 @@ Conventions used by all of them:
 - **Every write appends to `corrections.yaml`** in `plugin_data_dir()`: `{when, session_id (the
   Hermes session that issued the call), tool, before, after, rule?}`. That log is the plugin's
   memory of being corrected; nothing is learned unless it lands there.
-- **No destructive verbs.** No delete tools. Clearing a tag is `set(null)`; a wrong rename is
+- **No destructive verbs.** No delete tools. Clearing an axis is `set(null)`; a wrong rename is
   undone by renaming again, and the log has the previous value.
 
 ## Read — 4 tools
@@ -24,7 +24,7 @@ Conventions used by all of them:
 ### 1. `cellar_search`
 The workhorse. One call answers "what do I have about X".
 - `q` (text, optional): matches title, sujeto, desc, raw, resumen.
-- `tags`: partial map, e.g. `{"iq1":"Cyberpanel","iq3":"Troubleshooting"}`; ignored keys are fine.
+- `iqs`: partial map, e.g. `{"iq1":"Cyberpanel","iq3":"Troubleshooting"}`; ignored keys are fine.
 - `date_from` / `date_to` (`YYYY-MM-DD`), `prof`, `motor`.
 - `state`: `active` (default) | `cron` | `deleted` | `empty` | `all`.
 - `sort`: `fecha_desc` (default) | `n_asc` | `costo_desc` | `horas_desc`.
@@ -64,7 +64,7 @@ Rename one session or a batch. Two modes:
   `rejected` covers host refusals (e.g. canonical bot chats) and 100-character breaches.
 
 ### 6. `cellar_tag`
-Set or clear individual tags without touching the rest of the title.
+Set or clear individual axes without touching the rest of the title.
 - `selector` (`n`, `id`, or `filter`), `set`: `{iq1: "Cyberpanel", iq5: null}`, `dry_run`, `confirm`.
 - Returns: same envelope as `cellar_rename`. Useful for the "wrong axis" cleanups.
 
@@ -111,7 +111,7 @@ Leaves the machine or comes back into the loop.
 
 ## What I deliberately did not ask for
 
-- **A tool per tag.** `cellar_tag` covers all nine.
+- **A tool per axis.** `cellar_tag` covers all nine.
 - **A delete tool.** Nothing in this plugin deletes; the host refuses and the log remembers.
 - **A GUI editor for the batería.** The owner chats, the assistant calls `cellar_bateria`, and the
   change lands in an append-only log. A form would duplicate a surface the agent covers better.

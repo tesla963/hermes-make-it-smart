@@ -30,7 +30,7 @@ One entry per rule the user taught, with the real examples that taught it.
   examples:
     - { nnn: 748, subject: "Air 2S", iq1: "DJI", iq2: "Ebay" }
     - { nnn: 812, subject: "Trace Minerals", iq1: "Dr. Berg", iq2: "Amazon" }
-  control_question: "Does the tag tell me who makes it, or where we looked?"
+  control_question: "Does the axis tell me who makes it, or where we looked?"
 ```
 
 Three fields, and nothing is lost: the rule, the evidence, and the question to ask when
@@ -68,7 +68,7 @@ up inside "Asistente IA" and verbs ended up in Iq2.
 
 It does not retrain a model, and it does not pretend to. The "intelligence" of this plugin
 is **a written taxonomy plus a curated set of examples plus a deterministic layer that
-enforces the invariants** — 100 characters, unique titles, no subject that repeats its tag,
+enforces the invariants** — 100 characters, unique titles, no subject that repeats its axis,
 ordinals without gaps. The model proposes; the rules dispose.
 
 That is a deliberate design choice. A system whose behaviour cannot be explained to its

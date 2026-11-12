@@ -106,7 +106,7 @@ def fit_description(text: str, budget: int) -> str:
 
 # A comparison is short by nature ("Gemma vs Qwen", 13 chars) but carries real
 # information, so it is exempt from the minimum length. Without this, every
-# "A vs B" description was silently dropped and the title ended in a bare tag.
+# "A vs B" description was silently dropped and the title ended in a bare axis.
 _COMPARATOR = re.compile(r"\s(vs\.?|versus|frente a)\s", re.I)
 
 
@@ -190,7 +190,7 @@ def render(
 ) -> str:
     """Build the title, spending the budget in priority order.
 
-    Subject and tags are never truncated. The description is compressed, then
+    Subject and axes are never truncated. The description is compressed, then
     cut, then dropped. The verb is the first thing to go.
     """
     subject = core_subject(facets.subject) or facets.subject or "Sin Sujeto"

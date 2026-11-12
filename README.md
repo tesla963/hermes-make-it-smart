@@ -76,7 +76,7 @@ Change the marketplace and the same shape still works:
 812 [Trace Minerals] 001 [Dr. Berg] [Amazon] Evaluate the supplement facts · Analizar
 ```
 
-That is the core insight of this project: **subject + two tags is enough to express a
+That is the core insight of this project: **subject + two axes is enough to express a
 complete idea, if each field answers exactly one question.**
 
 The full rules live in [`docs/ALGORITHM.md`](docs/ALGORITHM.md).

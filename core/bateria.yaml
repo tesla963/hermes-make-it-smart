@@ -8,9 +8,9 @@
 # Every user keeps their own. Edit it freely — it is data, not code.
 #
 # How the classifier uses it, in order:
-#   1. `marcas`     — a name found in a subject decides Tag 1 and whether the
+#   1. `marcas`     — a name found in a subject decides iq1 and whether the
 #                     brand leaves the subject.
-#   2. `productos`  — a known product fixes the subject and the model tag.
+#   2. `productos`  — a known product fixes the subject and the model axis.
 #   3. `programas`  — software: its maker, and whether the program name is a
 #                     brand of its own (most open source is).
 #   4. `companias`  — what a company makes, so a company name never becomes a
@@ -27,7 +27,7 @@ updated: 2026-11-09
 owner: jorge
 
 # ---------------------------------------------------------------------------
-# MARCAS — name found in a subject -> Tag 1
+# MARCAS — name found in a subject -> iq1
 #   strip: true  = the brand leaves the subject ("Dell Inspiron" -> "Inspiron")
 #   strip: false = the brand is part of the product name ("ThinkPad P53")
 # ---------------------------------------------------------------------------
@@ -339,7 +339,7 @@ conceptos:
 # This is the default for software.
 # ---------------------------------------------------------------------------
 logistica:
-  # Carriers y sus productos. La marca va al Tag 1; el producto es el sujeto.
+  # Carriers y sus productos. La marca va al iq1; el producto es el sujeto.
   usps:
     iq1: USPS
     pais: Estados Unidos
@@ -358,7 +358,7 @@ logistica:
         es: 1–2 días con garantía de entrega o reembolso.
         sujeto: Priority Mail Express
     nota: >
-      "USPS Ground Advantage" se parte: Tag 1 = USPS, sujeto = "Ground Advantage".
+      "USPS Ground Advantage" se parte: iq1 = USPS, sujeto = "Ground Advantage".
       La marca nunca se queda dentro del sujeto cuando el producto tiene nombre.
   fedex:
     iq1: FedEx

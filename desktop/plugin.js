@@ -20,7 +20,7 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 const ID = 'make-it-smart'
 const NAME = 'Hermes, Make it Smart!'
 const APP_TITLE = 'Make It Smart'
-const VERSION = '0.27.0'
+const VERSION = '0.27.1'
 const ROUTE = '/smart'
 
 /** jsx-runtime helper: keeps uncompiled React code compact and readable. */
@@ -145,6 +145,59 @@ const esIntocable = (d) => Boolean(d && (esCron(d) || d.vacia || esBorrada(d) ||
 
 /** Bot machinery: the canonical Bot Chat and subagent transcripts. Hidden by default. */
 const esBotSession = (d) => Boolean(d && (esBotChat(d) || esSubagent(d)))
+
+/**
+ * Is this row drawn as a child of another row on screen?
+ *
+ * Only a **subagent** session hangs from a parent. `parent_session_id` is broader than
+ * that: the host also sets it on a desktop session that continues one reaped at startup
+ * (end_reason *_orphan_reap) — 151 such rows against 7 subagents — so indenting on the
+ * field alone would claim a hierarchy that is really a continuation. The index already
+ * writes `parent` for subagents only; this predicate keeps the rule here as well, so an
+ * index built by another version cannot bleed the table. A row that names itself is a root.
+ */
+const isChildRow = (row, ids) => Boolean(
+  row && row.parent && row.esBot && row.parent !== row.id && ids && ids.has(row.parent)
+)
+
+/**
+ * Hang each sub-session under its mother, the way Hermes Desktop lists them.
+ * A row is drawn as a child only when its `parent` is among the given rows; a
+ * row whose mother is not visible is drawn as a root. Rows are only reordered,
+ * never added or dropped, so every KPI still counts each session once.
+ * Returns { rows: display order, sub: Set of ids drawn as children }.
+ */
+const jerarquia = (rows) => {
+  const list = Array.isArray(rows) ? rows : []
+  const ids = new Set(list.map((d) => d && d.id).filter(Boolean))
+  const kids = new Map()
+  const sub = new Set()
+  for (const d of list) {
+    if (isChildRow(d, ids)) {
+      const p = d.parent
+      if (!kids.has(p)) kids.set(p, [])
+      kids.get(p).push(d)
+      sub.add(d.id)
+    }
+  }
+  const out = []
+  const seen = new Set()
+  const walk = (d) => {
+    if (!d || seen.has(d)) return
+    seen.add(d)
+    out.push(d)
+    for (const k of kids.get(d.id) || []) walk(k)
+  }
+  for (const d of list) if (!d || !sub.has(d.id)) walk(d)
+  // A parent loop (a→b→a) leaves no root: draw the first one met as a root.
+  for (const d of list) {
+    if (d && !seen.has(d)) {
+      sub.delete(d.id)
+      walk(d)
+    }
+  }
+  return { rows: out, sub }
+}
 
 /* Bilingual synonym table */
 const SIN = {
@@ -281,7 +334,7 @@ function parseTitle(title) {
 }
 
 /**
- * Accept both axis schemas. v0.26.x wrote `tag0`…`tag9`; v0.27.0 writes `iq0`…`iq9`.
+ * Accept both axis schemas. v0.26.x wrote `iq0`…`iq9`; v0.27.0 writes `iq0`…`iq9`.
  * A new panel over an old data directory must not render an empty catalogue, so a
  * missing `iqN` is filled from `tagN` before anything reads the row.
  */
@@ -403,7 +456,7 @@ const I18N = {
     botsTitle: 'Mostrar u ocultar sesiones de bot (Bot Chat y subagentes)',
     showVacio: 'Vacío',
     hideVacio: 'Vacío',
-    buscar: 'Buscar sujeto, tema, tag…',
+    buscar: 'Buscar sujeto, tema, eje…',
     pilar: 'Pilar',
     frente: 'frente de trabajo',
     iq1: 'Marca',
@@ -418,11 +471,11 @@ const I18N = {
     rango: 'Rango',
     motor: 'Motor de IA',
     autor: 'Autor',
-    maquina: 'Tag 6 · Máquina',
+    maquina: 'iq6 · Máquina',
     colN: 'Nº',
     colFecha: 'Fecha',
     colSujeto: 'Sujeto · #',
-    colTags: 'Tags',
+    colIqs: 'Ejes',
     colCosto: 'Costo',
     colHoras: 'Horas',
     colTokens: 'Tokens',
@@ -510,7 +563,7 @@ const I18N = {
     vReg: 'REGLAS QUE APRENDIÓ',
     vCerrar: 'Cerrar',
     v1: 'Catálogo de sesiones · NNN [Sujeto] MMM [Iq1] [Iq2] Descripción · Verbo',
-    v2: 'Nueve tags declarados; iq1 y iq2 en el nombre, el resto filtros',
+    v2: 'Nueve ejes declarados; iq1 y iq2 en el nombre, el resto filtros',
     v3: 'El ordinal <b>MMM</b> fuera del corchete del sujeto',
     v4: 'Sin fecha en el título; la fecha es columna y filtro',
     v5: 'Buscador numérico: <span class="mono">126,305</span> y <span class="mono">50-75</span>',
@@ -539,6 +592,7 @@ const I18N = {
     commitDone: '{n} actualizados · {m} sin cambios',
     revertDone: '{n} títulos restaurados',
     updateStale: 'El índice tiene más de 24 h y está desactualizado; pídele a Hermes: reindexa el catálogo del plugin',
+    subSesion: 'Sub-sesión de subagente: cuelga de la sesión de arriba',
   },
   en: {
     navPrev: 'Previous session',
@@ -560,7 +614,7 @@ const I18N = {
     botsTitle: 'Show or hide bot sessions (Bot Chat and subagent transcripts)',
     showVacio: 'Empty',
     hideVacio: 'Empty',
-    buscar: 'Search subject, topic, tag…',
+    buscar: 'Search subject, topic, axis…',
     pilar: 'Pillar',
     frente: 'work front',
     iq1: 'Maker',
@@ -575,11 +629,11 @@ const I18N = {
     rango: 'Range',
     motor: 'AI engine',
     autor: 'Author',
-    maquina: 'Tag 6 · Machine',
+    maquina: 'iq6 · Machine',
     colN: 'No.',
     colFecha: 'Date',
     colSujeto: 'Subject · #',
-    colTags: 'Tags',
+    colIqs: 'Axes',
     colCosto: 'Cost',
     colHoras: 'Hours',
     colTokens: 'Tokens',
@@ -667,7 +721,7 @@ const I18N = {
     vReg: 'REGLAS QUE APRENDIÓ',
     vCerrar: 'Close',
     v1: 'Session catalogue · NNN [Subject] MMM [Iq1] [Iq2] Description · Verb',
-    v2: 'Nine tags declared; iq1 and iq2 in the name, the rest are filters',
+    v2: 'Nine axes declared; iq1 and iq2 in the name, the rest are filters',
     v3: 'The <b>MMM</b> ordinal sits outside the subject bracket',
     v4: 'No date in the title; the date is a column and a filter',
     v5: 'Numeric search: <span class="mono">126,305</span> and <span class="mono">50-75</span>',
@@ -696,6 +750,7 @@ const I18N = {
     commitDone: '{n} updated · {m} unchanged',
     revertDone: '{n} titles restored',
     updateStale: 'The index is older than 24h and stale; ask Hermes: rebuild plugin catalog',
+    subSesion: 'Subagent sub-session: hangs from the session above',
   },
 }
 
@@ -840,6 +895,7 @@ position:relative;display:flex;flex-direction:column;width:100%;height:100%;min-
 .mmws #tb td.ttitle{padding:6px 8px 2px 0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10.5px;line-height:1.45;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-bottom:none !important;color:#f4e6ee;font-weight:700}
 .mmws tr.t{cursor:pointer}
 .mmws tr.t.sele{background:#251521;box-shadow:inset 3px 0 0 var(--wine2)}
+.mmws #tb .tsub{color:var(--gold);font-weight:700;opacity:.9;margin-right:3px}
 .mmws tr.t td.ncol.t{font-family:ui-monospace,Menlo,monospace;font-size:10.5px;line-height:1.45;font-weight:700;color:#f4e6ee;border-bottom:none !important;vertical-align:baseline}
 .mmws tr.t .ttitle .tfac{color:#f4e6ee;font-weight:700}
 .mmws tr.t .ttitle .tdesc{color:#f4e6ee;font-weight:700;letter-spacing:.005em}
@@ -1302,6 +1358,7 @@ async function loadCatalogue(ctx) {
       vacia: Boolean(idx.vacia != null ? idx.vacia : mc <= 0 && (!claves || claves.length === 0)),
       esCron: Boolean(idx.esCron || /^cron[_-]/i.test(id) || /^cron[_-]/i.test(prof)),
       esBot: Boolean(idx.esBot) || (live && String(live.source || '').toLowerCase() === 'subagent'),
+      parent: idx.parent || '',
       _canonical: Boolean(g),
       isLive,
       runtimeVivo: isLive,
@@ -1381,7 +1438,7 @@ function App({ ctx }) {
   const [f, setF] = useState({
     iq1: null,
     iq2: null,
-    tag3i: null,
+    iq3i: null,
     iq3: null,
     iq4: null,
     iq5: null,
@@ -1669,7 +1726,7 @@ function App({ ctx }) {
       }
     }
     if (!skips.includes('iq3') && f.iq3 && d.pilar !== f.iq3) return false
-    if (!skips.includes('tag3i') && f.tag3i && d.iq3 !== f.tag3i) return false
+    if (!skips.includes('iq3i') && f.iq3i && d.iq3 !== f.iq3i) return false
     if (!skips.includes('iq1') && f.iq1 && d.iq1 !== f.iq1) return false
     if (!skips.includes('iq2') && f.iq2 && d.iq2 !== f.iq2) return false
     if (!skips.includes('iq4') && f.iq4 && d.iq4 !== f.iq4) return false
@@ -1707,7 +1764,7 @@ function App({ ctx }) {
     [sessions, pendingRows, activeTab, f, q, nums, qs, showElim, showVacio, showCron, showBots]
   )
 
-  const sorted = useMemo(() => {
+  const arbol = useMemo(() => {
     const arr = visible.slice()
     arr.sort((a, b) => {
       if (orden.k === 'pending') {
@@ -1731,8 +1788,11 @@ function App({ ctx }) {
       if (x === y) return b.n - a.n
       return (x > y ? 1 : x < y ? -1 : 0) * (orden.asc ? 1 : -1)
     })
-    return arr
+    // Sub-sessions follow their mother when she is visible; table and prev/next agree.
+    return jerarquia(arr)
   }, [visible, orden])
+  const sorted = arbol.rows
+  const subIds = arbol.sub
 
   const facetCounts = (skipKeys, field) => {
     const c = {}
@@ -1769,7 +1829,7 @@ function App({ ctx }) {
   // Active chips list
   const activeChips = useMemo(() => {
     const out = []
-    if (f.tag3i) out.push(['tag3i', f.tag3i])
+    if (f.iq3i) out.push(['iq3i', f.iq3i])
     if (f.iq3) out.push(['iq3', f.iq3])
     if (f.iq1) out.push(['iq1', f.iq1])
     if (f.iq2) out.push(['iq2', f.iq2])
@@ -1817,7 +1877,7 @@ function App({ ctx }) {
     setF({
       iq1: null,
       iq2: null,
-      tag3i: null,
+      iq3i: null,
       iq3: null,
       iq4: null,
       iq5: null,
@@ -1863,8 +1923,8 @@ function App({ ctx }) {
       'pend_mem',
       'pend_skl',
       'sujeto_nuevo',
-      'tag1_nuevo',
-      'tag2_nuevo',
+      'iq1_nuevo',
+      'iq2_nuevo',
       'descripcion_nueva',
       'verbo_nuevo',
       'observaciones',
@@ -1901,10 +1961,10 @@ function App({ ctx }) {
     } catch (_) {
       /* ignore */
     }
-    const tag = '[' + String(nExp).padStart(4, '0') + ']'
+    const pref = '[' + String(nExp).padStart(4, '0') + ']'
     const now = new Date()
     const z = (x) => String(x).padStart(2, '0')
-    const fname = `${tag} ${now.getFullYear()}${z(now.getMonth() + 1)}${z(now.getDate())}_${z(now.getHours())}${z(now.getMinutes())}_${vis.length}sesiones.csv`
+    const fname = `${pref} ${now.getFullYear()}${z(now.getMonth() + 1)}${z(now.getDate())}_${z(now.getHours())}${z(now.getMinutes())}_${vis.length}sesiones.csv`
 
     if (ctx && ctx.files && typeof ctx.files.writeText === 'function') {
       try {
@@ -1922,7 +1982,7 @@ function App({ ctx }) {
     } catch (_) {
       /* headless test fallback */
     }
-    setBtnMsg((p) => ({ ...p, expc: `✔ ${tag} · ${vis.length}` }))
+    setBtnMsg((p) => ({ ...p, expc: `✔ ${pref} · ${vis.length}` }))
     setTimeout(() => setBtnMsg((p) => ({ ...p, expc: '' })), 3000)
   }
 
@@ -2610,10 +2670,10 @@ function App({ ctx }) {
     })
   }
 
-  // Render a foldable radio facet block (iq1, iq2, tag3i, iq3/pilar)
+  // Render a foldable radio facet block (iq1, iq2, iq3i, iq3/pilar)
   const renderFacetBlock = (blockId, labelKey, stateKey, fieldName, sortSpecial) => {
     const isOff = folded.has(blockId)
-    const { c, allValues } = facetCounts([stateKey === 'iq3' ? 'iq3' : stateKey === 'tag3i' ? 'tag3i' : stateKey], fieldName)
+    const { c, allValues } = facetCounts([stateKey === 'iq3' ? 'iq3' : stateKey === 'iq3i' ? 'iq3i' : stateKey], fieldName)
     const FIJOS1 = blockId === 'iq1' ? ['Bot'] : []
     const allKeys = [...new Set([...allValues, ...FIJOS1])]
       .filter((k) => k && ((c[k] || 0) > 0 || f[stateKey] === k))
@@ -2900,6 +2960,8 @@ function App({ ctx }) {
     const tail = cut > 0 ? rawToDisplay.slice(cut + 1).trim() : rawToDisplay
     const isDel = /borrad/i.test(d.sujeto) || esBorrada(d)
     const isSel = Boolean(sel && sel.id === d.id)
+    // A sub-session whose mother is visible hangs under her: 18 px in and a ↳ marker.
+    const esSub = subIds.has(d.id)
 
     return [
       h(
@@ -2912,7 +2974,12 @@ function App({ ctx }) {
         h('td', { className: 'ncol t' }, isCanon ? d.n : ''),
         h(
           'td',
-          { colSpan: pendMap ? 7 : 6, className: 'ttitle' + (isDel ? ' borrada' : '') },
+          {
+            colSpan: pendMap ? 7 : 6,
+            className: 'ttitle' + (isDel ? ' borrada' : ''),
+            style: esSub ? { paddingLeft: '18px' } : undefined,
+          },
+          esSub ? h('span', { className: 'tsub', title: t('subSesion') }, '↳ ') : null,
           h('b', { className: 'tfac' }, head),
           tail ? h('b', { className: 'tdesc' }, ' ' + tail) : null
         )
@@ -3241,7 +3308,7 @@ function App({ ctx }) {
 
           renderFacetBlock('iq1', 'iq1', 'iq1', 'iq1', false),
           renderFacetBlock('iq2', 'iq2', 'iq2', 'iq2', false),
-          renderFacetBlock('iq3', 'iq3', 'tag3i', 'iq3', false),
+          renderFacetBlock('iq3', 'iq3', 'iq3i', 'iq3', false),
           renderFacetBlock('iq4', 'tema', 'iq3', 'pilar', true),
           renderFacetBlock('iq8', 'lblProyecto', 'iq8', 'iq8', false),
 
@@ -3502,7 +3569,7 @@ function App({ ctx }) {
                           setF({
                             iq1: null,
                             iq2: null,
-                            tag3i: null,
+                            iq3i: null,
                             iq3: null,
                             iq4: null,
                             iq5: null,
@@ -3756,7 +3823,7 @@ function App({ ctx }) {
 }
 
 // Named exports so tests/test_plugin.mjs can exercise the pure helpers without React.
-export { numSel, fmtC, fmtH, fmtN, loadCatalogue, canonicalTitle }
+export { numSel, fmtC, fmtH, fmtN, loadCatalogue, canonicalTitle, jerarquia, isChildRow }
 
 export default {
   id: ID,

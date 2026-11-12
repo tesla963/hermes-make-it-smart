@@ -36,7 +36,7 @@ TITLE_RE = re.compile(
 
 COLUMNS = [
     "n", "id", "fecha", "titulo_actual", "sujeto", "iq1", "iq2", "descripcion", "verbo",
-    "sujeto_nuevo", "tag1_nuevo", "tag2_nuevo", "descripcion_nueva", "verbo_nuevo",
+    "sujeto_nuevo", "iq1_nuevo", "iq2_nuevo", "descripcion_nueva", "verbo_nuevo",
     "observaciones",
 ]
 
@@ -70,8 +70,8 @@ def main() -> int:
                     "descripcion": (g["desc"] or "").strip(),
                     "verbo": (g["verb"] or "").strip(),
                     "sujeto_nuevo": "",
-                    "tag1_nuevo": "",
-                    "tag2_nuevo": "",
+                    "iq1_nuevo": "",
+                    "iq2_nuevo": "",
                     "descripcion_nueva": "",
                     "verbo_nuevo": "",
                     "observaciones": "",

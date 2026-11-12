@@ -18,7 +18,7 @@ manual check in the last column is observed.
 | 8 | **`⌥` + right click = menu** | *Abrir sesión · Copiar título · Copiar ficha · Ver la serie · Limpiar filtros* | menu appears only with `⌥` held |
 | 9 | **`⌥↓` / `⌥↑`** | previous/next visible session with the Card following; the card's ▲/▼ buttons mirror the same handler | with the card open, `⌥↓` moves card and selection together |
 | 10 | **Keybinds registered** | `KEYBINDS_AREA`: `smarts.open` = `mod+shift+s`, `smarts.search` = `mod+shift+f`, `smarts.nextSession` = `alt+down`, `smarts.prevSession` = `alt+up` | the four appear in Settings → Keybinds and are rebindable |
-| 11 | **`/` focuses search; pill click filters** | `/` jumps to the aside search box; clicking a pill adds that tag as an active chip | type after `/` and the list narrows; click a pill and a chip appears |
+| 11 | **`/` focuses search; pill click filters** | `/` jumps to the aside search box; clicking a pill adds that axis as an active chip | type after `/` and the list narrows; click a pill and a chip appears |
 
 ## Deliberate deviations from platform convention
 
@@ -31,4 +31,4 @@ manual check in the last column is observed.
 
 - The hours statistic (frozen by decision, not a bug to fix now).
 - Resizing the Card by keyboard — mouse drag only, and reading does not require it.
-- Any change to the naming algorithm or the tag axes.
+- Any change to the naming algorithm or the axis set.

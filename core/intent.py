@@ -23,12 +23,12 @@ import re
 from dataclasses import dataclass
 from typing import Any
 
-# Closed vocabulary. iq3 must be one of these seven or empty — a free-form tag
+# Closed vocabulary. iq3 must be one of these seven or empty — a free-form axis
 # is a filter that cannot be clicked twice. The seven come from the rule
 # `tag-structure-2026-11-10` in core/corrections.yaml, which outranks every older
 # intention rule: the older names (Update, Version, Feature, Costo, Administrar,
 # Respaldar, Comparación, Diagnosticar) survive as signals inside the canonical
-# intention they belong to, not as tags of their own.
+# intention they belong to, not as axes of their own.
 INTENTS: dict[str, dict[str, Any]] = {
     "Instalar": {
         # was: Instalar + Update + Version + Feature

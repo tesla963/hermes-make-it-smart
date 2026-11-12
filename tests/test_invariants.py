@@ -86,7 +86,7 @@ def test_subject_strips_action_prefix() -> None:
     assert core_subject("Auto-arranque Gateway Telegram") == "Gateway Telegram"
 
 
-def test_subject_repeating_tag1_is_flagged() -> None:
+def test_subject_repeating_iq1_is_flagged() -> None:
     t = "748 [DJI 001] [DJI] 19ago algo que decir"
     problems = validate(t, subject="DJI", iq1="DJI")
     assert "subject repeats iq1" in problems

@@ -123,7 +123,7 @@ def main() -> int:
                     new_iq2 = intent.name
                     why.append(f"iq2: {iq2 or '(vacío)'} → {intent.name}")
 
-            if args.tag2_only and (new_subject != subject or new_iq1 != iq1):
+            if args.iq2_only and (new_subject != subject or new_iq1 != iq1):
                 # The subject and Iq1 recuts still need a human eye: "Grok Bot"
                 # is a product, "Windows" is not Apple. Iq2 is the safe half.
                 skipped += 1

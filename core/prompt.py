@@ -191,9 +191,9 @@ machine     The equipment a spec or a component belongs to: "Mac mini M4",
             "ThinkPad P53", "VPS", "Teléfono". Not only computers — anything a
             specification can belong to. Otherwise "".
 
-description What subject + tags could NOT say. One short telegraphic clause,
+description What subject + axes could NOT say. One short telegraphic clause,
             written in {language}, no filler, no restating the subject.
-            May be "" if the subject and tags already say everything.
+            May be "" if the subject and axes already say everything.
 
 verb        The ACTION taken, from the verb list below, or "".
             This becomes an appendix at the end of the title.
@@ -236,7 +236,7 @@ A thing someone buys has a shape of its own:
     iq2    = the model              "COM-6900"
     pillar  = "Productos"            (or "Servicios" for a service)
 
-The model is NOT part of the subject: it is the second tag, which is what
+The model is NOT part of the subject: it is the second axis, which is what
 distinguishes two otherwise identical items.
 
 ## Abbreviations
