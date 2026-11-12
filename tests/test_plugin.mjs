@@ -140,5 +140,30 @@ if (typeof isChildRow === 'function') {
   ok(!isChildRow({ id: 'h', parent: 'madre', esBot: true }, null), 'sin conjunto visible: no adivina')
 } else ok(false, 'isChildRow se exporta')
 
+console.log('\n§ esquema de ejes (migración)')
+const { esEsquemaViejo, migrarEjes, contarEjes } = mod
+if (typeof esEsquemaViejo === 'function') {
+  // Quien viene de < 0.27.0 trae tagN y ningún sello.
+  ok(esEsquemaViejo({ sessions: [{ id: 'a', tag1: 'Apple' }] }), 'tagN sin sello es esquema viejo')
+  ok(esEsquemaViejo({ facets: { tag3: { v: 1 } } }), 'también en objetos anidados')
+  // Quien ya está en 0.27.0+ no debe ver nunca el aviso.
+  ok(!esEsquemaViejo({ schema: 2, sessions: [{ id: 'a', iq1: 'Apple' }] }), 'sello 2 con iqN no es viejo')
+  ok(!esEsquemaViejo({ schema: 2, sessions: [] }), 'sello 2 vacío no es viejo')
+  ok(!esEsquemaViejo({ sessions: [{ id: 'a', iq1: 'Apple' }] }), 'iqN sin sello tampoco')
+  ok(!esEsquemaViejo(null) && !esEsquemaViejo({}), 'sin datos no hay nada que migrar')
+
+  const viejo = { generated: 'x', sessions: [{ id: 'a', tag0: 'Sujeto', tag1: 'Apple', sujeto: 'Mac mini' }], facets: { tag3: { n: 1 } } }
+  const { data, renamed } = migrarEjes(viejo)
+  ok(renamed === 3, `renombra las 3 claves (${renamed})`)
+  ok(data.schema === 2, 'sella schema 2')
+  ok(data.sessions[0].iq1 === 'Apple' && data.sessions[0].sujeto === 'Mac mini', 'conserva los valores')
+  ok(!JSON.stringify(data).includes('"tag'), 'no queda ninguna clave tag')
+  ok(contarEjes(data) === 3, 'cuenta las claves de eje del resultado')
+
+  // Idempotente: migrar lo ya migrado no cambia nada.
+  const segunda = migrarEjes(data)
+  ok(segunda.renamed === 0 && JSON.stringify(segunda.data) === JSON.stringify(data), 'la segunda pasada no cambia nada')
+} else ok(false, 'esEsquemaViejo se exporta')
+
 console.log(failures ? `\n${failures} fallo(s)` : '\nTODO OK')
 process.exit(failures ? 1 : 0)

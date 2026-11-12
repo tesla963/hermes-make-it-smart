@@ -333,6 +333,119 @@ function parseTitle(title) {
   return m && m.groups ? m.groups : null
 }
 
+/* ------------------------------------------------------------------ *
+ * Esquema de los ejes: v1 usaba tag0…tag9, v2 usa iq0…iq9.
+ *
+ * Solo un usuario que venga de una versión ANTERIOR a 0.27.0 tiene datos v1.
+ * Quien esté en 0.27.0 o superior ya trae `"schema": 2` y no debe ver ningún
+ * aviso de migración: el sello es la prueba, no la versión instalada.
+ * ------------------------------------------------------------------ */
+const ESQUEMA_ACTUAL = 2
+const CLAVE_VIEJA = /^tag(\d)$/
+const CLAVE_NUEVA = /^iq(\d)$/
+
+function tieneClavesViejas(nodo, depth) {
+  if (!nodo || typeof nodo !== 'object' || (depth || 0) > 12) return false
+  if (Array.isArray(nodo)) return nodo.some((x) => tieneClavesViejas(x, (depth || 0) + 1))
+  for (const k of Object.keys(nodo)) {
+    if (CLAVE_VIEJA.test(k)) return true
+    if (tieneClavesViejas(nodo[k], (depth || 0) + 1)) return true
+  }
+  return false
+}
+
+/** ¿Este artefacto viene de un plugin anterior a 0.27.0? */
+function esEsquemaViejo(data) {
+  if (!data || typeof data !== 'object') return false
+  const marca = Number(data.schema)
+  if (Number.isFinite(marca) && marca >= ESQUEMA_ACTUAL) return false
+  return tieneClavesViejas(data, 0)
+}
+
+/** tagN → iqN en las claves, a cualquier profundidad. Los valores no se tocan. */
+function migrarEjes(nodo) {
+  let renombradas = 0
+  const walk = (n) => {
+    if (Array.isArray(n)) return n.map(walk)
+    if (!n || typeof n !== 'object') return n
+    const out = {}
+    for (const [k, v] of Object.entries(n)) {
+      const m = CLAVE_VIEJA.exec(k)
+      if (m) renombradas += 1
+      out[m ? `iq${m[1]}` : k] = walk(v)
+    }
+    return out
+  }
+  const datos = walk(nodo)
+  if (datos && typeof datos === 'object' && !Array.isArray(datos)) datos.schema = ESQUEMA_ACTUAL
+  return { data: datos, renamed: renombradas }
+}
+
+/** Cuántas claves iqN trae, para poder informar el resultado al usuario. */
+function contarEjes(data) {
+  let n = 0
+  const walk = (x, depth) => {
+    if (!x || typeof x !== 'object' || depth > 12) return
+    if (Array.isArray(x)) { x.forEach((y) => walk(y, depth + 1)); return }
+    for (const [k, v] of Object.entries(x)) {
+      if (CLAVE_NUEVA.test(k)) n += 1
+      walk(v, depth + 1)
+    }
+  }
+  walk(data, 0)
+  return n
+}
+
+/**
+ * Deja rastro de cada commit.
+ *
+ * `commit-backup-<stamp>.json` ya guarda el lote completo, pero el panel solo
+ * recuerda el último en `commit-last.json`: si el usuario desinstala el plugin,
+ * no queda forma de devolver las sesiones a su nombre original. Aquí se añaden
+ * dos piezas que sí sobreviven:
+ *
+ *   titles-journal.jsonl  una línea por commit: cuándo, cuántas y qué cambió.
+ *   titles-origin.json    el primer título conocido de cada sesión; no se
+ *                         sobrescribe nunca, así que restaurar devuelve la base
+ *                         a como estaba antes de que el plugin la tocara.
+ *
+ * Nunca lanza: si el journal falla, el commit de los títulos ya está hecho y no
+ * se debe deshacer por un problema de registro.
+ */
+async function appendRenameJournal(filesApi, entries) {
+  if (!filesApi || typeof filesApi.writeText !== 'function') return false
+  const lista = Array.isArray(entries) ? entries.filter((e) => e && e.id) : []
+  if (!lista.length) return false
+  try {
+    const origenPrev = await filesApi.readText('data', 'titles-origin.json').catch(() => null)
+    let origen = {}
+    if (origenPrev && origenPrev.ok && origenPrev.text) {
+      try { origen = JSON.parse(origenPrev.text) || {} } catch (_) { origen = {} }
+    }
+    const ts = new Date().toISOString()
+    let nuevos = 0
+    for (const e of lista) {
+      if (!origen[e.id] && typeof e.title_before === 'string') {
+        origen[e.id] = { title: e.title_before, ts }
+        nuevos += 1
+      }
+    }
+    if (nuevos) await filesApi.writeText('data', 'titles-origin.json', JSON.stringify(origen))
+
+    const linea = JSON.stringify({
+      ts,
+      count: lista.length,
+      changes: lista.map((e) => ({ id: e.id, before: e.title_before, after: e.title_after })),
+    })
+    const prev = await filesApi.readText('data', 'titles-journal.jsonl').catch(() => null)
+    const texto = (prev && prev.ok && prev.text ? prev.text : '') + linea + '\n'
+    await filesApi.writeText('data', 'titles-journal.jsonl', texto)
+    return true
+  } catch (_) {
+    return false
+  }
+}
+
 /**
  * Accept both axis schemas. v0.26.x wrote `iq0`…`iq9`; v0.27.0 writes `iq0`…`iq9`.
  * A new panel over an old data directory must not render an empty catalogue, so a
@@ -592,6 +705,17 @@ const I18N = {
     commitDone: '{n} actualizados · {m} sin cambios',
     revertDone: '{n} títulos restaurados',
     updateStale: 'El índice tiene más de 24 h y está desactualizado; pídele a Hermes: reindexa el catálogo del plugin',
+    migTitle: 'La base de sesiones usa el formato anterior',
+    migBody: 'Tus datos se guardaron con la nomenclatura vieja de los ejes (tag0…tag9). Para seguir usándolos hay que actualizarlos a iq0…iq9. Antes de escribir nada se guarda un backup de index.json y facets.json.',
+    migNow: 'Actualizar y hacer backup',
+    migLater: 'Ahora no',
+    migConfirm: '¿Actualizar la base de sesiones a la nomenclatura nueva?\n\nSe guardará un backup de index.json y facets.json antes de escribir.',
+    migDone: 'Actualizado: {n} claves migradas · backup: {f}',
+    migFail: 'No se pudo actualizar: {e}',
+    restTitle: 'Restaurar títulos originales',
+    restConfirm: '¿Devolver {n} sesiones a su título original?\n\nÚtil antes de desinstalar el plugin.',
+    restDone: 'Restauradas: {n}',
+    restNone: 'Todavía no hay títulos originales guardados',
     subSesion: 'Sub-sesión de subagente: cuelga de la sesión de arriba',
   },
   en: {
@@ -750,6 +874,17 @@ const I18N = {
     commitDone: '{n} updated · {m} unchanged',
     revertDone: '{n} titles restored',
     updateStale: 'The index is older than 24h and stale; ask Hermes: rebuild plugin catalog',
+    migTitle: 'The session database uses the old format',
+    migBody: 'Your data was saved with the old axis names (tag0…tag9). To keep using it, the keys must be updated to iq0…iq9. A backup of index.json and facets.json is written before anything changes.',
+    migNow: 'Update and back up',
+    migLater: 'Not now',
+    migConfirm: 'Update the session database to the new axis names?\n\nindex.json and facets.json will be backed up first.',
+    migDone: 'Updated: {n} keys migrated · backup: {f}',
+    migFail: 'Could not update: {e}',
+    restTitle: 'Restore original titles',
+    restConfirm: 'Return {n} sessions to their original title?\n\nUseful before uninstalling the plugin.',
+    restDone: 'Restored: {n}',
+    restNone: 'No original titles saved yet',
     subSesion: 'Subagent sub-session: hangs from the session above',
   },
 }
@@ -1413,6 +1548,8 @@ async function loadCatalogue(ctx) {
     newCount: merged.length - canonicalCount,
     fromLiveRpc: liveById.size > 0,
     cronInfo: { vacias: vaciasCron, jobs_activos: jobsActivos },
+    // Solo un usuario que venga de una versión anterior a 0.27.0 trae datos v1.
+    esquemaViejo: esEsquemaViejo(idxData) || esEsquemaViejo(facetsMap),
     errors,
     pendData,
     pendMap,
@@ -1475,6 +1612,8 @@ function App({ ctx }) {
   const [isCommitting, setIsCommitting] = useState(false)
   const [isReverting, setIsReverting] = useState(false)
   const [staleNotice, setStaleNotice] = useState('')
+  const [esqViejo, setEsqViejo] = useState(false)
+  const [migrando, setMigrando] = useState(false)
   const [btnMsg, setBtnMsg] = useState({
     copia: '',
     expc: '',
@@ -1526,6 +1665,7 @@ function App({ ctx }) {
     setPendData(res.pendData || null)
     setPendMap(res.pendMap || null)
     setPendAttr(res.pendAttr || null)
+    setEsqViejo(Boolean(res.esquemaViejo))
     setLoading(false)
     // Open the newest year node in Fecha tree automatically
     const years = [...new Set(res.sessions.map((d) => (d.mes || '').slice(0, 4)).filter(Boolean))].sort().reverse()
@@ -1557,6 +1697,7 @@ function App({ ctx }) {
         setPendData(res.pendData || null)
         setPendMap(res.pendMap || null)
         setPendAttr(res.pendAttr || null)
+        setEsqViejo(Boolean(res.esquemaViejo))
         const years = [...new Set(res.sessions.map((d) => (d.mes || '').slice(0, 4)).filter(Boolean))].sort().reverse()
         if (years.length) {
           setOpenNodes(new Set(['y:' + years[0], 'init:' + years[0]]))
@@ -2470,11 +2611,97 @@ function App({ ctx }) {
           setPendData(res.pendData || null)
           setPendMap(res.pendMap || null)
           setPendAttr(res.pendAttr || null)
+          setEsqViejo(Boolean(res.esquemaViejo))
         }
       } catch (_) {}
       const pendingRevert = lastBackup && lastBackup.committed && !lastBackup.reverted
       await createCommitBackup(rows, { keepLedger: pendingRevert })
     }
+  }
+
+  /**
+   * Migrar los datos de un plugin anterior a 0.27.0 al esquema iq0…iq9.
+   *
+   * El panel no ejecuta Python, así que la migración se hace aquí, en JS, sobre
+   * los mismos archivos que el panel pinta. El orden importa: primero se copia el
+   * texto crudo tal cual a un backup, y solo después se escribe. Si algo falla a
+   * mitad, el backup ya está y los datos originales siguen en disco.
+   */
+  const migrarEsquema = async () => {
+    const filesApi = (ctx && ctx.files) || (host && host.files)
+    if (!filesApi || typeof filesApi.writeText !== 'function') {
+      setBtnMsg((p2) => ({ ...p2, mig: t('migFail', { e: 'files API no disponible' }) }))
+      return
+    }
+    if (!window.confirm(t('migConfirm'))) return
+    setMigrando(true)
+    try {
+      const stamp = getBackupStamp()
+      const lee = async (nombre) => {
+        const r = await filesApi.readText('data', nombre).catch(() => null)
+        return r && r.ok && r.text ? r.text : null
+      }
+      const idxTxt = await lee('index.json')
+      const facTxt = await lee('facets.json')
+      if (!idxTxt && !facTxt) throw new Error('no hay index.json ni facets.json')
+      let claves = 0
+      const nombreBackup = `index.pre-iq_${stamp}.json`
+      if (idxTxt) {
+        await filesApi.writeText('data', nombreBackup, idxTxt)
+        const m = migrarEjes(JSON.parse(idxTxt))
+        claves += m.renamed
+        await filesApi.writeText('data', 'index.json', JSON.stringify(m.data))
+      }
+      if (facTxt) {
+        await filesApi.writeText('data', `facets.pre-iq_${stamp}.json`, facTxt)
+        const m = migrarEjes(JSON.parse(facTxt))
+        claves += m.renamed
+        await filesApi.writeText('data', 'facets.json', JSON.stringify(m.data))
+      }
+      setEsqViejo(false)
+      setBtnMsg((p2) => ({ ...p2, mig: t('migDone', { n: claves, f: nombreBackup }) }))
+      await refreshData()
+    } catch (e) {
+      setBtnMsg((p2) => ({ ...p2, mig: t('migFail', { e: String((e && e.message) || e) }) }))
+    } finally {
+      setMigrando(false)
+    }
+  }
+
+  /**
+   * Devuelve cada sesión a su título original (el primero que el plugin vio) y
+   * describe cuántas quedaron como estaban. Es la salida limpia antes de
+   * desinstalar: sin esto, los títulos se quedan escritos en la base de Hermes.
+   */
+  const restaurarOriginales = async () => {
+    const filesApi = (ctx && ctx.files) || (host && host.files)
+    if (!filesApi) return
+    const res = await filesApi.readText('data', 'titles-origin.json').catch(() => null)
+    if (!res || !res.ok || !res.text) {
+      setBtnMsg((p2) => ({ ...p2, resto: t('restNone') }))
+      return
+    }
+    let origen = {}
+    try { origen = JSON.parse(res.text) || {} } catch (_) { origen = {} }
+    const ids = Object.keys(origen)
+    if (!ids.length) {
+      setBtnMsg((p2) => ({ ...p2, resto: t('restNone') }))
+      return
+    }
+    if (!window.confirm(t('restConfirm', { n: ids.length }))) return
+    setIsCommitting(true)
+    let ok = 0
+    for (const id of ids) {
+      try {
+        const r = await callRpc(ctx, 'session.resume', { session_id: id, lazy: true, omit_messages: true })
+        const sid = (r && r.session_id) || id
+        await callRpc(ctx, 'session.title', { session_id: sid, title: origen[id].title })
+        ok += 1
+      } catch (_) {}
+    }
+    setBtnMsg((p2) => ({ ...p2, resto: t('restDone', { n: ok }) }))
+    setIsCommitting(false)
+    await refreshData()
   }
 
   const handleCommit = async () => {
@@ -2536,6 +2763,8 @@ function App({ ctx }) {
       prev.map((s) => (idMap.has(s.id) ? { ...s, raw: idMap.get(s.id) } : s))
     )
     await syncIndexRaw(idMap)
+    // Rastro permanente: qué se renombró y el título original de cada sesión.
+    await appendRenameJournal((ctx && ctx.files) || (host && host.files), targets)
 
     const updatedBackup = {
       ...curBackup,
@@ -3162,6 +3391,35 @@ function App({ ctx }) {
         )
       : null,
 
+    /* ---------- Migración de esquema: solo datos anteriores a 0.27.0, solo en Testing ---------- */
+    esqViejo && activeTab === 'testing'
+      ? h(
+          'div',
+          { className: 'aviso', id: 'avisoEsquema', style: { margin: '6px 16px' } },
+          h(
+            'div',
+            { className: 'avhead' },
+            h('b', null, '⚠ ' + t('migTitle')),
+            h(
+              'div',
+              { className: 'acc' },
+              h(
+                'button',
+                { id: 'btnMigrar', onClick: migrarEsquema, disabled: migrando },
+                migrando ? '…' : t('migNow')
+              ),
+              h(
+                'button',
+                { className: 'ghost', onClick: () => setEsqViejo(false), disabled: migrando },
+                t('migLater')
+              )
+            )
+          ),
+          h('div', null, t('migBody')),
+          btnMsg && btnMsg.mig ? h('div', { style: { marginTop: '6px' } }, btnMsg.mig) : null
+        )
+      : null,
+
     /* ---------- Visible Diagnostic Error Banner ---------- */
     rpcErrors && rpcErrors.length > 0
       ? h(
@@ -3199,6 +3457,36 @@ function App({ ctx }) {
           )
         )
       : null,
+
+    /* ---------- Migración de esquema: solo datos anteriores a 0.27.0, solo en Testing ---------- */
+    esqViejo && activeTab === 'testing'
+      ? h(
+          'div',
+          { className: 'aviso', id: 'avisoEsquema', style: { margin: '6px 16px' } },
+          h(
+            'div',
+            { className: 'avhead' },
+            h('b', null, '⚠ ' + t('migTitle')),
+            h(
+              'div',
+              { className: 'acc' },
+              h(
+                'button',
+                { id: 'btnMigrar', onClick: migrarEsquema, disabled: migrando },
+                migrando ? '…' : t('migNow')
+              ),
+              h(
+                'button',
+                { className: 'ghost', onClick: () => setEsqViejo(false), disabled: migrando },
+                t('migLater')
+              )
+            )
+          ),
+          h('div', null, t('migBody')),
+          btnMsg && btnMsg.mig ? h('div', { style: { marginTop: '6px' } }, btnMsg.mig) : null
+        )
+      : null,
+
 
     /* ---------- Body (Aside + Main + Slide-over Detail Panel) ---------- */
     h(
@@ -3699,6 +3987,18 @@ function App({ ctx }) {
                   },
                   btnMsg.revert || t('revertBtn')
                 ),
+            h(
+              'button',
+              {
+                className: 'ghost',
+                id: 'btnRestaurar',
+                disabled: isCommitting || isReverting,
+                onClick: restaurarOriginales,
+                title: t('restTitle'),
+                style: { marginLeft: '10px', fontSize: '11px', padding: '3px 8px' },
+              },
+              btnMsg.resto || t('restTitle')
+            ),
             btnMsg.foot ? h('span', { className: 'footmsg' }, btnMsg.foot) : null
           )
         : h('div', { className: 'footbtns' }),
@@ -3823,7 +4123,9 @@ function App({ ctx }) {
 }
 
 // Named exports so tests/test_plugin.mjs can exercise the pure helpers without React.
-export { numSel, fmtC, fmtH, fmtN, loadCatalogue, canonicalTitle, jerarquia, isChildRow }
+export { numSel, fmtC, fmtH, fmtN, loadCatalogue, canonicalTitle, jerarquia, isChildRow,
+  esEsquemaViejo, migrarEjes, contarEjes, ESQUEMA_ACTUAL
+}
 
 export default {
   id: ID,
