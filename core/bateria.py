@@ -19,21 +19,83 @@ from typing import Any
 BATERIA_PATH = Path(__file__).with_name("bateria.yaml")
 
 
+def _deep_merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
+    """Merge two batteries **by key**: the override wins only where it speaks.
+
+    A section present in both is merged entry by entry, so a personal battery that
+    defines one brand does not delete the other twenty-five. Scalars and lists
+    replace whole.
+    """
+    out = dict(base)
+    for key, value in (override or {}).items():
+        if value is None:
+            # An empty section in the personal battery means "nothing said here",
+            # not "delete this section". Skipping None keeps the manual intact.
+            continue
+        current = out.get(key)
+        if isinstance(current, dict) and isinstance(value, dict):
+            out[key] = _deep_merge(current, value)
+        else:
+            out[key] = value
+    return out
+
+
+def _personal_path() -> Path | None:
+    """The owner's own battery, or None when it cannot be resolved."""
+    try:
+        from .paths import bateria_personal  # noqa: PLC0415
+
+        p = bateria_personal()
+        return p if p.exists() else None
+    except Exception:  # noqa: BLE001
+        return None
+
+
 @lru_cache(maxsize=1)
-def load_bateria(path: str | None = None) -> dict[str, Any]:
-    """Read the cheatsheet. A missing PyYAML degrades to an empty sheet."""
-    p = Path(path) if path else BATERIA_PATH
-    if not p.exists():
+def _load_packaged() -> dict[str, Any]:
+    """The manual that travels with the plugin, cached for the process."""
+    return _read_yaml(BATERIA_PATH)
+
+
+def _read_yaml(path: Path) -> dict[str, Any]:
+    """Read one YAML battery. A missing PyYAML degrades to an empty sheet."""
+    if not path.exists():
         return {}
     try:
         import yaml  # noqa: PLC0415
-    except Exception:
+    except Exception:  # noqa: BLE001
         return {}
     try:
-        data = yaml.safe_load(p.read_text(encoding="utf-8"))
-    except Exception:
+        data = yaml.safe_load(path.read_text(encoding="utf-8"))
+    except Exception:  # noqa: BLE001
         return {}
     return data if isinstance(data, dict) else {}
+
+
+def load_bateria(path: str | None = None, merge_personal: bool = True) -> dict[str, Any]:
+    """Read the cheatsheet: the packaged manual plus, by default, the owner's own.
+
+    The contract at the top of ``bateria.personal.yaml`` says the classifier reads
+    both and that the owner's experience wins over the manual. This is where that
+    promise is kept: the two are merged key by key, and the personal battery
+    overrides only the entries it actually defines.
+
+    Pass ``merge_personal=False`` (or an explicit ``path``) for an objective-only
+    read. The personal file is re-read on every call, so editing it takes effect
+    on the next classification without restarting anything.
+    """
+    if path is not None:
+        return _read_yaml(Path(path))
+
+    data = _load_packaged()
+    if not merge_personal or not data:
+        return data
+
+    personal = _personal_path()
+    if personal is None:
+        return data
+    extra = _read_yaml(personal)
+    return _deep_merge(data, extra) if extra else data
 
 
 def brand_of(subject: str, bateria: dict[str, Any] | None = None) -> tuple[str, bool] | None:
