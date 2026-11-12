@@ -202,10 +202,35 @@ None of that is expressible as a prompt.
 ## Installation
 
 ```bash
+# 1. install the plugin (the panel, the ten agent tools and the indexer)
 hermes plugins install https://github.com/tesla963/hermes-make-it-smart --enable
+
+# 2. build the index the panel paints — this is what names your sessions
+cd ~/.hermes/plugins/hermes-make-it-smart
+~/.hermes/hermes-agent/scripts/run-in-hermes-env python3 tools/build_index.py
+
+# 3. restart Hermes Desktop and open "Make It Smart" in the sidebar
 ```
 
+`hermes plugins install` downloads the whole repository — `plugin.yaml`, `tools/`, `core/`,
+`desktop/plugin.js` — into `~/.hermes/plugins/hermes-make-it-smart/`; Electron copies the panel
+from there into its own folder when the plugin is enabled, so nothing has to be copied by hand.
+
+Step 2 is not optional: the panel only paints `index.json`. Installed without it, the window
+opens but shows your sessions with the names Hermes gave them, unclassified — the plugin looks
+broken when it is only unindexed. From then on you can re-run that command, or just ask Hermes
+*"reindex the plugin catalogue"* (the `cellar_index` tool does the same thing).
+
 Requires Hermes Agent with plugin support. Python 3.11+.
+
+### Upgrading from 0.26.x or older
+
+Nothing to do by hand. The panel reads both key sets, so `tag0`…`tag9` data keeps painting
+correctly after the upgrade, and the first reindex migrates it: `tools/build_index.py` calls
+`tools/migrate_axes.py` before rebuilding, which copies the old files to
+`~/.hermes/plugin-data/make-it-smart/backups/`, renames the keys to `iq0`…`iq9`, stamps
+`"schema": 2` and rewrites them atomically. Running it twice is harmless — the second pass
+reports `already-current`.
 
 ## Disclosure
 

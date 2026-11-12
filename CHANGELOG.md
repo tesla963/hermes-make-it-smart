@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.27.2 — 12-nov-2026 · the install instructions a judge will follow
+
+### Fixed
+- **The README's Installation section stopped at the install command.** A reader who installed
+  the plugin and opened the panel would have seen sessions with the names Hermes gave them and
+  no classification — the plugin looking broken when it was only unindexed. The section now
+  carries the index step, says why it is not optional, and points at the alternative ("ask
+  Hermes to reindex the catalogue", the `cellar_index` tool).
+- **The path in that step was wrong and was corrected by measurement**: `hermes plugins install`
+  downloads the whole repository into `~/.hermes/plugins/hermes-make-it-smart/` — `plugin.yaml`,
+  `tools/`, `core/`, `desktop/plugin.js` — and Electron copies the panel from there into its own
+  folder. It is not `~/.hermes/desktop-plugins/…`, which is where a hand copy lands. Verified by
+  installing `v0.27.1` into a throwaway `HERMES_HOME`: version 0.27.1, `tools/build_index.py`
+  present, `core/`, `adapters/`, `tests/` and `docs/` all there.
+- **A section for upgrades** now states what happens on its own: the panel reads both key sets,
+  so old `tagN` data keeps painting, and the first reindex migrates it with a backup, the
+  `"schema": 2` stamp and an atomic replace.
+
 ## 0.27.1 — 12-nov-2026 · sub-sessions hang from their mother, and the rename finishes
 
 ### Added
