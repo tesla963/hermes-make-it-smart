@@ -151,7 +151,7 @@ synchronised to the same SHA-256.
 git clone https://github.com/tesla963/hermes-make-it-smart
 cd hermes-make-it-smart
 python3 tools/build_index.py          # builds index.json from your state.db (read-only)
-cp desktop/plugin.js ~/.hermes/desktop-plugins/make-all-my-work-smart/plugin.js
+cp desktop/plugin.js ~/.hermes/desktop-plugins/make-it-smart/plugin.js   # id in use since v0.25.0
 ```
 
 Restart Hermes Desktop and open **Make It Smart** in the sidebar. The full functional specification

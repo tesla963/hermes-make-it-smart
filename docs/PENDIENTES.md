@@ -28,10 +28,12 @@ Steps:
 
 ## 2 · Internal identifier — ✅ DONE (2026-11-11)
 
-The internal id is `make-all-my-work-smart` everywhere, same as the visible
-name. Verified: the index rebuilds at
-`~/.hermes/plugin-data/make-all-my-work-smart/index.json` with **910 sessions**,
-460 subjects, tag3 in 570 and tag4 in 854.
+The id was unified to `make-all-my-work-smart` in this step. **Superseded the same
+day:** the final rename (v0.25.0, 2026-11-11) settled on the manifest name
+`hermes-make-it-smart` and the internal id `make-it-smart`, so the data now lives at
+`~/.hermes/plugin-data/make-it-smart/index.json`. Measured at the time: **910 sessions**,
+460 subjects, tag3 in 570 and tag4 in 854. The `Now` column below is the intermediate
+id from this step, not the final one.
 
 | File | Before | Now |
 |---|---|---|
@@ -71,15 +73,19 @@ only once**; four of them concentrate 206 sessions. The full map is in
 `tests/eval/` and the 50-session set are frozen and **have not been run against
 the new schema**. Without that, refining the rules is guesswork.
 
-## 6 · Publish the delivery repo — Wednesday
+## 6 · Publish the delivery repo — ✅ DONE (2026-11-11, 16:22)
+
+The repo made public was `tesla963/hermes-make-it-smart`:
 
 ```bash
-gh repo edit tesla963/make-all-my-work-smart \
+gh repo edit tesla963/hermes-make-it-smart \
   --visibility public --accept-visibility-change-consequences
 ```
 
-Only that repo. `hermes-make-all-my-work-smart` (data and internal documents)
-stays private **always**.
+The predecessor repo `tesla963/make-all-my-work-smart` was renamed to
+`tesla963/archived-plugin` and stays private and archived. Data and internal
+documents (`reports/`) were never published. Catalog PR:
+`NousResearch/hermes-agent#154009`.
 
 ## 7 · Cron hygiene notice — ✅ implemented in the native plugin
 
