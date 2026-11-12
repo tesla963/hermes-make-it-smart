@@ -701,18 +701,24 @@ position:relative;display:flex;flex-direction:column;width:100%;height:100%;min-
 .mmws .headtab::after{right:0}
 .mmws .headtab:first-child::before,.mmws .headtab:first-child::after{background:var(--ok)}
 .mmws .headtab:last-child::before,.mmws .headtab:last-child::after{background:var(--gold)}
-.mmws .headtab:hover{color:var(--tx);background:rgba(255,255,255,.04)}
+.mmws .headtab:hover{color:var(--tx)}
 .mmws .headtab:hover::before,.mmws .headtab:hover::after{opacity:.75}
-.mmws .headtab.on{background:transparent;color:#fff;border-bottom-color:var(--ok);box-shadow:none}
+.mmws .headtab.on{color:#fff}
 .mmws .headtab.on::before,.mmws .headtab.on::after{opacity:1}
-.mmws .headtab.on.testing{background:transparent;color:var(--gold);border-bottom-color:var(--gold)}
+.mmws .headtab.on.testing{color:var(--gold)}
 .mmws .headtab.on.testing::before,.mmws .headtab.on.testing::after{background:var(--gold);opacity:1}
-/* La regla genérica .mmws button:hover{border-color:var(--wine)} pintaba de rojo
-   el borde inferior de la pestaña al pasar el ratón. Estas tres la anulan para los
-   tabs: el color de la pestaña lo decide su propio color, nunca el vino genérico. */
-.mmws .headtabs .headtab:hover{border-color:transparent;border-bottom-color:transparent}
-.mmws .headtabs .headtab.on:hover{border-bottom-color:var(--ok)}
-.mmws .headtabs .headtab.on.testing:hover{border-bottom-color:var(--gold)}
+/* La pestaña manda sobre su propio borde, en todos sus estados. Las reglas
+   genéricas del plugin (.mmws button:hover{border-color:var(--wine)},
+   .mmws button.on{background/border wine}) y el anillo de foco del sistema
+   pintaban el borde inferior de rojo o rosa; esto no lo puede ganar nadie. */
+.mmws .headtabs .headtab,
+.mmws .headtabs .headtab:hover,
+.mmws .headtabs .headtab:focus,
+.mmws .headtabs .headtab:focus-visible,
+.mmws .headtabs .headtab:active{border-color:transparent!important;background-color:transparent!important;box-shadow:none!important;outline:0!important}
+.mmws .headtabs .headtab.on{border-bottom-color:var(--ok)!important}
+.mmws .headtabs .headtab.on.testing{border-bottom-color:var(--gold)!important}
+
 .mmws .bodywrap{flex:1 1 auto;min-height:0;display:flex;align-items:stretch;position:relative;overflow:hidden}
 .mmws .abarra{flex:none;padding:9px 0 8px;background:var(--bg2);border-bottom:1px solid var(--line);z-index:2}
 .mmws .ascroll{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;padding:8px 0 14px;scrollbar-width:none;-ms-overflow-style:none;overscroll-behavior:contain}
