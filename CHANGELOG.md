@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.27.3 — 12-nov-2026 · the panel migrates its own data, and remembers every rename
+
+### Added
+- **Assisted migration in the Testing tab.** When the panel sees data from before 0.27.0 — `tagN`
+  keys and no `"schema": 2` marker — it shows a notice there, and on confirmation it copies
+  `index.json` and `facets.json` **raw, exactly as they are**, to `index.pre-iq_<stamp>.json`
+  *before* writing anything; only then does it rename the keys at any depth, stamp the schema and
+  rewrite. Cancelling writes nothing, and the panel already paints v1 data through `withAxes()`.
+  The decision is made from the data, never from the installed version, so a user on 0.27.0 or
+  later carries the marker and never sees the notice.
+- **A journal for every rename.** Each commit appends one line to `titles-journal.jsonl` and
+  records the first title the plugin ever saw for each session in `titles-origin.json`, which is
+  never overwritten. `commit-last.json` only kept the last batch, so until now an uninstall left
+  the titles renamed inside Hermes' own database with no record of what they used to be.
+- **Restore original titles**, in the Testing footer: it walks that map and writes the titles back
+  through the host's API. This is the clean exit before removing the plugin.
+- **`docs/UNINSTALL.md`**: what survives an uninstall (everything the plugin wrote, including the
+  titles in `state.db`), the order that leaves nothing behind, and how to restore by hand from the
+  two JSON files if the plugin is already gone.
+
+### Changed
+- The window tab reads **"Actual Session DB"** (it said "Actual Hermes DB Sessions").
+
+### Verified
+Twelve new cases for the schema detector and the migrator — `tagN` anywhere, the marker winning,
+values untouched, no `tag` key left, and a second pass that changes nothing — plus `node`,
+`plugin.mjs`, `invariants 11/11`, `protocol`, `migrate_axes` and `plugins validate`.
+
 ## 0.27.2 — 12-nov-2026 · the install instructions a judge will follow
 
 ### Fixed
