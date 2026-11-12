@@ -128,6 +128,10 @@ def build(with_messages: bool = True) -> dict:
                     "tok": int(rec.tokens or 0),
                     "posts": int(rec.posts or 0),
                     "esCron": bool(re.match(r"^cron[_-]", rec.id or "")),
+                    # Machinery, not work: the canonical Bot Chat and the transcripts
+                    # delegate_task spawns. The panel hides them behind the Bots chip.
+                    "esBot": (rec.source or "").lower() in {"subagent", "bot"},
+                    "source": rec.source or "",
                     "pilar": extra.get(rec.id, {}).get("pilar", ""),
                     "motor": extra.get(rec.id, {}).get("motor", ""),
                     "mc": extra.get(rec.id, {}).get("mc", rec.posts or 0),

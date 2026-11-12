@@ -134,13 +134,17 @@ const esBotChat = (d) => Boolean(d && /^\s*bot chat\b/i.test(String(d.raw || '')
 const esSubagent = (d) =>
   Boolean(
     d &&
-      (/^\s*subagent[\s:]/i.test(String(d.raw || '')) ||
+      (d.esBot === true ||
+        /^\s*subagent[\s:]/i.test(String(d.raw || '')) ||
         /^subagent/i.test(String(d.prof || '')) ||
         /^subagent/i.test(String(d.id || '')))
   )
 
 /** Anything the renamer must never touch: cron, empty, deleted, Bot Chat, subagent. */
 const esIntocable = (d) => Boolean(d && (esCron(d) || d.vacia || esBorrada(d) || esBotChat(d) || esSubagent(d)))
+
+/** Bot machinery: the canonical Bot Chat and subagent transcripts. Hidden by default. */
+const esBotSession = (d) => Boolean(d && (esBotChat(d) || esSubagent(d)))
 
 /* Bilingual synonym table */
 const SIN = {
@@ -375,6 +379,9 @@ const I18N = {
     hideDel: 'Borradas',
     showCron: 'Cron',
     hideCron: 'Cron',
+    showBots: 'Bots',
+    hideBots: 'Bots',
+    botsTitle: 'Mostrar u ocultar sesiones de bot (Bot Chat y subagentes)',
     showVacio: 'Vacío',
     hideVacio: 'Vacío',
     buscar: 'Buscar sujeto, tema, tag…',
@@ -529,6 +536,9 @@ const I18N = {
     hideDel: 'Deleted',
     showCron: 'Cron',
     hideCron: 'Cron',
+    showBots: 'Bots',
+    hideBots: 'Bots',
+    botsTitle: 'Show or hide bot sessions (Bot Chat and subagent transcripts)',
     showVacio: 'Empty',
     hideVacio: 'Empty',
     buscar: 'Search subject, topic, tag…',
@@ -1269,6 +1279,7 @@ async function loadCatalogue(ctx) {
       resumen,
       vacia: Boolean(idx.vacia != null ? idx.vacia : mc <= 0 && (!claves || claves.length === 0)),
       esCron: Boolean(idx.esCron || /^cron[_-]/i.test(id) || /^cron[_-]/i.test(prof)),
+      esBot: Boolean(idx.esBot) || (live && String(live.source || '').toLowerCase() === 'subagent'),
       _canonical: Boolean(g),
       isLive,
       runtimeVivo: isLive,
@@ -1371,6 +1382,7 @@ function App({ ctx }) {
   const [showElim, setShowElim] = useState(false)
   const [showVacio, setShowVacio] = useState(false)
   const [showCron, setShowCron] = useState(false)
+  const [showBots, setShowBots] = useState(false)
   const [orden, setOrden] = useState({ k: 'fecha', asc: false })
   const [sel, setSel] = useState(null)
   const [editModal, setEditModal] = useState(false)
@@ -1566,10 +1578,12 @@ function App({ ctx }) {
     const yaActivo =
       (cual === 'elim' && showElim) ||
       (cual === 'vacio' && showVacio) ||
-      (cual === 'cron' && showCron)
+      (cual === 'cron' && showCron) ||
+      (cual === 'bots' && showBots)
     setShowElim(!yaActivo && cual === 'elim')
     setShowVacio(!yaActivo && cual === 'vacio')
     setShowCron(!yaActivo && cual === 'cron')
+    setShowBots(!yaActivo && cual === 'bots')
   }
 
   const copyPendingIds = async (ids, key) => {
@@ -1613,7 +1627,7 @@ function App({ ctx }) {
   const qNorm = useMemo(() => norm(q), [q])
 
   const pass = (d, ...skips) => {
-    const modo = showElim ? 'elim' : showVacio ? 'vacio' : showCron ? 'cron' : null
+    const modo = showElim ? 'elim' : showVacio ? 'vacio' : showCron ? 'cron' : showBots ? 'bots' : null
     if (!skips.includes('estado')) {
       if (modo === 'elim') {
         if (!esBorrada(d)) return false
@@ -1621,10 +1635,15 @@ function App({ ctx }) {
         if (!d.vacia) return false
       } else if (modo === 'cron') {
         if (!esCron(d)) return false
+      } else if (modo === 'bots') {
+        if (!esBotSession(d)) return false
       } else {
         if (!skips.includes('elim') && esBorrada(d)) return false
         if (!skips.includes('cron') && esCron(d)) return false
         if (!skips.includes('vacio') && d.vacia) return false
+        // Bot Chat and subagent transcripts stay out of the way until the Bots chip
+        // is switched on.
+        if (!skips.includes('bots') && esBotSession(d)) return false
       }
     }
     if (!skips.includes('tag3') && f.tag3 && d.pilar !== f.tag3) return false
@@ -1663,7 +1682,7 @@ function App({ ctx }) {
 
   const visible = useMemo(
     () => (activeTab === 'testing' ? pendingRows : sessions).filter((d) => pass(d)),
-    [sessions, pendingRows, activeTab, f, q, nums, qs, showElim, showVacio, showCron]
+    [sessions, pendingRows, activeTab, f, q, nums, qs, showElim, showVacio, showCron, showBots]
   )
 
   const sorted = useMemo(() => {
@@ -1723,6 +1742,7 @@ function App({ ctx }) {
   const nElim = useMemo(() => sessions.filter(esBorrada).length, [sessions])
   const nVacio = useMemo(() => sessions.filter((d) => d.vacia).length, [sessions])
   const nCron = useMemo(() => sessions.filter(esCron).length, [sessions])
+  const nBots = useMemo(() => sessions.filter(esBotSession).length, [sessions])
 
   // Active chips list
   const activeChips = useMemo(() => {
@@ -3403,6 +3423,16 @@ function App({ ctx }) {
                 title: 'Mostrar u ocultar sesiones automáticas de cron',
               },
               (showCron ? t('hideCron') : t('showCron')) + ' · ' + nCron
+            ),
+            h(
+              'button',
+              {
+                id: 'btnBots',
+                className: showBots ? 'on' : '',
+                onClick: () => setEstado('bots'),
+                title: t('botsTitle'),
+              },
+              (showBots ? t('hideBots') : t('showBots')) + ' · ' + nBots
             ),
             h('span', { style: { flex: 1, minWidth: 0 } })
           ),
