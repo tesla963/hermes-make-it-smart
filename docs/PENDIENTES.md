@@ -1,5 +1,12 @@
 # Pending Items
 
+> **Naming note (2026-11-11).** This document is a historical snapshot from the
+> 2026-11-10 session, so it still prints the names in use at that time. The current
+> names are: repo `hermes-make-it-smart`, install/catalog name `hermes-make-it-smart`
+> (`plugin.yaml`), and internal data id `make-it-smart` (`core/paths.py`, `desktop/plugin.js`).
+> Paths below that say `make-all-my-work-smart` are history — the real data directory is
+> `~/.hermes/plugin-data/make-it-smart/`. See `docs/DATA-PATHS.md` for the live map.
+
 Status at the close of the **2026-11-10** session. Ordered by priority, not by
 size.
 

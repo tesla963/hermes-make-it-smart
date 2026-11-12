@@ -95,16 +95,31 @@ cd hermes-make-it-smart
 ~/.hermes/hermes-agent/scripts/run-in-hermes-env python3 tools/build_index.py
 
 # 2. copy the plugin where Hermes Desktop looks for it
-mkdir -p ~/.hermes/desktop-plugins/make-all-my-work-smart
-cp desktop/plugin.js ~/.hermes/desktop-plugins/make-all-my-work-smart/
+mkdir -p ~/.hermes/desktop-plugins/make-it-smart
+cp desktop/plugin.js ~/.hermes/desktop-plugins/make-it-smart/
 
 # 3. restart Hermes Desktop, then open "Make It Smart" in the sidebar
 ```
 
 The plugin never touches `state.db`: step 1 reads it and writes one JSON file to
-`~/.hermes/plugin-data/make-all-my-work-smart/index.json`, and the window only paints
+`~/.hermes/plugin-data/make-it-smart/index.json`, and the window only paints
 that file. Re-run step 1 (or press **Refresh DB**) whenever you want new sessions
 in the catalogue.
+
+### Two names, on purpose
+
+The manifest name and the data-directory name are different, and that is by design:
+
+| What | Value | Where it comes from |
+|---|---|---|
+| Install / catalog name | `hermes-make-it-smart` | `plugin.yaml` → `name:` — this is the folder `hermes plugins install` creates |
+| Internal data id | `make-it-smart` | `core/paths.py` → `PLUGIN`, and `desktop/plugin.js` → `ID` — this is the folder under `plugin-data/` |
+
+So an install from the catalog puts the code in
+`~/.hermes/desktop-plugins/hermes-make-it-smart/` while its data stays in
+`~/.hermes/plugin-data/make-it-smart/`. Both are correct; see
+[`docs/DATA-PATHS.md`](docs/DATA-PATHS.md) for the full map. Changing either name
+orphans the existing index, so neither is renamed.
 
 ### Verify without the app
 
