@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased — tab silhouette without the grey hairline
+
+### Fixed
+- **Grey hairline under the idle tab**: `.headtabs` painted a 1px `--line2` baseline that showed through the 2px *transparent* bottom border of any tab that was not selected, so both idle tabs (green and gold) carried a thin grey thread along their bottom edge, breaking the window-tab silhouette. Root cause: the coloured side bars (`.headtab::before/::after`) close the tab on the left and right, but the bottom stayed transparent and let the container rule through.
+- **Fix**: the tab strip no longer paints a baseline (`border-bottom:1px solid transparent` keeps the geometry), and each tab closes its bottom edge in its own hue — `--ok40` / `--gold40` (40% alpha) when idle, full `--ok` / `--gold` on hover and when selected. Because the grey rule is gone, the attenuated border composites over one single background and no longer renders half-over-grey / half-over-black.
+- Verified by pixel measurement at DPR 2 (static page, real stylesheet, four states): zero `#3a3040` pixels in the border rows and a uniform 2px line per state.
+
 ## 0.25.0 — 11-nov-2026 · data paths architecture, tag0/tag8/tag9 axes, Actual/Testing tabs, commit/revert and removal of the simulator
 
 ### Added

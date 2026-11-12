@@ -673,7 +673,7 @@ const I18N = {
 /* ------------------------------------------------------------------ */
 
 const CSS = `
-.mmws{--tabw:62px;--tabx:16px;--kbar-h:33px;--aside-ef:264px;--bg:#0d0b0e;--bg2:#141117;--card:#17131a;--line:#2a2330;--line2:#3a3040;--tx:#eae4ee;--tx2:#b9aec4;--tx3:#857a92;--wine:#a3234a;--wine2:#d94f78;--gold:#c9a227;--ok:#3f9e6a;
+.mmws{--tabw:62px;--tabx:16px;--kbar-h:33px;--aside-ef:264px;--bg:#0d0b0e;--bg2:#141117;--card:#17131a;--line:#2a2330;--line2:#3a3040;--tx:#eae4ee;--tx2:#b9aec4;--tx3:#857a92;--wine:#a3234a;--wine2:#d94f78;--gold:#c9a227;--ok:#3f9e6a;--ok40:rgba(63,158,106,.4);--gold40:rgba(201,162,39,.4);
 position:relative;display:flex;flex-direction:column;width:100%;height:100%;min-height:0;overflow:hidden;background:var(--bg);color:var(--tx);font:14px/1.55 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",sans-serif}
 .mmws *{box-sizing:border-box}
 .mmws h1{font-size:12.5px;margin:0;letter-spacing:.01em;font-weight:800;color:var(--tx);cursor:pointer;transition:color .12s}
@@ -684,10 +684,11 @@ position:relative;display:flex;flex-direction:column;width:100%;height:100%;min-
 .mmws .mono{font-family:ui-monospace,Menlo,monospace;font-size:12px}
 .mmws header.top{flex:0 0 auto;z-index:40;background:linear-gradient(180deg,#100d12,#0d0b0e);border-bottom:1px solid var(--line);padding:10px 18px}
 .mmws .brandrow{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.mmws .headtabs{display:inline-flex;align-items:flex-end;gap:2px;background:transparent;border:0;border-bottom:1px solid var(--line2);border-radius:0;padding:0;margin-left:10px}
+.mmws .headtabs{display:inline-flex;align-items:flex-end;gap:2px;background:transparent;border:0;border-bottom:1px solid transparent;border-radius:0;padding:0;margin-left:10px}
 .mmws .headtab{position:relative;border:0;border-bottom:2px solid transparent;background:transparent;color:var(--tx3);font-size:11.5px;font-weight:600;padding:6px 16px 5px;border-radius:6px 6px 0 0;cursor:pointer;display:inline-flex;align-items:center;gap:6px;margin-bottom:-1px;transition:color .12s,background .12s,border-color .12s}
-/* Cada pestaña lleva su color a los lados, como una pestaña de ventana:
-   verde la base real, amarillo la simulación. */
+/* Cada pestaña lleva su color alrededor, como una pestaña de ventana: los
+   laterales aquí y el borde inferior más abajo (atenuado si está inactiva).
+   Verde la base real, amarillo la simulación. */
 .mmws .headtab::before,.mmws .headtab::after{content:'';position:absolute;top:5px;bottom:-1px;width:2px;border-radius:1px;opacity:.4;transition:opacity .12s,background .12s}
 .mmws .headtab::before{left:0}
 .mmws .headtab::after{right:0}
@@ -708,12 +709,19 @@ position:relative;display:flex;flex-direction:column;width:100%;height:100%;min-
 .mmws .headtabs .headtab:focus,
 .mmws .headtabs .headtab:focus-visible,
 .mmws .headtabs .headtab:active{border-color:transparent!important;background-color:transparent!important;box-shadow:none!important;outline:0!important}
-.mmws .headtabs .headtab.on{border-bottom-color:var(--ok)!important}
-.mmws .headtabs .headtab.on.testing{border-bottom-color:var(--gold)!important}
-/* Hover: el tab inactivo también muestra su línea inferior, en su propio color,
-   para que se vea que es una pestaña y que responde. */
+/* La pestaña cierra su silueta también abajo, en su propio color atenuado: con
+   el borde inferior transparente se veía la línea base gris del contenedor como
+   una hebra gris pegada al borde inferior del tab inactivo (verde o amarillo). */
+.mmws .headtabs .headtab:first-child{border-bottom-color:var(--ok40)!important}
+.mmws .headtabs .headtab:last-child{border-bottom-color:var(--gold40)!important}
+/* Hover: el tab inactivo sube a color pleno, para que se vea que es una pestaña
+   y que responde. Va después del estado base: misma especificidad, gana el orden. */
 .mmws .headtabs .headtab:first-child:hover{border-bottom-color:var(--ok)!important}
 .mmws .headtabs .headtab:last-child:hover{border-bottom-color:var(--gold)!important}
+/* Las activas se reimponen al final: el hover tiene la misma especificidad que
+   .headtab.on, así que el orden decide y el color pleno debe ganar siempre. */
+.mmws .headtabs .headtab.on{border-bottom-color:var(--ok)!important}
+.mmws .headtabs .headtab.on.testing{border-bottom-color:var(--gold)!important}
 
 .mmws .bodywrap{flex:1 1 auto;min-height:0;display:flex;align-items:stretch;position:relative;overflow:hidden}
 .mmws .abarra{flex:none;padding:9px 0 8px;background:var(--bg2);border-bottom:1px solid var(--line);z-index:2}
