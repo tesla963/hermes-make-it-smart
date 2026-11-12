@@ -1135,7 +1135,16 @@ async function loadCatalogue(ctx) {
     const tag4 = (ex.tag4 || idx.tag4 || pais || pilar || '').trim()
     const tag5 = (ex.tag5 || idx.tag5 || anio || '').trim()
     const tag6 = (ex.tag6 || idx.tag6 || '').trim()
-    const desc = ((g && g.desc) || idx.desc || (live && live.preview) || rawTitle || '').trim()
+    // A title that already parsed as canonical must never become its own
+    // description: '925 [Sin título] 001' came out as
+    // '925 [Sin título] 001 925 [Sin título] 001' on the next commit.
+    const desc = (
+      (g && g.desc) ||
+      idx.desc ||
+      (live && live.preview) ||
+      (g ? '' : rawTitle) ||
+      ''
+    ).trim()
     const verb = ((g && g.verb) || idx.verb || '').trim()
     const prof = (live && (live._prof || live.profile)) || idx.prof || 'default'
     const mc = Number((live && (live.live_message_count || live.message_count)) || ex.mc || idx.mc || idx.posts || 0)
