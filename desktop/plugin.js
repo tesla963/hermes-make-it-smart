@@ -20,7 +20,7 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 const ID = 'make-it-smart'
 const NAME = 'Hermes, Make it Smart!'
 const APP_TITLE = 'Make It Smart'
-const VERSION = '0.25.0'
+const VERSION = '0.26.0'
 const ROUTE = '/smart'
 
 /** jsx-runtime helper: keeps uncompiled React code compact and readable. */
@@ -126,6 +126,21 @@ const esBorrada = (d) =>
         /^\s*sesi[oó]n( de cron)? eliminad/i.test(d.desc || '') ||
         /^\s*\[?sesi[oó]n borrada/i.test(d.raw || ''))
   )
+
+// The canonical Bot Chat's name IS its identity, and a subagent transcript is
+// machinery, not work: neither is renamed, and neither counts as a pending change.
+const esBotChat = (d) => Boolean(d && /^\s*bot chat\b/i.test(String(d.raw || '')))
+
+const esSubagent = (d) =>
+  Boolean(
+    d &&
+      (/^\s*subagent[\s:]/i.test(String(d.raw || '')) ||
+        /^subagent/i.test(String(d.prof || '')) ||
+        /^subagent/i.test(String(d.id || '')))
+  )
+
+/** Anything the renamer must never touch: cron, empty, deleted, Bot Chat, subagent. */
+const esIntocable = (d) => Boolean(d && (esCron(d) || d.vacia || esBorrada(d) || esBotChat(d) || esSubagent(d)))
 
 /* Bilingual synonym table */
 const SIN = {
@@ -263,7 +278,7 @@ function parseTitle(title) {
 
 function canonicalTitle(d) {
   if (!d) return ''
-  if (esCron(d) || d.vacia || esBorrada(d)) return d.raw || ''
+  if (esIntocable(d)) return d.raw || ''
 
   const nnn = String(Number(d.n) || 0).padStart(3, '0')
   const subj = (d.sujeto || d.tag0 || '').trim() || 'Sin sujeto'
@@ -486,18 +501,16 @@ const I18N = {
     tabTesting: 'Testing',
     tabTestingTitle: 'Simulación de nomenclatura canónica y herramientas de commit/revert',
     commitBtn: 'Commit Changes to Hermes DB',
+    commitBtnCount: 'Commit Changes to Hermes DB ({n} sesiones por procesar)',
     commitBtnTitle: 'Escribe los títulos canónicos simulados en state.db vía session.title',
     revertBtn: 'Revert',
     revertBtnTitle: 'Restaura los títulos anteriores desde el último backup',
-    updateBtn: 'New Rules Update',
-    updateBtnTitle: 'Relee index.json y facets.json, recalcula la simulación e informa cambios',
     infoPluginTitle: 'Ver información y reglas aprendidas del plugin Make It Smart',
     confirmCommit: '¿Aplicar {n} cambios de título en tu base de sesiones de Hermes?',
     confirmRevert: '¿Revertir {n} títulos a su estado anterior al último commit?',
     commitProgress: 'Commit {current}/{total}',
     commitDone: '{n} actualizados · {m} sin cambios',
     revertDone: '{n} títulos restaurados',
-    updateDone: '{count} sesiones cambiarían con las reglas actuales',
     updateStale: 'El índice tiene más de 24 h y está desactualizado; pídele a Hermes: reindexa el catálogo del plugin',
   },
   en: {
@@ -641,18 +654,16 @@ const I18N = {
     tabTesting: 'Testing',
     tabTestingTitle: 'Canonical nomenclature simulation and commit/revert tools',
     commitBtn: 'Commit Changes to Hermes DB',
+    commitBtnCount: 'Commit Changes to Hermes DB ({n} Sessions to Process)',
     commitBtnTitle: 'Write simulated canonical titles to state.db via session.title',
     revertBtn: 'Revert',
     revertBtnTitle: 'Restore previous titles from the last backup',
-    updateBtn: 'New Rules Update',
-    updateBtnTitle: 'Re-read index.json and facets.json, recalculate simulation and report changes',
     infoPluginTitle: 'View plugin information and learned rules for Make It Smart',
     confirmCommit: 'Apply {n} title changes to your Hermes session database?',
     confirmRevert: 'Revert {n} titles back to their state before the last commit?',
     commitProgress: 'Commit {current}/{total}',
     commitDone: '{n} updated · {m} unchanged',
     revertDone: '{n} titles restored',
-    updateDone: '{count} sessions would change with current rules',
     updateStale: 'The index is older than 24h and stale; ask Hermes: rebuild plugin catalog',
   },
 }
@@ -662,7 +673,7 @@ const I18N = {
 /* ------------------------------------------------------------------ */
 
 const CSS = `
-.mmws{--tabw:62px;--tabx:16px;--kbar-h:33px;--aside-ef:264px;--bg:#0d0b0e;--bg2:#141117;--card:#17131a;--line:#2a2330;--line2:#3a3040;--tx:#eae4ee;--tx2:#b9aec4;--tx3:#857a92;--wine:#a3234a;--wine2:#d94f78;--gold:#c9a227;--ok:#3f9e6a;
+.mmws{--tabw:62px;--tabx:16px;--kbar-h:33px;--aside-ef:264px;--bg:#0d0b0e;--bg2:#141117;--card:#17131a;--line:#2a2330;--line2:#3a3040;--tx:#eae4ee;--tx2:#b9aec4;--tx3:#857a92;--wine:#a3234a;--wine2:#d94f78;--gold:#c9a227;--ok:#3f9e6a;--ok40:rgba(63,158,106,.4);--gold40:rgba(201,162,39,.4);
 position:relative;display:flex;flex-direction:column;width:100%;height:100%;min-height:0;overflow:hidden;background:var(--bg);color:var(--tx);font:14px/1.55 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",sans-serif}
 .mmws *{box-sizing:border-box}
 .mmws h1{font-size:12.5px;margin:0;letter-spacing:.01em;font-weight:800;color:var(--tx);cursor:pointer;transition:color .12s}
@@ -673,11 +684,45 @@ position:relative;display:flex;flex-direction:column;width:100%;height:100%;min-
 .mmws .mono{font-family:ui-monospace,Menlo,monospace;font-size:12px}
 .mmws header.top{flex:0 0 auto;z-index:40;background:linear-gradient(180deg,#100d12,#0d0b0e);border-bottom:1px solid var(--line);padding:10px 18px}
 .mmws .brandrow{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.mmws .headtabs{display:inline-flex;align-items:center;gap:3px;background:#15101a;border:1px solid var(--line2);border-radius:7px;padding:2px;margin-left:6px}
-.mmws .headtab{border:0;background:transparent;color:var(--tx3);font-size:11.5px;font-weight:600;padding:3px 10px;border-radius:5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all .12s}
+.mmws .headtabs{display:inline-flex;align-items:flex-end;gap:2px;background:transparent;border:0;border-bottom:1px solid transparent;border-radius:0;padding:0;margin-left:10px}
+.mmws .headtab{position:relative;border:0;border-bottom:2px solid transparent;background:transparent;color:var(--tx3);font-size:11.5px;font-weight:600;padding:6px 16px 5px;border-radius:6px 6px 0 0;cursor:pointer;display:inline-flex;align-items:center;gap:6px;margin-bottom:-1px;transition:color .12s,background .12s,border-color .12s}
+/* Cada pestaña lleva su color alrededor, como una pestaña de ventana: los
+   laterales aquí y el borde inferior más abajo (atenuado si está inactiva).
+   Verde la base real, amarillo la simulación. */
+.mmws .headtab::before,.mmws .headtab::after{content:'';position:absolute;top:5px;bottom:-1px;width:2px;border-radius:1px;opacity:.4;transition:opacity .12s,background .12s}
+.mmws .headtab::before{left:0}
+.mmws .headtab::after{right:0}
+.mmws .headtab:first-child::before,.mmws .headtab:first-child::after{background:var(--ok)}
+.mmws .headtab:last-child::before,.mmws .headtab:last-child::after{background:var(--gold)}
 .mmws .headtab:hover{color:var(--tx)}
-.mmws .headtab.on{background:#2a1f33;color:#fff;box-shadow:0 1px 3px rgba(0,0,0,.4)}
-.mmws .headtab.on.testing{background:var(--gold);color:#0d0b0e}
+.mmws .headtab:hover::before,.mmws .headtab:hover::after{opacity:.75}
+.mmws .headtab.on{color:#fff}
+.mmws .headtab.on::before,.mmws .headtab.on::after{opacity:1}
+.mmws .headtab.on.testing{color:var(--gold)}
+.mmws .headtab.on.testing::before,.mmws .headtab.on.testing::after{background:var(--gold);opacity:1}
+/* La pestaña manda sobre su propio borde, en todos sus estados. Las reglas
+   genéricas del plugin (.mmws button:hover{border-color:var(--wine)},
+   .mmws button.on{background/border wine}) y el anillo de foco del sistema
+   pintaban el borde inferior de rojo o rosa; esto no lo puede ganar nadie. */
+.mmws .headtabs .headtab,
+.mmws .headtabs .headtab:hover,
+.mmws .headtabs .headtab:focus,
+.mmws .headtabs .headtab:focus-visible,
+.mmws .headtabs .headtab:active{border-color:transparent!important;background-color:transparent!important;box-shadow:none!important;outline:0!important}
+/* La pestaña cierra su silueta también abajo, en su propio color atenuado: con
+   el borde inferior transparente se veía la línea base gris del contenedor como
+   una hebra gris pegada al borde inferior del tab inactivo (verde o amarillo). */
+.mmws .headtabs .headtab:first-child{border-bottom-color:var(--ok40)!important}
+.mmws .headtabs .headtab:last-child{border-bottom-color:var(--gold40)!important}
+/* Hover: el tab inactivo sube a color pleno, para que se vea que es una pestaña
+   y que responde. Va después del estado base: misma especificidad, gana el orden. */
+.mmws .headtabs .headtab:first-child:hover{border-bottom-color:var(--ok)!important}
+.mmws .headtabs .headtab:last-child:hover{border-bottom-color:var(--gold)!important}
+/* Las activas se reimponen al final: el hover tiene la misma especificidad que
+   .headtab.on, así que el orden decide y el color pleno debe ganar siempre. */
+.mmws .headtabs .headtab.on{border-bottom-color:var(--ok)!important}
+.mmws .headtabs .headtab.on.testing{border-bottom-color:var(--gold)!important}
+
 .mmws .bodywrap{flex:1 1 auto;min-height:0;display:flex;align-items:stretch;position:relative;overflow:hidden}
 .mmws .abarra{flex:none;padding:9px 0 8px;background:var(--bg2);border-bottom:1px solid var(--line);z-index:2}
 .mmws .ascroll{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;padding:8px 0 14px;scrollbar-width:none;-ms-overflow-style:none;overscroll-behavior:contain}
@@ -1098,8 +1143,11 @@ async function loadCatalogue(ctx) {
 
   // 5. Use the index as the authoritative source of rows (importing is not filtering: 910 rows).
   // Live gateway listing is used to check for live runtime and enrich runtime metrics (duration, costs).
+  // Sessions the snapshot does not contain yet are appended from the gateway: a session
+  // created after the index was built must still show up (and count as pending work).
   const hasIndex = Boolean(idxData && Array.isArray(idxData.sessions) && idxData.sessions.length > 0)
-  const sessionList = hasIndex ? idxData.sessions : [...liveById.values()]
+  const liveOnly = [...liveById.values()].filter((r) => r && r.id && !idxById.has(r.id))
+  const sessionList = hasIndex ? idxData.sessions.concat(liveOnly) : [...liveById.values()]
   const merged = []
 
   for (const item of sessionList) {
@@ -1110,7 +1158,10 @@ async function loadCatalogue(ctx) {
     const ex = facetsMap[id] || {}
     const isLive = Boolean(live)
 
-    const rawTitle = String(idx.raw || (live && live.title) || '').trim()
+    // The live gateway title is the truth. index.json is a snapshot: if a commit
+    // is written after it was built, idx.raw still holds the pre-commit title and
+    // the session reappears as pending forever. Prefer the live title.
+    const rawTitle = String((live && live.title) || idx.raw || '').trim()
     const g = parseTitle(rawTitle)
 
     const fecha = String(idx.fecha || toFecha(live && live.started_at, '')).slice(0, 10)
@@ -1132,7 +1183,16 @@ async function loadCatalogue(ctx) {
     const tag4 = (ex.tag4 || idx.tag4 || pais || pilar || '').trim()
     const tag5 = (ex.tag5 || idx.tag5 || anio || '').trim()
     const tag6 = (ex.tag6 || idx.tag6 || '').trim()
-    const desc = ((g && g.desc) || idx.desc || (live && live.preview) || rawTitle || '').trim()
+    // A title that already parsed as canonical must never become its own
+    // description: '925 [Sin título] 001' came out as
+    // '925 [Sin título] 001 925 [Sin título] 001' on the next commit.
+    const desc = (
+      (g && g.desc) ||
+      idx.desc ||
+      (live && live.preview) ||
+      (g ? '' : rawTitle) ||
+      ''
+    ).trim()
     const verb = ((g && g.verb) || idx.verb || '').trim()
     const prof = (live && (live._prof || live.profile)) || idx.prof || 'default'
     const mc = Number((live && (live.live_message_count || live.message_count)) || ex.mc || idx.mc || idx.posts || 0)
@@ -1223,6 +1283,26 @@ async function loadCatalogue(ctx) {
 
   merged.sort((a, b) => a.n - b.n)
 
+  // A commit written after index.json was built leaves idx.raw holding the old
+  // title. For sessions the gateway no longer lists live, the commit ledger
+  // records what was actually written, so it stands in for the live title.
+  if (filesApi && typeof filesApi.readText === 'function') {
+    try {
+      const ledRes = await filesApi.readText('data', 'commit-last.json')
+      if (ledRes && ledRes.ok && ledRes.text) {
+        const led = JSON.parse(ledRes.text)
+        if (led && led.committed && !led.reverted && Array.isArray(led.entries)) {
+          const written = new Map(led.entries.map((e) => [e.id, e.title_after]))
+          for (const d of merged) {
+            if (!d.vivo && written.has(d.id)) d.raw = written.get(d.id)
+          }
+        }
+      }
+    } catch (_) {
+      /* a missing or broken ledger is not fatal */
+    }
+  }
+
   // Compute canonical simulated title and search synonym index per row once
   for (const d of merged) {
     d.canonTitle = canonicalTitle(d)
@@ -1293,13 +1373,9 @@ function App({ ctx }) {
   const [editModal, setEditModal] = useState(false)
   const [editVal, setEditVal] = useState('')
   const [vModal, setVModal] = useState(false)
-  const [activeTab, setActiveTab] = useState(() => {
-    try {
-      return localStorage.getItem('mmws_active_tab') || 'actual'
-    } catch (_) {
-      return 'actual'
-    }
-  })
+  // The panel always opens on the real session database. Testing is a deliberate
+  // step the user takes to preview a rename, so it is never restored on open.
+  const [activeTab, setActiveTab] = useState('actual')
   const [lastBackup, setLastBackup] = useState(null)
   const [canRevert, setCanRevert] = useState(false)
   const [isCommitting, setIsCommitting] = useState(false)
@@ -1574,9 +1650,17 @@ function App({ ctx }) {
     return true
   }
 
+  // In the Testing tab only the sessions a commit would actually change are listed:
+  // a session already carrying its canonical title is not work, and Bot Chat,
+  // cron, empty, deleted and subagent rows are never renamed.
+  const pendingRows = useMemo(
+    () => sessions.filter((d) => !esIntocable(d) && d.canonTitle && d.canonTitle !== d.raw),
+    [sessions]
+  )
+
   const visible = useMemo(
-    () => sessions.filter((d) => pass(d)),
-    [sessions, f, q, nums, qs, showElim, showVacio, showCron]
+    () => (activeTab === 'testing' ? pendingRows : sessions).filter((d) => pass(d)),
+    [sessions, pendingRows, activeTab, f, q, nums, qs, showElim, showVacio, showCron]
   )
 
   const sorted = useMemo(() => {
@@ -1912,7 +1996,7 @@ function App({ ctx }) {
       h(
         'div',
         { className: 'pthead' },
-        h('div', { className: 'pname', id: 'pname' }, activeTab === 'testing' ? (d.canonTitle || d.raw) : d.raw),
+        h('div', { className: 'pname', id: 'pname' }, d.raw),
         h(
           'div',
           { className: 'pnaveg' },
@@ -2202,10 +2286,37 @@ function App({ ctx }) {
     }
   }
 
-  const createCommitBackup = async (sessionsList) => {
+  // index.json is a snapshot. After this panel writes titles it must patch the
+  // snapshot's raw values, or the next load resurrects the old ones (making already
+  // renamed sessions look pending) or hides real work (making unrenamed sessions
+  // disappear from Testing while the left panel still shows them).
+  const syncIndexRaw = async (updates) => {
+    if (!updates || typeof updates.size !== 'number' || updates.size === 0) return 0
+    const filesApi = (ctx && ctx.files) || (host && host.files)
+    if (!filesApi || typeof filesApi.writeText !== 'function') return 0
+    try {
+      const res = await filesApi.readText('data', 'index.json')
+      if (!res || !res.ok || !res.text) return 0
+      const idx = JSON.parse(res.text)
+      let touched = 0
+      for (const s of idx.sessions || []) {
+        if (updates.has(s.id)) {
+          s.raw = updates.get(s.id)
+          touched += 1
+        }
+      }
+      if (touched) await filesApi.writeText('data', 'index.json', JSON.stringify(idx))
+      return touched
+    } catch (_) {
+      return 0
+    }
+  }
+
+  const createCommitBackup = async (sessionsList, opts) => {
+    const keepLedger = Boolean(opts && opts.keepLedger)
     const list = sessionsList || sessions || []
     const entries = list
-      .filter((d) => !esCron(d) && !d.vacia && !esBorrada(d) && d.canonTitle && d.canonTitle !== d.raw)
+      .filter((d) => !esIntocable(d) && d.canonTitle && d.canonTitle !== d.raw)
       .map((d) => ({
         id: d.id,
         title_before: d.raw,
@@ -2226,31 +2337,57 @@ function App({ ctx }) {
     if (filesApi && typeof filesApi.writeText === 'function') {
       try {
         await filesApi.writeText('data', fname, JSON.stringify(payload, null, 2))
-        await filesApi.writeText('data', 'commit-last.json', JSON.stringify(payload, null, 2))
+        // commit-last.json is the revert ledger. Do not overwrite it while it
+        // still holds a commit that has not been reverted: that would lose the
+        // only record Revert can restore from.
+        if (!keepLedger) {
+          await filesApi.writeText('data', 'commit-last.json', JSON.stringify(payload, null, 2))
+        }
       } catch (_) {}
     }
-    setLastBackup(payload)
+    if (!keepLedger) setLastBackup(payload)
     return payload
   }
 
   const switchTab = async (tab) => {
     setActiveTab(tab)
-    try {
-      localStorage.setItem('mmws_active_tab', tab)
-    } catch (_) {}
     if (tab === 'testing') {
-      await createCommitBackup(sessions)
+      // Entering Testing is the refresh moment. The index is a cache, so it is left
+      // alone everywhere else; here the catalogue is re-read (and the gateway rows
+      // the snapshot does not have yet are included) before anything is simulated.
+      let rows = sessions
+      try {
+        const res = await loadCatalogue(ctx)
+        if (res && Array.isArray(res.sessions)) {
+          rows = res.sessions
+          setSessions(rows)
+          setRpcErrors(Array.isArray(res.errors) ? res.errors : [])
+          setPendData(res.pendData || null)
+          setPendMap(res.pendMap || null)
+          setPendAttr(res.pendAttr || null)
+        }
+      } catch (_) {}
+      const pendingRevert = lastBackup && lastBackup.committed && !lastBackup.reverted
+      await createCommitBackup(rows, { keepLedger: pendingRevert })
     }
   }
 
   const handleCommit = async () => {
     let curBackup = lastBackup
-    // If backup is missing or older than 10 minutes (600,000 ms), refresh before writing
-    if (!curBackup || !curBackup.ts || Date.now() - curBackup.ts > 600000) {
+    // Reuse a fresh backup only when it is still pending: one that is already
+    // committed describes titles that are already written, and re-applying it
+    // would report the previous commit's count as if it were new work.
+    if (
+      !curBackup ||
+      curBackup.committed ||
+      curBackup.reverted ||
+      !curBackup.ts ||
+      Date.now() - curBackup.ts > 600000
+    ) {
       curBackup = await createCommitBackup(sessions)
     }
     const targets = (curBackup && curBackup.entries) || []
-    const eligibleCount = sessions.filter((d) => !esCron(d) && !d.vacia && !esBorrada(d)).length
+    const eligibleCount = sessions.filter((d) => !esIntocable(d)).length
     const unchangedCount = eligibleCount - targets.length
 
     if (targets.length === 0) {
@@ -2293,6 +2430,7 @@ function App({ ctx }) {
     setSessions((prev) =>
       prev.map((s) => (idMap.has(s.id) ? { ...s, raw: idMap.get(s.id) } : s))
     )
+    await syncIndexRaw(idMap)
 
     const updatedBackup = {
       ...curBackup,
@@ -2359,6 +2497,7 @@ function App({ ctx }) {
     setSessions((prev) =>
       prev.map((s) => (revMap.has(s.id) ? { ...s, raw: revMap.get(s.id) } : s))
     )
+    await syncIndexRaw(revMap)
 
     const updatedBackup = {
       ...lastBackup,
@@ -2385,58 +2524,6 @@ function App({ ctx }) {
       foot: t('revertDone', { n: reverted }),
     }))
     setTimeout(() => setBtnMsg((p) => ({ ...p, foot: '' })), 4500)
-  }
-
-  const handleUpdateRules = async () => {
-    let idx = null
-    let fac = null
-    const filesApi = (ctx && ctx.files) || (host && host.files)
-    if (filesApi && typeof filesApi.readText === 'function') {
-      try {
-        const [iRes, fRes] = await Promise.all([
-          filesApi.readText('data', 'index.json').catch(() => null),
-          filesApi.readText('data', 'facets.json').catch(() => null),
-        ])
-        if (iRes && iRes.ok && iRes.text) idx = JSON.parse(iRes.text)
-        if (fRes && fRes.ok && fRes.text) fac = JSON.parse(fRes.text)
-      } catch (_) {}
-    }
-
-    let isStale = false
-    if (idx && idx.generated) {
-      const genTs = new Date(idx.generated).getTime()
-      if (!isNaN(genTs) && Date.now() - genTs > 24 * 3600 * 1000) {
-        isStale = true
-      }
-    }
-
-    let diffCount = 0
-    setSessions((prev) =>
-      prev.map((s) => {
-        const cTitle = canonicalTitle(s)
-        if (!esCron(s) && !s.vacia && !esBorrada(s) && cTitle !== s.raw) {
-          diffCount++
-        }
-        return { ...s, canonTitle: cTitle }
-      })
-    )
-
-    if (isStale) {
-      setStaleNotice(t('updateStale'))
-      setBtnMsg((p) => ({
-        ...p,
-        update: `${diffCount} cambiarían`,
-        foot: `${diffCount} cambiarían · ${t('updateStale')}`,
-      }))
-    } else {
-      setStaleNotice('')
-      setBtnMsg((p) => ({
-        ...p,
-        update: `${diffCount} cambiarían`,
-        foot: t('updateDone', { count: diffCount }),
-      }))
-    }
-    setTimeout(() => setBtnMsg((p) => ({ ...p, update: '', foot: '' })), 6000)
   }
 
   const toggleFold = (b) => {
@@ -2758,13 +2845,14 @@ function App({ ctx }) {
 
   // Build two-line rows matching 2026-11-11_simulador-solo-codigo.html
   const tableRows = sorted.flatMap((d) => {
-    const rawToDisplay = (activeTab === 'testing' ? (d.canonTitle || d.raw) : d.raw) || ''
-    const cut = rawToDisplay.lastIndexOf(']')
-    const head = (cut > 0 ? rawToDisplay.slice(0, cut + 1) : `[${d.sujeto}] ${String(d.mmm).padStart(3, '0')}`).replace(
-      /^\d+\s+/,
-      ''
-    )
-    const tail = cut > 0 ? rawToDisplay.slice(cut + 1).trim() : d.desc
+    // The table always shows the title the session actually has. A title that is not
+    // canonical (no NNN [...] MMM at the start) is printed exactly as Hermes wrote it:
+    // no number and no invented subject in front of it.
+    const rawToDisplay = d.raw || ''
+    const isCanon = /^\d{3,4}\s*\[/.test(rawToDisplay)
+    const cut = isCanon ? rawToDisplay.lastIndexOf(']') : -1
+    const head = cut > 0 ? rawToDisplay.slice(0, cut + 1).replace(/^\d+\s+/, '') : ''
+    const tail = cut > 0 ? rawToDisplay.slice(cut + 1).trim() : rawToDisplay
     const isDel = /borrad/i.test(d.sujeto) || esBorrada(d)
     const isSel = Boolean(sel && sel.id === d.id)
 
@@ -2776,7 +2864,7 @@ function App({ ctx }) {
           key: d.id + '-t',
           onClick: () => selectSession(d),
         },
-        h('td', { className: 'ncol t' }, d.n),
+        h('td', { className: 'ncol t' }, isCanon ? d.n : ''),
         h(
           'td',
           { colSpan: pendMap ? 7 : 6, className: 'ttitle' + (isDel ? ' borrada' : '') },
@@ -2797,21 +2885,27 @@ function App({ ctx }) {
         h(
           'td',
           { className: 'tight' },
-          h(
-            'span',
-            {
-              className: 'pill s pick' + (isDel ? ' del' : ''),
-              title: 'Filtrar por este sujeto',
-              onClick: (e) => {
-                e.stopPropagation()
-                setF((p) => ({ ...p, sujeto: p.sujeto === d.sujeto ? null : d.sujeto }))
-                setSel(null)
-              },
-            },
-            d.sujeto
-          ),
-          ' ',
-          h('span', { className: 'mono', style: { color: 'var(--tx3)' } }, String(d.mmm || 1).padStart(3, '0')),
+          // A row without a canonical title has no subject of its own: the subject and
+          // the ordinal would be inventions of the panel, so they are not printed.
+          isCanon
+            ? h(
+                'span',
+                {
+                  className: 'pill s pick' + (isDel ? ' del' : ''),
+                  title: 'Filtrar por este sujeto',
+                  onClick: (e) => {
+                    e.stopPropagation()
+                    setF((p) => ({ ...p, sujeto: p.sujeto === d.sujeto ? null : d.sujeto }))
+                    setSel(null)
+                  },
+                },
+                d.sujeto
+              )
+            : null,
+          isCanon ? ' ' : null,
+          isCanon
+            ? h('span', { className: 'mono', style: { color: 'var(--tx3)' } }, String(d.mmm || 1).padStart(3, '0'))
+            : null,
           d.tag1
             ? h(
                 'span',
@@ -3463,11 +3557,11 @@ function App({ ctx }) {
                   {
                     className: 'commitbtn',
                     id: 'btnCommit',
-                    disabled: isCommitting || isReverting,
+                    disabled: isCommitting || isReverting || pendingRows.length === 0,
                     onClick: handleCommit,
                     title: t('commitBtnTitle'),
                   },
-                  btnMsg.commit || t('commitBtn')
+                  btnMsg.commit || t('commitBtnCount', { n: pendingRows.length })
                 )
               : h(
                   'button',
@@ -3480,17 +3574,6 @@ function App({ ctx }) {
                   },
                   btnMsg.revert || t('revertBtn')
                 ),
-            h(
-              'button',
-              {
-                className: 'updatebtn',
-                id: 'btnUpdate',
-                disabled: isCommitting || isReverting,
-                onClick: handleUpdateRules,
-                title: t('updateBtnTitle'),
-              },
-              btnMsg.update || t('updateBtn')
-            ),
             btnMsg.foot ? h('span', { className: 'footmsg' }, btnMsg.foot) : null
           )
         : h('div', { className: 'footbtns' }),

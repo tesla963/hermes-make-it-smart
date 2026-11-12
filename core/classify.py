@@ -23,7 +23,7 @@ from typing import Any, Callable, Iterable, Sequence
 
 from .normalize import Facets, core_subject, strip_spec
 from .prompt import build_messages
-from .bateria import strip_brand
+from .bateria import load_bateria, strip_brand
 from .taxonomy import (
     DEFAULT_PLATFORM,
     apply_abbreviation,
@@ -137,8 +137,16 @@ def parse_json_object(raw: str) -> dict[str, Any]:
 # --------------------------------------------------------------------------- #
 
 
-def to_facets(obj: dict[str, Any], ordinal: int = 1) -> Facets:
-    """Fold the model's answer onto the closed vocabularies and the invariants."""
+def to_facets(
+    obj: dict[str, Any],
+    ordinal: int = 1,
+    bateria: dict[str, Any] | None = None,
+) -> Facets:
+    """Fold the model's answer onto the closed vocabularies and the invariants.
+
+    ``bateria`` is the merged sheet (manual + the owner's own). Pass it in when
+    one is already loaded; otherwise the merged sheet is read here.
+    """
     subject = core_subject(str(obj.get("subject") or "").strip())
     subject = apply_abbreviation(subject)
     subject, spec = strip_spec(subject)
@@ -182,9 +190,10 @@ def to_facets(obj: dict[str, Any], ordinal: int = 1) -> Facets:
         subject = ""
 
     # The cheatsheet knows who makes what: it can move a brand into Tag1 and
-    # take it out of the subject in one step.
+    # take it out of the subject in one step. The merged sheet wins over the
+    # packaged one, so the owner's own brands are recognised here too.
     if subject:
-        stripped, brand_tag = strip_brand(subject)
+        stripped, brand_tag = strip_brand(subject, bateria)
         if brand_tag:
             subject = stripped
             if brand_tag.lower() != "hermes agent":
@@ -301,9 +310,11 @@ def classify_one(
     ordinal: int = 1,
     corrections: list[dict[str, Any]] | None = None,
     call_model: Callable[[ClassifyConfig, dict[str, Any]], str] | None = None,
+    bateria: dict[str, Any] | None = None,
 ) -> ClassifyResult:
     """Classify one session. Retries once, then falls back deterministically."""
     caller = call_model or _post
+    sheet = bateria if bateria is not None else load_bateria()
     payload_messages = build_messages(
         messages=messages,
         date=date,
@@ -313,34 +324,43 @@ def classify_one(
         agent_name=config.agent_name,
         language=config.language,
     )
+    conversation: list[dict[str, Any]] = list(payload_messages)
     base_payload: dict[str, Any] = {
         "model": config.model,
         "temperature": config.temperature,
         "max_tokens": config.max_tokens,
         "response_format": {"type": "json_object"},
-        "messages": payload_messages,
+        "messages": conversation,
     }
 
     attempts = 0
     last_error = ""
     for attempt in range(config.retries + 1):
         attempts = attempt + 1
+        base_payload["messages"] = conversation
         try:
             raw = caller(config, base_payload)
             obj = parse_json_object(raw)
-            facets = to_facets(obj, ordinal)
+            facets = to_facets(obj, ordinal, bateria=sheet)
             bad = problems_with(facets)
             if bad:
                 last_error = "; ".join(bad)
-                base_payload["messages"] = payload_messages + [
-                    {"role": "user", "content": f"That answer was rejected: {last_error}. Return corrected JSON."}
+                conversation = conversation + [
+                    {"role": "assistant", "content": raw},
+                    {
+                        "role": "user",
+                        "content": f"That answer was rejected: {last_error}. Return corrected JSON.",
+                    },
                 ]
                 continue
             return ClassifyResult(facets=facets, raw=raw, attempts=attempts, ok=True)
         except Exception as exc:  # noqa: BLE001
             last_error = f"{type(exc).__name__}: {exc}"
-            base_payload["messages"] = payload_messages + [
-                {"role": "user", "content": f"Your previous reply was invalid ({last_error}). Return ONLY the JSON object."}
+            conversation = conversation + [
+                {
+                    "role": "user",
+                    "content": f"Your previous reply was invalid ({last_error}). Return ONLY the JSON object.",
+                }
             ]
 
     return ClassifyResult(

@@ -50,12 +50,12 @@ ACTORS = {
     ),
 }
 
-# nnn -> (user text, expected tag2)
+# nnn -> (user text, expected tag3)
 INTENTS_CASES = {
-    462: ("Comprobar si ya salió la versión de iOS 27", "Update"),
+    462: ("Comprobar si ya salió la versión de iOS 27", "Instalar"),
     353: ("Me llego este hygrometer aydame a instalarlo", "Instalar"),
-    369: ("Compara estos dos lentes, quiero usarlos para volar drone", "Comparación"),
-    397: ("verifica si ellos ya sacaron deepseek v4.1 flash", "Update"),
+    369: ("Compara estos dos lentes, quiero usarlos para volar drone", "Comparar"),
+    397: ("verifica si ellos ya sacaron deepseek v4.1 flash", "Instalar"),
 }
 
 failures = 0
@@ -88,7 +88,11 @@ for nnn, (text, want) in INTENTS_CASES.items():
     ok(got.name == want, f"{nnn}: {want} (dio {got.name or '(ninguna)'} por {got.source})")
 
 print("\n§ vocabulario cerrado")
-ok(len(INTENTS) >= 12, f"{len(INTENTS)} intenciones declaradas")
+# The seven come from the rule tag-structure-2026-11-10 in core/corrections.yaml.
+CANONICAL_INTENTS = {"Comparar", "Instalar", "Investigar", "Testear",
+                     "Cotizar", "Troubleshooting", "Compatibilidad"}
+ok(set(INTENTS) == CANONICAL_INTENTS,
+   f"{len(INTENTS)} intenciones, exactamente las siete de tag-structure-2026-11-10")
 ok(all(v.get("means") for v in INTENTS.values()), "todas traen su significado en una línea")
 ok(all(v.get("signals") for v in INTENTS.values()), "todas traen señales léxicas")
 

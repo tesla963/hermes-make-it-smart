@@ -1,7 +1,7 @@
 """What did the user want done? The one judgement the script cannot make alone.
 
-Tag2 is not a topic — it is an intention. "Electronica" says nothing; "Instalar"
-says the user had a box in his hands. The difference is what makes Tag2 worth
+tag3 is not a topic — it is an intention. "Electronica" says nothing; "Instalar"
+says the user had a box in his hands. The difference is what makes tag3 worth
 filtering by.
 
 This module reads the intention in two passes:
@@ -23,53 +23,53 @@ import re
 from dataclasses import dataclass
 from typing import Any
 
-# Closed vocabulary. Tag2 must be one of these or empty — a free-form tag is a
-# filter that cannot be clicked twice.
+# Closed vocabulary. tag3 must be one of these seven or empty — a free-form tag
+# is a filter that cannot be clicked twice. The seven come from the rule
+# `tag-structure-2026-11-10` in core/corrections.yaml, which outranks every older
+# intention rule: the older names (Update, Version, Feature, Costo, Administrar,
+# Respaldar, Comparación, Diagnosticar) survive as signals inside the canonical
+# intention they belong to, not as tags of their own.
 INTENTS: dict[str, dict[str, Any]] = {
     "Instalar": {
+        # was: Instalar + Update + Version + Feature
         "signals": ["instalar", "instalarlo", "instalarla", "instalé", "instale",
                     "me llegó", "me llego", "recién llegó", "montar", "poner a andar",
-                    "install", "set up", "setup", "configurar", "dejar listo"],
-        "means": "el usuario tiene el objeto delante y quiere que funcione",
-    },
-    "Update": {
-        "signals": ["ya salió", "ya salio", "nueva versión", "nueva version",
+                    "install", "set up", "setup", "configurar", "dejar listo",
+                    "ya salió", "ya salio", "nueva versión", "nueva version",
                     "actualizar", "actualización", "actualizacion", "update",
                     "salio la version", "salió la versión", "hay versión", "hay version",
                     "me conviene actualizar", "ya sacaron", "sacaron", "ya salido",
-                    "ya está disponible", "ya esta disponible"],
-        "means": "existe una versión más nueva y quiere saber si le toca moverse",
-    },
-    "Version": {
-        "signals": ["qué versión", "que version", "cuál versión", "cual version",
-                    "version instalada", "versión instalada", "número de versión"],
-        "means": "quiere identificar qué versión tiene o cuál es la actual",
-    },
-    "Feature": {
-        # "puede", "hace", "permite" and "se puede" appear in half the sentences
-        # ever written. They fired on "Preguntar qué tareas quedaron pendientes"
-        # and turned a greeting into a Feature. Only phrases that ask what the
-        # object IS CAPABLE OF count.
-        "signals": ["sirve para", "maneja", "soporta", "capacidad de",
+                    "ya está disponible", "ya esta disponible",
+                    "qué versión", "que version", "cuál versión", "cual version",
+                    "version instalada", "versión instalada", "número de versión",
+                    # "puede", "hace", "permite" appear in half the sentences ever
+                    # written; only phrases asking what the object IS CAPABLE OF count.
+                    "sirve para", "maneja", "soporta", "capacidad de",
                     "qué funciones", "que funciones", "es capaz de",
                     "tiene la función", "tiene la funcion", "qué puede hacer",
                     "que puede hacer", "maneja pdf", "soporta pdf"],
-        "means": "pregunta qué sabe hacer el objeto, no cómo se usa",
+        "means": "quiere instalar, actualizar o identificar la versión de algo que ya tiene",
     },
     "Compatibilidad": {
         "signals": ["compatible", "compatibilidad", "funciona con", "sirve con",
                     "se puede usar con", "anda con", "trabaja con", "soporta el"],
         "means": "dos cosas que ya existen: pregunta si se hablan",
     },
-    "Comparación": {
+    "Comparar": {
+        # was: Comparación
         "signals": ["compara", "comparar", "comparación", "comparacion", " vs ",
                     "cuál es mejor", "cual es mejor", "diferencia entre", "mejor que"],
         "means": "dos o más candidatos y hay que elegir",
     },
-    "Diagnosticar": {
+    "Troubleshooting": {
+        # was: Diagnosticar + Administrar + Respaldar
         "signals": ["no funciona", "falla", "error", "no abre", "no arranca",
-                    "se cae", "problema", "roto", "no responde", "por qué no"],
-        "means": "algo está roto y hay que encontrar la causa",
+                    "se cae", "problema", "roto", "no responde", "por qué no",
+                    "administrar", "gestionar", "configurar el servidor", "panel",
+                    "usuario", "permisos", "crear cuenta", "alta de",
+                    "respaldo", "backup", "copiar a", "copia de seguridad",
+                    "guardar en el disco", "exportar a disco"],
+        "means": "algo está roto, desconfigurado o sin respaldo y hay que intervenir",
     },
     "Testear": {
         "signals": ["verificar", "comprobar", "probar", "test", "confirmar",
@@ -77,24 +77,12 @@ INTENTS: dict[str, dict[str, Any]] = {
         "means": "hay que confirmar que algo cumple lo que promete",
     },
     "Cotizar": {
+        # was: Cotizar + Costo
         "signals": ["precio", "cuánto cuesta", "cuanto cuesta", "cotizar",
-                    "cotización", "cotizacion", "barato", "oferta", "descuento"],
-        "means": "el objeto todavía no es suyo: está mirando el precio",
-    },
-    "Costo": {
-        "signals": ["cuánto gasté", "cuanto gaste", "cuánto he gastado", "gasto",
+                    "cotización", "cotizacion", "barato", "oferta", "descuento",
+                    "cuánto gasté", "cuanto gaste", "cuánto he gastado", "gasto",
                     "factura", "costo total", "cuánto llevo", "cuanto llevo"],
-        "means": "el dinero ya se gastó y hay que contarlo",
-    },
-    "Administrar": {
-        "signals": ["administrar", "gestionar", "configurar el servidor", "panel",
-                    "usuario", "permisos", "crear cuenta", "alta de"],
-        "means": "hay un sistema bajo su mando y quiere cambiarlo",
-    },
-    "Respaldar": {
-        "signals": ["respaldo", "backup", "copiar a", "copia de seguridad",
-                    "guardar en el disco", "exportar a disco"],
-        "means": "los datos existen y hay que ponerlos a salvo",
+        "means": "el dinero está en juego: un precio por pagar o un gasto ya hecho",
     },
     "Investigar": {
         "signals": ["investiga", "investigar", "busca información", "buscar info",
@@ -106,9 +94,8 @@ INTENTS: dict[str, dict[str, Any]] = {
 # When two intents tie, the one closer to the top of this list wins. Order is by
 # how much the verb changes the object: installing is not the same as pricing.
 _PRIORITY = [
-    "Instalar", "Update", "Version", "Compatibilidad", "Comparación",
-    "Diagnosticar", "Testear", "Cotizar", "Costo", "Respaldar", "Administrar",
-    "Feature", "Investigar",
+    "Instalar", "Compatibilidad", "Comparar", "Troubleshooting", "Testear",
+    "Cotizar", "Investigar",
 ]
 
 _PRIORITY_INDEX = {k: i for i, k in enumerate(_PRIORITY)}
