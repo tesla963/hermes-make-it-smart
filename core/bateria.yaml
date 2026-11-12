@@ -82,10 +82,6 @@ marcas:
     tag1: Samsung
     sitio: https://www.samsung.com/
     productos: [Galaxy A55, Galaxy S, A55]
-  google:
-    tag1: Google
-    sitio: https://www.google.com/
-    productos: [Chrome, Chromium, Gemini, Gemini Desktop]
   iterm2:
     tag1: ""
     nota: >
@@ -122,8 +118,10 @@ marcas:
     productos: [Case USB, DD28C3C, 8628SUS3]
   google:
     tag1: Google
+    sitio: https://www.google.com/
     strip: true
-    productos: [Gemini, Gemini Flash Lite, Gemini Pro, Workspace, Drive, Pixel]
+    productos: [Chrome, Chromium, Gemini, Gemini Desktop, Gemini Flash Lite,
+                Gemini Pro, Workspace, Drive, Pixel]
   anthropic:
     tag1: Anthropic
     strip: true
