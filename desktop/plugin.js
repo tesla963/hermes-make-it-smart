@@ -1143,8 +1143,11 @@ async function loadCatalogue(ctx) {
 
   // 5. Use the index as the authoritative source of rows (importing is not filtering: 910 rows).
   // Live gateway listing is used to check for live runtime and enrich runtime metrics (duration, costs).
+  // Sessions the snapshot does not contain yet are appended from the gateway: a session
+  // created after the index was built must still show up (and count as pending work).
   const hasIndex = Boolean(idxData && Array.isArray(idxData.sessions) && idxData.sessions.length > 0)
-  const sessionList = hasIndex ? idxData.sessions : [...liveById.values()]
+  const liveOnly = [...liveById.values()].filter((r) => r && r.id && !idxById.has(r.id))
+  const sessionList = hasIndex ? idxData.sessions.concat(liveOnly) : [...liveById.values()]
   const merged = []
 
   for (const item of sessionList) {
@@ -2349,8 +2352,23 @@ function App({ ctx }) {
   const switchTab = async (tab) => {
     setActiveTab(tab)
     if (tab === 'testing') {
+      // Entering Testing is the refresh moment. The index is a cache, so it is left
+      // alone everywhere else; here the catalogue is re-read (and the gateway rows
+      // the snapshot does not have yet are included) before anything is simulated.
+      let rows = sessions
+      try {
+        const res = await loadCatalogue(ctx)
+        if (res && Array.isArray(res.sessions)) {
+          rows = res.sessions
+          setSessions(rows)
+          setRpcErrors(Array.isArray(res.errors) ? res.errors : [])
+          setPendData(res.pendData || null)
+          setPendMap(res.pendMap || null)
+          setPendAttr(res.pendAttr || null)
+        }
+      } catch (_) {}
       const pendingRevert = lastBackup && lastBackup.committed && !lastBackup.reverted
-      await createCommitBackup(sessions, { keepLedger: pendingRevert })
+      await createCommitBackup(rows, { keepLedger: pendingRevert })
     }
   }
 
