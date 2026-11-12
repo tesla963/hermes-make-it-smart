@@ -718,6 +718,10 @@ position:relative;display:flex;flex-direction:column;width:100%;height:100%;min-
 .mmws .headtabs .headtab:active{border-color:transparent!important;background-color:transparent!important;box-shadow:none!important;outline:0!important}
 .mmws .headtabs .headtab.on{border-bottom-color:var(--ok)!important}
 .mmws .headtabs .headtab.on.testing{border-bottom-color:var(--gold)!important}
+/* Hover: el tab inactivo también muestra su línea inferior, en su propio color,
+   para que se vea que es una pestaña y que responde. */
+.mmws .headtabs .headtab:first-child:hover{border-bottom-color:var(--ok)!important}
+.mmws .headtabs .headtab:last-child:hover{border-bottom-color:var(--gold)!important}
 
 .mmws .bodywrap{flex:1 1 auto;min-height:0;display:flex;align-items:stretch;position:relative;overflow:hidden}
 .mmws .abarra{flex:none;padding:9px 0 8px;background:var(--bg2);border-bottom:1px solid var(--line);z-index:2}
