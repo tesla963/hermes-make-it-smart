@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.26.1 — 12-nov-2026 · empty-state message and a Bots filter
+
+### Added
+- **Bots chip**: a fourth state chip next to Deleted / Empty / Cron. Bot Chat and subagent transcripts are machinery, not work, so the list hides them by default (19 rows in this catalogue: 12 Bot Chat + 7 subagents) and shows only them when the chip is on. The count rides on the chip: `Bots · 19`.
+- **Empty state**: when nothing is pending, Testing says so instead of leaving a dead button — `No sessions to process` in English (the default) or `No hay sesiones para procesar` when the user switches language. 14 px, weight 700, primary text colour: readable at a glance without borrowing the panel's error red.
+- **`esBot` in the index**: `build_index` now writes a flag from the session's `source` column. Two subagents had already been renamed, so detecting them by the `Subagent:` title prefix was not enough — the database had the answer.
+
 ## 0.26.0 — 12-nov-2026 · window tabs, an honest Testing tab, classifier alignment
 
 ### Added
