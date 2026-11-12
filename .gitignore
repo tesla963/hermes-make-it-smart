@@ -19,6 +19,7 @@ tools/*.local.html
 core/bateria.personal.yaml
 
 # Written by tests/test_plugin.mjs on every run
+.plugin-verify.mjs   # scratch cascade check, never shipped
 .plugin-under-test.mjs
 
 # Datos de trabajo: backups del dataset (pueden contener texto de sesiones)
