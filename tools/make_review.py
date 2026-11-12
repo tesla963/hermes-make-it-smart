@@ -134,7 +134,7 @@ def main() -> int:
             p = row["propuesta"]
             facets = Facets(
                 subject=p["subject"], subject_ordinal=len(rows) + 1,
-                tag1=p["tag1"], tag2=p["tag2"], pillar=p["pillar"],
+                iq1=p["iq1"], iq2=p["iq2"], pillar=p["pillar"],
                 country=p.get("country", ""), year=p.get("year", ""),
                 machine=p.get("machine", ""),
                 description=p["description"], verb=p["verb"],
@@ -164,8 +164,8 @@ def main() -> int:
                     "source": s["source"],
                     "propuesta": {
                         "subject": f.subject,
-                        "tag1": f.tag1,
-                        "tag2": f.tag2,
+                        "iq1": f.iq1,
+                        "iq2": f.iq2,
                         "pillar": f.pillar,
                         "country": f.country,
                         "year": f.year,

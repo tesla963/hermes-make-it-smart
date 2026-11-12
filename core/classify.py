@@ -40,7 +40,7 @@ from .taxonomy import (
 DEFAULT_ENDPOINT = "https://api.deepseek.com/v1/chat/completions"
 DEFAULT_MODEL = "deepseek-flash"
 
-REQUIRED_KEYS = ("subject", "tag1", "tag2", "pillar", "description", "verb")
+REQUIRED_KEYS = ("subject", "iq1", "iq2", "pillar", "description", "verb")
 
 
 # --------------------------------------------------------------------------- #
@@ -150,17 +150,17 @@ def to_facets(
     subject = core_subject(str(obj.get("subject") or "").strip())
     subject = apply_abbreviation(subject)
     subject, spec = strip_spec(subject)
-    raw_tag1 = str(obj.get("tag1") or "").strip()
-    tag1 = apply_abbreviation(normalize_platform(raw_tag1))
-    tag2 = normalize_context(str(obj.get("tag2") or "").strip())
-    # The 2026-11-10 schema. tag3 is the verb, tag4 the theme, tag5 the year;
+    raw_iq1 = str(obj.get("iq1") or "").strip()
+    iq1 = apply_abbreviation(normalize_platform(raw_iq1))
+    iq2 = normalize_context(str(obj.get("iq2") or "").strip())
+    # The 2026-11-10 schema. iq3 is the verb, iq4 the theme, iq5 the year;
     # the old `pillar` key is still read so an older reply does not break.
-    tag3 = normalize_intention(str(obj.get("tag3") or obj.get("verb") or "").strip())
-    tag4 = normalize_theme(
-        str(obj.get("tag4") or obj.get("pillar") or "").strip()
+    iq3 = normalize_intention(str(obj.get("iq3") or obj.get("verb") or "").strip())
+    iq4 = normalize_theme(
+        str(obj.get("iq4") or obj.get("pillar") or "").strip()
     )
-    tag5 = str(obj.get("tag5") or obj.get("year") or "").strip()
-    pillar = normalize_pillar(str(obj.get("pillar") or obj.get("tag4") or "").strip())
+    iq5 = str(obj.get("iq5") or obj.get("year") or "").strip()
+    pillar = normalize_pillar(str(obj.get("pillar") or obj.get("iq4") or "").strip())
     verb = normalize_verb(str(obj.get("verb") or "").strip())
     desc = re.sub(r"\s+", " ", str(obj.get("description") or "")).strip()
     if spec and not desc:
@@ -171,25 +171,25 @@ def to_facets(
 
     # A brand the closed list does not know is still a brand. Forcing it to
     # "Hermes Agent" loses the single most identifying word of the session.
-    if pillar in ("Productos", "Servicios") and raw_tag1 and tag1 == DEFAULT_PLATFORM:
-        if raw_tag1.lower() not in ("hermes", "hermes agent", ""):
-            tag1 = raw_tag1.title() if raw_tag1.islower() else raw_tag1
+    if pillar in ("Productos", "Servicios") and raw_iq1 and iq1 == DEFAULT_PLATFORM:
+        if raw_iq1.lower() not in ("hermes", "hermes agent", ""):
+            iq1 = raw_iq1.title() if raw_iq1.islower() else raw_iq1
 
     # "Hermes Agent" is the AUTHOR of every session, never the maker of its
     # subject. The model still reaches for it because 50 rules mention it; here
     # it is turned into an honest empty field.
-    if tag1.strip().lower().startswith("hermes") or tag1.strip().lower() in ("", "varios"):
-        tag1 = ""
+    if iq1.strip().lower().startswith("hermes") or iq1.strip().lower() in ("", "varios"):
+        iq1 = ""
 
     # The same word cannot fill two fields: if the context repeats the verb or
     # the theme, it says nothing and belongs nowhere.
-    if tag2 and tag2.lower() in {tag3.lower(), tag4.lower()}:
-        tag2 = ""
+    if iq2 and iq2.lower() in {iq3.lower(), iq4.lower()}:
+        iq2 = ""
 
-    if subject and tag1 and subject.strip().lower() == tag1.strip().lower():
+    if subject and iq1 and subject.strip().lower() == iq1.strip().lower():
         subject = ""
 
-    # The cheatsheet knows who makes what: it can move a brand into Tag1 and
+    # The cheatsheet knows who makes what: it can move a brand into Iq1 and
     # take it out of the subject in one step. The merged sheet wins over the
     # packaged one, so the owner's own brands are recognised here too.
     if subject:
@@ -197,20 +197,20 @@ def to_facets(
         if brand_tag:
             subject = stripped
             if brand_tag.lower() != "hermes agent":
-                tag1 = brand_tag
+                iq1 = brand_tag
 
-    # A tag that only repeats the subject or Tag1 is noise in the filter list.
-    if is_redundant_tag(subject, tag2):
-        tag2 = ""
+    # A tag that only repeats the subject or Iq1 is noise in the filter list.
+    if is_redundant_tag(subject, iq2):
+        iq2 = ""
 
     return Facets(
         subject=subject,
         subject_ordinal=ordinal,
-        tag1=tag1 or DEFAULT_PLATFORM,
-        tag2=tag2,
-        tag3=tag3,
-        tag4=tag4 or pillar,
-        tag5=tag5 or year,
+        iq1=iq1 or DEFAULT_PLATFORM,
+        iq2=iq2,
+        iq3=iq3,
+        iq4=iq4 or pillar,
+        iq5=iq5 or year,
         pillar=pillar,
         country=country,
         year=year,
@@ -226,10 +226,10 @@ def problems_with(facets: Facets) -> list[str]:
         out.append("empty subject")
     if len(facets.subject) > 40:
         out.append("subject too long")
-    if facets.tag2 and facets.tag2 == facets.tag1:
-        out.append("tag2 repeats tag1")
-    if facets.tag2 and is_redundant_tag(facets.subject, facets.tag2):
-        out.append("tag2 repeats the subject")
+    if facets.iq2 and facets.iq2 == facets.iq1:
+        out.append("iq2 repeats iq1")
+    if facets.iq2 and is_redundant_tag(facets.subject, facets.iq2):
+        out.append("iq2 repeats the subject")
     if facets.subject and facets.verb and facets.verb.lower() in facets.subject.lower():
         out.append("verb repeated inside the subject")
     return out
@@ -273,10 +273,10 @@ _KEYWORDS: tuple[tuple[str, str, str], ...] = (
 def fallback_facets(messages: Sequence[str], ordinal: int = 1) -> Facets:
     """Last-resort classification. Never invents: it reads the first message."""
     blob = " ".join(messages).lower()
-    tag1, tag2 = DEFAULT_PLATFORM, ""
+    iq1, iq2 = DEFAULT_PLATFORM, ""
     for needle, plat, fam in _KEYWORDS:
         if needle in blob:
-            tag1, tag2 = plat, fam
+            iq1, iq2 = plat, fam
             break
     first = (messages[0] if messages else "").strip()
     subject = core_subject(re.sub(r"[^\w\sáéíóúñÁÉÍÓÚÑ-]", " ", first))[:60].strip()
@@ -287,8 +287,8 @@ def fallback_facets(messages: Sequence[str], ordinal: int = 1) -> Facets:
     return Facets(
         subject=subject,
         subject_ordinal=ordinal,
-        tag1=tag1,
-        tag2=tag2,
+        iq1=iq1,
+        iq2=iq2,
         pillar="Temas Varios",
         description="",
         verb="",

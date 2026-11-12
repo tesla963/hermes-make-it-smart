@@ -38,8 +38,8 @@ The classifier consumes `SessionRecord` and returns a `Facets`:
 class Facets:
     subject: str
     subject_ordinal: int          # MMM
-    tag1: str
-    tag2: str
+    iq1: str
+    iq2: str
     pillar: str
     country: str | None
     year: str | None
@@ -171,7 +171,7 @@ Theming uses `var(--ui-*)` variables so it follows the app, not a hardcoded pale
 | Suite | What it protects |
 |---|---|
 | `test_core_purity.py` | `core/` has no host imports |
-| `test_format.py` | 100 chars, no subject repeating Tag1, ordinals without gaps |
+| `test_format.py` | 100 chars, no subject repeating Iq1, ordinals without gaps |
 | `test_title_api.py` | every write goes through `SessionDB`, never raw SQL |
 | `test_backup.py` | a backup exists and its hashes match before any write |
 | `test_eval.py` | the owned corrections still classify correctly |

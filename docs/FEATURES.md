@@ -19,24 +19,24 @@ agent that forgets the shape of your work is an agent you must re-brief every da
 ## 2 · The nomenclature
 
 ```
-NNN [Sujeto] MMM [Tag1] [Tag2] Descripción · Verbo
+NNN [Sujeto] MMM [Iq1] [Iq2] Descripción · Verbo
 ```
 
-The **title identifies the subject**. `Tag1` **amplifies** it — the brand, or the program.
-`Tag2` is context: place, machine, country, store. The description states the essence (the
-intention in words), and `Tag3`/`Tag4` — intention and theme — stay **invisible** in the title
+The **title identifies the subject**. `Iq1` **amplifies** it — the brand, or the program.
+`Iq2` is context: place, machine, country, store. The description states the essence (the
+intention in words), and `Iq3`/`Iq4` — intention and theme — stay **invisible** in the title
 while driving every filter.
 
 ### The four reference cases
 
-| | Sujeto | Tag1 | Tag2 | Tag3 (intención) | Tag4 (tema) |
+| | Sujeto | Iq1 | Iq2 | Iq3 (intención) | Iq4 (tema) |
 |---|---|---|---|---|---|
 | **1** | **Air 2S** | DJI | Ebay | *la intención* — la aclara la descripción | el tema |
 | **2** | **DNS + Email** | Cyberpanel *(programa)* | VPS | Troubleshooting | — |
 | **3** | **Protocolo** | Hermes Gateway | MacMini M4 | Troubleshooting | IT Manager *(o la subcategoría que cuelga de ese tema)* |
 | **4** | **Trace Minerals** | Dr. Berg | Amazon | Compra | Medicina / Nutrición |
 
-Cases 2 and 3 are why `Tag1` was widened: **it holds a brand *or* a program.** A troubleshooting
+Cases 2 and 3 are why `Iq1` was widened: **it holds a brand *or* a program.** A troubleshooting
 session is about a program, not a manufacturer, and forcing it into "brand" produced wrong
 titles.
 
@@ -49,17 +49,17 @@ Nine slots, so a new axis never forces a migration. Six in use, three reserved.
 
 | Slot | Axis | What it holds | In the title |
 |---|---|---|---|
-| **tag1** | Protagonist | brand, **or program / platform / service** | yes |
-| **tag2** | Context | place, machine, country, store | yes |
-| **tag3** | Intention | closed vocabulary — see §4 | no |
-| **tag4** | Theme | work front, or a sub-theme under it | no |
-| **tag5** | **Date** | when it happened | no |
-| **tag6** | Machine | which computer | no |
-| **tag7** | *free* | reserved | no |
-| **tag8** | *free* | reserved | no |
-| **tag9** | *free* | reserved | no |
+| **iq1** | Protagonist | brand, **or program / platform / service** | yes |
+| **iq2** | Context | place, machine, country, store | yes |
+| **iq3** | Intention | closed vocabulary — see §4 | no |
+| **iq4** | Theme | work front, or a sub-theme under it | no |
+| **iq5** | **Date** | when it happened | no |
+| **iq6** | Machine | which computer | no |
+| **iq7** | *free* | reserved | no |
+| **iq8** | *free* | reserved | no |
+| **iq9** | *free* | reserved | no |
 
-**The date is `tag5`** — not part of `tag2`, and not part of the name. The name says *what*; the
+**The date is `iq5`** — not part of `iq2`, and not part of the name. The name says *what*; the
 tags say *when, where and why*.
 
 ## 4 · The code is still on the old axis order
@@ -69,9 +69,9 @@ but **the axes are mapped the old way**, and that is the real work item:
 
 | In the new nomenclature (§3) | What `core/taxonomy.py` actually implements |
 |---|---|
-| tag2 = **context** (place, machine, country, store) | **tag2 = work family**: `IT_FAMILIES` (IA, Data Mining, Automation, WebHosting, **Troubleshooting**, VPS, Data Security, Multimedia, Productivity, MCP/CLI, File System, **IT Manager**, Data Backup, Programming, Networking, Data Recovery, Repository), `NON_IT_FAMILIES` (Derecho Constitucional/Penal/Civil, Educación, **Medicina**, **Nutrición**, Compras, Geopolítica) and `MARKET_FAMILIES` (Ebay, Amazon, Comparación) |
-| tag3 = **intention** | **tag3 = pillar**: `PILLARS` (Asistente IA, VPS, Compras, Productos, Servicios, Data Backup, Derecho, Youtuber, MindMap, Geopolítica, Masoterapia, Temas Varios) |
-| tag4 = **theme** | exists only as `IT_SUBCATEGORIES` (IA Bot, VPS, Data Backup, Hardware, MindMap, Network, OS) + `OTHER_THEMES`, not as tag4 |
+| iq2 = **context** (place, machine, country, store) | **iq2 = work family**: `IT_FAMILIES` (IA, Data Mining, Automation, WebHosting, **Troubleshooting**, VPS, Data Security, Multimedia, Productivity, MCP/CLI, File System, **IT Manager**, Data Backup, Programming, Networking, Data Recovery, Repository), `NON_IT_FAMILIES` (Derecho Constitucional/Penal/Civil, Educación, **Medicina**, **Nutrición**, Compras, Geopolítica) and `MARKET_FAMILIES` (Ebay, Amazon, Comparación) |
+| iq3 = **intention** | **iq3 = pillar**: `PILLARS` (Asistente IA, VPS, Compras, Productos, Servicios, Data Backup, Derecho, Youtuber, MindMap, Geopolítica, Masoterapia, Temas Varios) |
+| iq4 = **theme** | exists only as `IT_SUBCATEGORIES` (IA Bot, VPS, Data Backup, Hardware, MindMap, Network, OS) + `OTHER_THEMES`, not as iq4 |
 
 Every value from your four example cases **does exist** — `Troubleshooting`, `IT Manager`,
 `Medicina`, `Nutrición`, `Ebay`, `Amazon` — but they sit on the wrong axis today. `Compra` is the
@@ -196,9 +196,9 @@ outside the host API. No title write without a backup.**
 
 ## 14 · Doc sync owed
 
-- `ALGORITHM.md` still lists `Date` as a **name field**; this page puts the date in **`tag5`**.
+- `ALGORITHM.md` still lists `Date` as a **name field**; this page puts the date in **`iq5`**.
   `ALGORITHM.md` gets corrected, not this page.
-- `SPEC-UI.md`'s axis names for `tag5`/`tag6` must match §3 (date, machine).
+- `SPEC-UI.md`'s axis names for `iq5`/`iq6` must match §3 (date, machine).
 
 ## 15 · Branding — one product, three names
 

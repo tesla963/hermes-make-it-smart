@@ -46,7 +46,7 @@ whether it still rules or is history.
 ## The naming format
 
 ```
-NNN [Subject] MMM [Tag1] [Tag2] Description · Verb
+NNN [Subject] MMM [Iq1] [Iq2] Description · Verb
 ```
 
 | Part | Question it answers | Example |
@@ -54,8 +54,8 @@ NNN [Subject] MMM [Tag1] [Tag2] Description · Verb
 | `NNN` | global sequence, never reused | `748` |
 | `[Subject]` | *what* the session is about | `[Air 2S]` |
 | `MMM` | which one of the series — the ordinal, **outside** the bracket | `003` |
-| `[Tag1]` | *who/what* is the real protagonist | `[DJI]` |
-| `[Tag2]` | *what kind of work* | `[Ebay]` |
+| `[Iq1]` | *who/what* is the real protagonist | `[DJI]` |
+| `[Iq2]` | *what kind of work* | `[Ebay]` |
 | `Description` | everything the three previous fields could not say | `Compare the Fly More bundle` |
 | `· Verb` | the action taken, as an appendix | `· Comparar` |
 

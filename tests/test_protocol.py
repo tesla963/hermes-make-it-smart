@@ -50,7 +50,7 @@ ACTORS = {
     ),
 }
 
-# nnn -> (user text, expected tag3)
+# nnn -> (user text, expected iq3)
 INTENTS_CASES = {
     462: ("Comprobar si ya salió la versión de iOS 27", "Instalar"),
     353: ("Me llego este hygrometer aydame a instalarlo", "Instalar"),

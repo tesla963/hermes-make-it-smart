@@ -5,18 +5,18 @@
     python3 tools/reclassify.py --all            # every session, propose only
     python3 tools/reclassify.py --all --apply    # back up and write
 
-This is NOT a migration. The old Tag2 (families, topics, intentions mixed in one
+This is NOT a migration. The old Iq2 (families, topics, intentions mixed in one
 field) is thrown away; the model reads what the user said and decides again.
-That is why some sessions will come out with an empty tag3: an empty field says
+That is why some sessions will come out with an empty iq3: an empty field says
 nobody read an intention there, which is true. It is not filled with whatever
 the old tag happened to hold.
 
 The schema:
-    tag1 = maker of the subject (adjective)   "DJI"
-    tag2 = context: store, country or machine "Ebay"
-    tag3 = intention (seven verbs, closed)    "Comparar"
-    tag4 = theme / subcategory                "Hardware"
-    tag5 = year                               "2026"
+    iq1 = maker of the subject (adjective)   "DJI"
+    iq2 = context: store, country or machine "Ebay"
+    iq3 = intention (seven verbs, closed)    "Comparar"
+    iq4 = theme / subcategory                "Hardware"
+    iq5 = year                               "2026"
 """
 
 from __future__ import annotations
@@ -43,7 +43,7 @@ from core.normalize import Facets, render  # noqa: E402
 
 TITLE_RE = re.compile(
     r"^(?P<nnn>\d{3,4})\s+\[(?P<subject>.+?)\]\s+(?P<mmm>\d{3,4})\s*"
-    r"(?:\[(?P<tag1>[^\]]*)\])?\s*(?:\[(?P<tag2>[^\]]*)\])?\s*"
+    r"(?:\[(?P<iq1>[^\]]*)\])?\s*(?:\[(?P<iq2>[^\]]*)\])?\s*"
     r"(?P<desc>.*?)(?:\s*·\s*(?P<verb>[^·]+))?\s*$"
 )
 
@@ -164,28 +164,28 @@ def main() -> int:
             f = res.facets
             if f is None:
                 continue
-            if not f.tag3:
+            if not f.iq3:
                 empty_intent += 1
             new = render(r["nnn"], f)
             out.append({
                 "id": r["id"], "db": r["db"], "nnn": r["nnn"], "old": r["old"],
-                "new": new, "subject": f.subject, "tag1": f.tag1, "tag2": f.tag2,
-                "tag3": f.tag3, "tag4": f.tag4, "tag5": f.tag5,
+                "new": new, "subject": f.subject, "iq1": f.iq1, "iq2": f.iq2,
+                "iq3": f.iq3, "iq4": f.iq4, "iq5": f.iq5,
                 "desc": f.description, "attempts": getattr(res, "attempts", 1),
             })
             if i % 50 == 0 or i == len(rows):
                 rate = i / max(1e-9, time.time() - t0)
                 left = (len(rows) - i) / max(1e-9, rate)
-                print(f"  {i}/{len(rows)} · {time.time()-t0:.0f}s · faltan {left/60:.0f} min · sin tag3: {empty_intent}", flush=True)
+                print(f"  {i}/{len(rows)} · {time.time()-t0:.0f}s · faltan {left/60:.0f} min · sin iq3: {empty_intent}", flush=True)
 
     out.sort(key=lambda r: r["nnn"])
 
     Path(args.out).write_text(json.dumps(out, ensure_ascii=False, indent=1), encoding="utf-8")
-    print(f"\n{len(out)} clasificadas · {empty_intent} sin tag3 ({empty_intent/len(out)*100:.0f}%)")
+    print(f"\n{len(out)} clasificadas · {empty_intent} sin iq3 ({empty_intent/len(out)*100:.0f}%)")
     print(f"-> {args.out}")
 
     for r in out[:8]:
-        print(f"\n  {r['nnn']:>3} [{r['tag1'] or '—'}] [{r['tag2'] or '—'}] [{r['tag3'] or '—'}] [{r['tag4'] or '—'}]")
+        print(f"\n  {r['nnn']:>3} [{r['iq1'] or '—'}] [{r['iq2'] or '—'}] [{r['iq3'] or '—'}] [{r['iq4'] or '—'}]")
         print(f"       - {r['old'][:92]}")
         print(f"       + {r['new'][:92]}")
 

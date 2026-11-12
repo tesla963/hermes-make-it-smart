@@ -28,7 +28,7 @@ from adapters.hermes import discover_databases, read_sessions  # noqa: E402
 
 TITLE_RE = re.compile(
     r"^(?P<nnn>\d{3,4})\s+\[(?P<subject>.+?)\s+(?P<mmm>\d{3,4})\]\s*"
-    r"(?:\[(?P<tag1>[^\]]*)\])?\s*(?:\[(?P<tag2>[^\]]*)\])?\s*"
+    r"(?:\[(?P<iq1>[^\]]*)\])?\s*(?:\[(?P<iq2>[^\]]*)\])?\s*"
     r"(?P<desc>.*?)(?:\s*·\s*(?P<verb>[^·]+))?\s*$"
 )
 
@@ -85,7 +85,7 @@ def main() -> int:
                     {
                         "session_id": rec.id, "profile": profile, "db_path": str(path),
                         "nnn": g["nnn"], "mmm": g["mmm"], "subject": g["subject"],
-                        "tag1": g["tag1"] or "", "tag2": g["tag2"] or "",
+                        "iq1": g["iq1"] or "", "iq2": g["iq2"] or "",
                         "verb": (g["verb"] or "").strip(),
                         "before": desc, "after": "", "stamp": bare.group(0).strip(),
                     }
@@ -101,8 +101,8 @@ def main() -> int:
                         "nnn": g["nnn"],
                         "mmm": g["mmm"],
                         "subject": g["subject"],
-                        "tag1": g["tag1"] or "",
-                        "tag2": g["tag2"] or "",
+                        "iq1": g["iq1"] or "",
+                        "iq2": g["iq2"] or "",
                         "verb": (g["verb"] or "").strip(),
                         "before": desc,
                         "after": cleaned,
@@ -146,8 +146,8 @@ def main() -> int:
         f = Facets(
             subject=r["subject"],
             subject_ordinal=int(r["mmm"]),
-            tag1=r["tag1"],
-            tag2=r["tag2"],
+            iq1=r["iq1"],
+            iq2=r["iq2"],
             description=r["after"],
             verb=r["verb"],
         )

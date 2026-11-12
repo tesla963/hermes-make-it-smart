@@ -218,24 +218,24 @@ def _is_empty(r: dict[str, Any]) -> bool:
 def _compact_row(r: dict[str, Any]) -> dict[str, Any]:
     """Return the canonical compact row shape defined in docs/AGENT-TOOLS.md."""
     title = str(r.get("title") or r.get("raw") or "").strip()
-    tag4 = str(r.get("tag4") or r.get("pilar") or "").strip()
+    iq4 = str(r.get("iq4") or r.get("pilar") or "").strip()
     fecha = str(r.get("fecha") or "")[:10]
-    tag5 = str(r.get("tag5") or r.get("anio") or (fecha[:4] if fecha else "")).strip()
+    iq5 = str(r.get("iq5") or r.get("anio") or (fecha[:4] if fecha else "")).strip()
     return {
         "n": int(r.get("n") or 0),
         "mmm": int(r.get("mmm") or 1),
         "id": str(r.get("id") or ""),
         "title": title,
         "sujeto": str(r.get("sujeto") or "").strip(),
-        "tag1": str(r.get("tag1") or "").strip(),
-        "tag2": str(r.get("tag2") or "").strip(),
-        "tag3": str(r.get("tag3") or "").strip(),
-        "tag4": tag4,
-        "tag5": tag5,
-        "tag6": str(r.get("tag6") or "").strip(),
-        "tag7": str(r.get("tag7") or "").strip(),
-        "tag8": str(r.get("tag8") or "").strip(),
-        "tag9": str(r.get("tag9") or "").strip(),
+        "iq1": str(r.get("iq1") or "").strip(),
+        "iq2": str(r.get("iq2") or "").strip(),
+        "iq3": str(r.get("iq3") or "").strip(),
+        "iq4": iq4,
+        "iq5": iq5,
+        "iq6": str(r.get("iq6") or "").strip(),
+        "iq7": str(r.get("iq7") or "").strip(),
+        "iq8": str(r.get("iq8") or "").strip(),
+        "iq9": str(r.get("iq9") or "").strip(),
         "desc": str(r.get("desc") or "").strip(),
         "verb": str(r.get("verb") or "").strip(),
         "fecha": fecha,
@@ -316,7 +316,7 @@ def _load_merged_rows() -> tuple[list[dict[str, Any]], str]:
         sid = str(r.get("id") or "")
         ex = facets_map.get(sid) or {}
         merged = dict(r)
-        for k in ("sujeto", "tag1", "tag2", "tag3", "tag4", "tag5", "tag6", "tag7", "tag8", "tag9", "pilar", "motor"):
+        for k in ("sujeto", "iq1", "iq2", "iq3", "iq4", "iq5", "iq6", "iq7", "iq8", "iq9", "pilar", "motor"):
             if not merged.get(k) and ex.get(k):
                 merged[k] = ex[k]
         if "mc" not in merged and "mc" in ex:
@@ -429,10 +429,10 @@ def _filter_rows(rows: list[dict[str, Any]], args: dict[str, Any]) -> list[dict[
                         c["desc"],
                         str(raw_r.get("raw") or ""),
                         str(raw_r.get("resumen") or ""),
-                        c["tag1"],
-                        c["tag2"],
-                        c["tag3"],
-                        c["tag4"],
+                        c["iq1"],
+                        c["iq2"],
+                        c["iq3"],
+                        c["iq4"],
                         str(c["n"]),
                         c["id"],
                     ]
@@ -595,12 +595,12 @@ def handle_cellar_search(args: dict[str, Any], **_kwargs: Any) -> str:
 def _build_why(c: dict[str, Any]) -> str:
     return (
         f"ADN de la sesión: sujeto {c['sujeto'] or '—'} · "
-        f"tag1 {c['tag1'] or '—'} (protagonista) · "
-        f"tag2 {c['tag2'] or '—'} (contexto) · "
-        f"tag3 {c['tag3'] or '—'} (intención) · "
-        f"tag4 {c['tag4'] or '—'} (tema) · "
-        f"tag5 {c['tag5'] or '—'} (fecha) · "
-        f"tag6 {c['tag6'] or '—'} (máquina)."
+        f"iq1 {c['iq1'] or '—'} (protagonista) · "
+        f"iq2 {c['iq2'] or '—'} (contexto) · "
+        f"iq3 {c['iq3'] or '—'} (intención) · "
+        f"iq4 {c['iq4'] or '—'} (tema) · "
+        f"iq5 {c['iq5'] or '—'} (fecha) · "
+        f"iq6 {c['iq6'] or '—'} (máquina)."
     )
 
 
@@ -682,7 +682,7 @@ def handle_cellar_stats(args: dict[str, Any], **_kwargs: Any) -> str:
     sum_tok = sum(r["tok"] for r in matched)
     sum_posts = sum(r["posts"] for r in matched)
 
-    all_axes = ("tag1", "tag2", "tag3", "tag4", "fecha_year", "prof")
+    all_axes = ("iq1", "iq2", "iq3", "iq4", "fecha_year", "prof")
     requested_facets = args.get("facets")
     if isinstance(requested_facets, list) and requested_facets:
         axes = [str(a) for a in requested_facets if str(a) in all_axes or re.match(r"^tag[1-9]$", str(a))]
@@ -924,7 +924,7 @@ def handle_cellar_index(args: dict[str, Any], **_kwargs: Any) -> str:
             if not r.get("claves") and sid in prev_claves:
                 r["claves"] = prev_claves[sid]
             ex = facets_map.get(sid) or {}
-            for k in ("sujeto", "tag1", "tag2", "tag3", "tag4", "tag5", "tag6", "tag7", "tag8", "tag9", "pilar", "motor"):
+            for k in ("sujeto", "iq1", "iq2", "iq3", "iq4", "iq5", "iq6", "iq7", "iq8", "iq9", "pilar", "motor"):
                 if not r.get(k) and ex.get(k):
                     r[k] = ex[k]
         out_path = _index_path()
@@ -1005,12 +1005,12 @@ def handle_cellar_index(args: dict[str, Any], **_kwargs: Any) -> str:
         f_with_mmm = Facets(
             subject=f.subject or "Sesión",
             subject_ordinal=mmm,
-            tag1=f.tag1,
-            tag2=f.tag2,
-            tag3=f.tag3,
-            tag4=f.tag4,
-            tag5=f.tag5 or (item["fecha"][:4] if item["fecha"] else ""),
-            tag6=f.tag6,
+            iq1=f.iq1,
+            iq2=f.iq2,
+            iq3=f.iq3,
+            iq4=f.iq4,
+            iq5=f.iq5 or (item["fecha"][:4] if item["fecha"] else ""),
+            iq6=f.iq6,
             description=f.description,
             verb=f.verb,
         )
@@ -1026,11 +1026,11 @@ def handle_cellar_index(args: dict[str, Any], **_kwargs: Any) -> str:
                 "fields": {
                     "sujeto": f_with_mmm.subject,
                     "mmm": mmm,
-                    "tag1": f_with_mmm.tag1,
-                    "tag2": f_with_mmm.tag2,
-                    "tag3": f_with_mmm.tag3,
-                    "tag4": f_with_mmm.tag4,
-                    "tag5": f_with_mmm.tag5,
+                    "iq1": f_with_mmm.iq1,
+                    "iq2": f_with_mmm.iq2,
+                    "iq3": f_with_mmm.iq3,
+                    "iq4": f_with_mmm.iq4,
+                    "iq5": f_with_mmm.iq5,
                     "desc": f_with_mmm.description,
                     "verb": f_with_mmm.verb,
                 },
@@ -1063,8 +1063,8 @@ def _known_tag1_set() -> set[str]:
     for b in (load_bateria(), _load_personal_bateria()):
         for key, spec in (b.get("marcas") or {}).items():
             known.add(str(key).lower())
-            if isinstance(spec, dict) and spec.get("tag1"):
-                known.add(str(spec["tag1"]).lower())
+            if isinstance(spec, dict) and spec.get("iq1"):
+                known.add(str(spec["iq1"]).lower())
         for key, spec in (b.get("programas") or {}).items():
             known.add(str(key).lower())
             if isinstance(spec, dict) and spec.get("marca"):
@@ -1088,9 +1088,9 @@ def handle_cellar_verify(args: dict[str, Any], **_kwargs: Any) -> str:
         by_rule[rule] += 1
         offenders.append({"n": c["n"], "id": c["id"], "rule": rule, "detail": detail})
 
-    known_tag1 = _known_tag1_set()
-    valid_tag3 = {x.lower() for x in INTENTIONS}
-    valid_tag4 = {x.lower() for x in (*THEMES, *IT_SUBCATEGORIES, *PILLARS)}
+    known_iq1 = _known_tag1_set()
+    valid_iq3 = {x.lower() for x in INTENTIONS}
+    valid_iq4 = {x.lower() for x in (*THEMES, *IT_SUBCATEGORIES, *PILLARS)}
 
     nnn_seen: dict[int, list[dict[str, Any]]] = defaultdict(list)
     by_subject: dict[str, list[dict[str, Any]]] = defaultdict(list)
@@ -1111,24 +1111,24 @@ def handle_cellar_verify(args: dict[str, Any], **_kwargs: Any) -> str:
         if c["sujeto"]:
             by_subject[slug_key(core_subject(c["sujeto"]) or c["sujeto"])].append(c)
 
-        # 4. tag3 inside the 7 intentions
-        if c["tag3"] and c["tag3"].lower() not in valid_tag3:
-            flag(c, "tag3_vocabulary", f"tag3={c['tag3']!r} not in 7 intentions")
+        # 4. iq3 inside the 7 intentions
+        if c["iq3"] and c["iq3"].lower() not in valid_iq3:
+            flag(c, "tag3_vocabulary", f"iq3={c['iq3']!r} not in 7 intentions")
 
-        # 5. tag4 inside themes
-        if c["tag4"] and c["tag4"].lower() not in valid_tag4:
-            flag(c, "tag4_vocabulary", f"tag4={c['tag4']!r} not in closed themes")
+        # 5. iq4 inside themes
+        if c["iq4"] and c["iq4"].lower() not in valid_iq4:
+            flag(c, "tag4_vocabulary", f"iq4={c['iq4']!r} not in closed themes")
 
-        # 6. tag1 present in bateria or empty
-        if c["tag1"] and c["tag1"].lower() not in known_tag1:
-            flag(c, "tag1_bateria", f"tag1={c['tag1']!r} not in bateria")
+        # 6. iq1 present in bateria or empty
+        if c["iq1"] and c["iq1"].lower() not in known_iq1:
+            flag(c, "tag1_bateria", f"iq1={c['iq1']!r} not in bateria")
 
-        # 7. Subject not equal to tag1 (unless subject has a version suffix)
-        if c["sujeto"] and c["tag1"]:
+        # 7. Subject not equal to iq1 (unless subject has a version suffix)
+        if c["sujeto"] and c["iq1"]:
             s_clean = slug_key(core_subject(c["sujeto"]) or c["sujeto"])
-            t1_clean = slug_key(c["tag1"])
+            t1_clean = slug_key(c["iq1"])
             if s_clean == t1_clean:
-                flag(c, "subject_repeats_tag1", f"sujeto={c['sujeto']!r} repeats tag1={c['tag1']!r}")
+                flag(c, "subject_repeats_iq1", f"sujeto={c['sujeto']!r} repeats iq1={c['iq1']!r}")
 
         # 8. Description present when fields cannot say it
         if not c["vacia"] and not c["desc"] and not c["verb"]:
@@ -1241,15 +1241,15 @@ def handle_cellar_rename(args: dict[str, Any], **kwargs: Any) -> str:
         if fields_arg is not None:
             sujeto = str(fields_arg.get("sujeto") if "sujeto" in fields_arg else c["sujeto"]).strip()
             mmm = int(fields_arg.get("mmm") if "mmm" in fields_arg and fields_arg.get("mmm") else c["mmm"] or 1)
-            tag1 = str(fields_arg.get("tag1") if "tag1" in fields_arg else c["tag1"]).strip()
-            tag2 = str(fields_arg.get("tag2") if "tag2" in fields_arg else c["tag2"]).strip()
+            iq1 = str(fields_arg.get("iq1") if "iq1" in fields_arg else c["iq1"]).strip()
+            iq2 = str(fields_arg.get("iq2") if "iq2" in fields_arg else c["iq2"]).strip()
             desc = str(fields_arg.get("desc") if "desc" in fields_arg else c["desc"]).strip()
             verb = str(fields_arg.get("verb") if "verb" in fields_arg else c["verb"]).strip()
             f_obj = Facets(
                 subject=sujeto,
                 subject_ordinal=mmm,
-                tag1=tag1,
-                tag2=tag2,
+                iq1=iq1,
+                iq2=iq2,
                 description=desc,
                 verb=verb,
             )
@@ -1257,12 +1257,12 @@ def handle_cellar_rename(args: dict[str, Any], **kwargs: Any) -> str:
             new_tags = {
                 "sujeto": core_subject(sujeto) or sujeto,
                 "mmm": mmm,
-                "tag1": tag1,
-                "tag2": tag2,
+                "iq1": iq1,
+                "iq2": iq2,
                 "desc": desc,
                 "verb": verb,
             }
-            for tk in ("tag3", "tag4", "tag5", "tag6", "tag7", "tag8", "tag9"):
+            for tk in ("iq3", "iq4", "iq5", "iq6", "iq7", "iq8", "iq9"):
                 if tk in fields_arg:
                     new_tags[tk] = "" if fields_arg[tk] is None else str(fields_arg[tk]).strip()
         else:
@@ -1282,8 +1282,8 @@ def handle_cellar_rename(args: dict[str, Any], **kwargs: Any) -> str:
             new_tags = {
                 "sujeto": (gd.get("subject") or "").strip(),
                 "mmm": int(gd.get("mmm") or 1),
-                "tag1": (gd.get("tag1") or "").strip(),
-                "tag2": (gd.get("tag2") or "").strip(),
+                "iq1": (gd.get("iq1") or "").strip(),
+                "iq2": (gd.get("iq2") or "").strip(),
                 "desc": (gd.get("desc") or "").strip(),
                 "verb": (gd.get("verb") or "").strip(),
             }
@@ -1363,8 +1363,8 @@ def handle_cellar_rename(args: dict[str, Any], **kwargs: Any) -> str:
 
         ex = facets_map.setdefault(c["id"], {})
         ex.update(new_tags)
-        if "tag4" in new_tags:
-            ex["pilar"] = new_tags["tag4"]
+        if "iq4" in new_tags:
+            ex["pilar"] = new_tags["iq4"]
 
         if c["id"] in idx_by_id:
             ir = idx_by_id[c["id"]]
@@ -1416,7 +1416,7 @@ def handle_cellar_tag(args: dict[str, Any], **kwargs: Any) -> str:
     confirm = bool(args.get("confirm", False))
     tag_set = args.get("set")
     if not isinstance(tag_set, dict) or not tag_set:
-        return _json({"ok": False, "error": "Provide a non-empty 'set' mapping of tags (tag1..tag9)."})
+        return _json({"ok": False, "error": "Provide a non-empty 'set' mapping of tags (iq1..iq9)."})
 
     valid_changes: dict[str, str] = {}
     for k, v in tag_set.items():
@@ -1424,7 +1424,7 @@ def handle_cellar_tag(args: dict[str, Any], **kwargs: Any) -> str:
             valid_changes[str(k)] = "" if v is None else str(v).strip()
 
     if not valid_changes:
-        return _json({"ok": False, "error": "No valid tag keys (tag1..tag9) found in 'set'."})
+        return _json({"ok": False, "error": "No valid tag keys (iq1..iq9) found in 'set'."})
 
     rows, gen_before = _load_merged_rows()
     targets, sel_err = _resolve_target_rows(rows, args)
@@ -1440,14 +1440,14 @@ def handle_cellar_tag(args: dict[str, Any], **kwargs: Any) -> str:
         before_tags = {k: c.get(k, "") for k in valid_changes}
         after_tags = dict(valid_changes)
 
-        # If tag1 or tag2 changed and session has a canonical title, re-render the title
+        # If iq1 or iq2 changed and session has a canonical title, re-render the title
         new_title: str | None = None
-        if ("tag1" in valid_changes or "tag2" in valid_changes) and parse_title(c["title"]):
+        if ("iq1" in valid_changes or "iq2" in valid_changes) and parse_title(c["title"]):
             f_obj = Facets(
                 subject=c["sujeto"],
                 subject_ordinal=c["mmm"],
-                tag1=after_tags.get("tag1", c["tag1"]),
-                tag2=after_tags.get("tag2", c["tag2"]),
+                iq1=after_tags.get("iq1", c["iq1"]),
+                iq2=after_tags.get("iq2", c["iq2"]),
                 description=c["desc"],
                 verb=c["verb"],
             )
@@ -1525,14 +1525,14 @@ def handle_cellar_tag(args: dict[str, Any], **kwargs: Any) -> str:
 
         ex = facets_map.setdefault(c["id"], {})
         ex.update(after_tags)
-        if "tag4" in after_tags:
-            ex["pilar"] = after_tags["tag4"]
+        if "iq4" in after_tags:
+            ex["pilar"] = after_tags["iq4"]
 
         if c["id"] in idx_by_id:
             ir = idx_by_id[c["id"]]
             ir.update(after_tags)
-            if "tag4" in after_tags:
-                ir["pilar"] = after_tags["tag4"]
+            if "iq4" in after_tags:
+                ir["pilar"] = after_tags["iq4"]
             if new_title is not None:
                 ir["raw"] = new_title
 
@@ -1654,19 +1654,19 @@ def handle_cellar_bateria(args: dict[str, Any], **kwargs: Any) -> str:
         return _json(
             {
                 "ok": True,
-                "nomenclature": "NNN [Sujeto] MMM [Tag1] [Tag2] Descripción · Verbo",
+                "nomenclature": "NNN [Sujeto] MMM [Iq1] [Iq2] Descripción · Verbo",
                 "max_title_length": MAX_TITLE_LENGTH,
                 "axes": {
-                    "tag0": {"name": "Subject (session patient)", "in_title": True},
-                    "tag1": {"name": "Protagonist (brand or program/platform/service)", "in_title": True},
-                    "tag2": {"name": "Context (place, machine, country, store)", "in_title": True},
-                    "tag3": {"name": "Intention (closed 7-verb vocabulary)", "in_title": False},
-                    "tag4": {"name": "Theme (work front or IT Manager subcategory)", "in_title": False},
-                    "tag5": {"name": "Date (year / when it happened)", "in_title": False},
-                    "tag6": {"name": "Machine (which computer)", "in_title": False},
-                    "tag7": {"name": "Reserved", "in_title": False},
-                    "tag8": {"name": "Project", "in_title": False},
-                    "tag9": {"name": "Pending (authorization requests)", "in_title": False},
+                    "iq0": {"name": "Subject (session patient)", "in_title": True},
+                    "iq1": {"name": "Protagonist (brand or program/platform/service)", "in_title": True},
+                    "iq2": {"name": "Context (place, machine, country, store)", "in_title": True},
+                    "iq3": {"name": "Intention (closed 7-verb vocabulary)", "in_title": False},
+                    "iq4": {"name": "Theme (work front or IT Manager subcategory)", "in_title": False},
+                    "iq5": {"name": "Date (year / when it happened)", "in_title": False},
+                    "iq6": {"name": "Machine (which computer)", "in_title": False},
+                    "iq7": {"name": "Reserved", "in_title": False},
+                    "iq8": {"name": "Project", "in_title": False},
+                    "iq9": {"name": "Pending (authorization requests)", "in_title": False},
                 },
                 "vocabularies": {
                     "tag3_intentions": list(INTENTIONS),
@@ -1806,8 +1806,8 @@ _TITLE_EXPORT_COLS = [
     "fecha",
     "titulo_actual",
     "sujeto",
-    "tag1",
-    "tag2",
+    "iq1",
+    "iq2",
     "descripcion",
     "verbo",
     "sujeto_nuevo",
@@ -1839,8 +1839,8 @@ def handle_cellar_export(args: dict[str, Any], **_kwargs: Any) -> str:
                 "fecha": c["fecha"],
                 "titulo_actual": c["title"],
                 "sujeto": c["sujeto"],
-                "tag1": c["tag1"],
-                "tag2": c["tag2"],
+                "iq1": c["iq1"],
+                "iq2": c["iq2"],
                 "descripcion": c["desc"],
                 "verbo": c["verb"],
                 "sujeto_nuevo": "",
@@ -1947,7 +1947,7 @@ _FILTER_PROPS: dict[str, Any] = {
     "q": {"type": "string", "description": "Free-text search (title, sujeto, desc, raw, resumen) or numeric NNN list/range."},
     "tags": {
         "type": "object",
-        "description": "Partial tag map, e.g. {'tag1': 'CyberPanel', 'tag3': 'Troubleshooting'}.",
+        "description": "Partial tag map, e.g. {'iq1': 'CyberPanel', 'iq3': 'Troubleshooting'}.",
     },
     "date_from": {"type": "string", "description": "Start date YYYY-MM-DD (inclusive)."},
     "date_to": {"type": "string", "description": "End date YYYY-MM-DD (inclusive)."},
@@ -1993,7 +1993,7 @@ CELLAR_STATS_SCHEMA = _schema(
         "facets": {
             "type": "array",
             "items": {"type": "string"},
-            "description": "Optional subset of facet axes to return (tag1, tag2, tag3, tag4, fecha_year, prof).",
+            "description": "Optional subset of facet axes to return (iq1, iq2, iq3, iq4, fecha_year, prof).",
         },
     },
 )
@@ -2019,7 +2019,7 @@ CELLAR_RENAME_SCHEMA = _schema(
         "selector": {"type": "object", "description": "Optional selector wrapper {'n', 'id', or 'filter'}."},
         "fields": {
             "type": "object",
-            "description": "Structured fields {'sujeto', 'mmm', 'tag1'..'tag9', 'desc', 'verb'} rendered into the canonical nomenclature.",
+            "description": "Structured fields {'sujeto', 'mmm', 'iq1'..'iq9', 'desc', 'verb'} rendered into the canonical nomenclature.",
         },
         "title": {"type": "string", "description": "Literal canonical title (validated for <=100 chars and structure)."},
         "dry_run": {"type": "boolean", "description": "Preview only without writing (default true)."},
@@ -2030,7 +2030,7 @@ CELLAR_RENAME_SCHEMA = _schema(
 
 CELLAR_TAG_SCHEMA = _schema(
     "cellar_tag",
-    "Set or clear (null) individual tags (tag1..tag9) on one session or a batch without losing the rest of the title. Gated by dry_run (default true) and confirm=true.",
+    "Set or clear (null) individual tags (iq1..iq9) on one session or a batch without losing the rest of the title. Gated by dry_run (default true) and confirm=true.",
     {
         "n": {"type": ["integer", "array"], "description": "Session NNN or list of NNNs."},
         "id": {"type": ["string", "array"], "description": "Session ID or list of IDs."},
@@ -2038,7 +2038,7 @@ CELLAR_TAG_SCHEMA = _schema(
         "selector": {"type": "object", "description": "Optional selector wrapper {'n', 'id', or 'filter'}."},
         "set": {
             "type": "object",
-            "description": "Tag map to set or clear, e.g. {'tag1': 'CyberPanel', 'tag5': null}.",
+            "description": "Tag map to set or clear, e.g. {'iq1': 'CyberPanel', 'iq5': null}.",
         },
         "dry_run": {"type": "boolean", "description": "Preview only without writing (default true)."},
         "confirm": {"type": "boolean", "description": "Must be true to execute a write."},
@@ -2081,7 +2081,7 @@ CELLAR_INDEX_SCHEMA = _schema(
 
 CELLAR_VERIFY_SCHEMA = _schema(
     "cellar_verify",
-    "Lint the archive against all nomenclature invariants (<=100 chars, unique NNN, gapless MMM per subject, closed tag3/tag4 vocabularies, tag1 in batería, subject != tag1, non-empty description).",
+    "Lint the archive against all nomenclature invariants (<=100 chars, unique NNN, gapless MMM per subject, closed iq3/iq4 vocabularies, iq1 in batería, subject != iq1, non-empty description).",
     {
         **_FILTER_PROPS,
     },

@@ -25,11 +25,11 @@ One entry per rule the user taught, with the real examples that taught it.
 - id: product-marketplace-shape
   taught: 2026-11-09
   rule: >
-    When the session is about evaluating a product, Tag1 is the brand and
-    Tag2 is the marketplace.
+    When the session is about evaluating a product, Iq1 is the brand and
+    Iq2 is the marketplace.
   examples:
-    - { nnn: 748, subject: "Air 2S", tag1: "DJI", tag2: "Ebay" }
-    - { nnn: 812, subject: "Trace Minerals", tag1: "Dr. Berg", tag2: "Amazon" }
+    - { nnn: 748, subject: "Air 2S", iq1: "DJI", iq2: "Ebay" }
+    - { nnn: 812, subject: "Trace Minerals", iq1: "Dr. Berg", iq2: "Amazon" }
   control_question: "Does the tag tell me who makes it, or where we looked?"
 ```
 
@@ -53,7 +53,7 @@ regressions    corrections that used to pass and now fail
 
 **A modified prompt that breaks a correction is a failed build**, not a judgement call.
 This is the piece that was missing: we were tuning by eye, and by eye the saludos ended
-up inside "Asistente IA" and verbs ended up in Tag2.
+up inside "Asistente IA" and verbs ended up in Iq2.
 
 ## 4. The loop
 

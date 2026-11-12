@@ -1,5 +1,38 @@
 # Changelog
 
+## 0.27.0 — 12-nov-2026 · the nine axes are called iq0…iq9
+
+### Changed
+- **Axis keys renamed**: `tag0`…`tag9` became `iq0`…`iq9` in the JSON artefacts
+  (`index.json`, `facets.json`), in the field names of `core/`, `tools/` and
+  `desktop/plugin.js`, in the YAML batteries, in the panel's labels and in the
+  documentation — 1,247 occurrences across 37 files. History is deliberately untouched:
+  `CHANGELOG.md`, `docs/PENDIENTES.md` and `SPEC-BATCH.md` keep the old names because they
+  describe what shipped at the time.
+
+### Added
+- **`tools/migrate_axes.py`** — the algorithm that upgrades any artefact from v0.26.1 or
+  older, in place and exactly once:
+  - it reads the schema from the file's own content (`tagN` ⇒ v1; `iqN` or
+    `"schema": 2` ⇒ v2), so nothing has to be declared;
+  - it renames every key at any depth, leaving values untouched — a `tag1` inside a
+    description stays a description;
+  - it copies the file to `plugin-data/make-it-smart/backups/<name>.pre-iq_<stamp>`
+    before writing, then replaces it atomically through a temp file;
+  - it stamps `"schema": 2` and is **idempotent**: a second run reports
+    `already-current` and leaves the file byte-identical;
+  - `--dry-run` reports the counts and writes nothing.
+- **Tolerant readers**: `withAxes()` in the panel and `load_facets()` in the indexer accept
+  either key set, so installing v0.27.0 over an old data directory never renders an empty
+  catalogue.
+- **`tests/test_migrate_axes.py`**: schema detection, key renaming, value preservation,
+  backup integrity, dry-run and idempotency.
+
+### Migration
+`tools/build_index.py` migrates first and rebuilds after, so an existing installation
+upgrades by rebuilding the catalogue. Verified on the live data: 7,913 keys in
+`index.json`, 8,181 in `facets.json`, zero `tagN` left, 879 sessions intact.
+
 ## 0.26.1 — 12-nov-2026 · empty-state message and a Bots filter
 
 ### Added

@@ -90,7 +90,7 @@ PLATFORMS: Final[tuple[str, ...]] = (
 # No default platform. "Hermes Agent" used to fill this slot, which meant every
 # session the classifier could not place became a session "about Hermes Agent" —
 # 303 of 884, spread across all eleven pillars. The assistant does the work in
-# every session; that makes it the AUTHOR, never the platform. An empty Tag1 is
+# every session; that makes it the AUTHOR, never the platform. An empty Iq1 is
 # honest: it says nobody knew, and it leaves the slot free for the maker.
 DEFAULT_PLATFORM: Final[str] = ""
 
@@ -192,7 +192,7 @@ ABBREVIATIONS: Final[dict[str, str]] = {
 }
 
 # Names that must NOT be abbreviated: they are not common vocabulary, and the
-# short form means nothing to a human. Keep the full string and let Tag1 carry
+# short form means nothing to a human. Keep the full string and let Iq1 carry
 # the maker.
 KEEP_FULL: Final[tuple[str, ...]] = (
     "Gorgon Halo",
@@ -310,15 +310,15 @@ __all__ = [
 # --------------------------------------------------------------------------- #
 # The 2026-11-10 schema
 # --------------------------------------------------------------------------- #
-# tag1 = the maker of the subject (adjective)
-# tag2 = the context that qualifies it (store, country or machine)
-# tag3 = the intention (a verb)
-# tag4 = the work front (theme, with subcategories)
-# tag5 = the year
+# iq1 = the maker of the subject (adjective)
+# iq2 = the context that qualifies it (store, country or machine)
+# iq3 = the intention (a verb)
+# iq4 = the work front (theme, with subcategories)
+# iq5 = the year
 # --------------------------------------------------------------------------- #
 
 # Closed vocabulary. Seven verbs the owner approved; a word outside this list
-# is not an intention, and an empty tag3 is honest — it says nobody read one.
+# is not an intention, and an empty iq3 is honest — it says nobody read one.
 INTENTIONS: Final[tuple[str, ...]] = (
     "Comparar",
     "Instalar",
@@ -343,7 +343,7 @@ IT_SUBCATEGORIES: Final[tuple[str, ...]] = (
 
 # Themes without subcategories yet.
 OTHER_THEMES: Final[tuple[str, ...]] = (
-    # Data Mining and Data Security were Tag2 values; the owner moved them here,
+    # Data Mining and Data Security were Iq2 values; the owner moved them here,
     # to a theme, because they name a front and not a verb.
     "Data Mining",
     "Data Security",
@@ -449,7 +449,7 @@ _KNOWN_MACHINES: Final[tuple[str, ...]] = (
 
 
 def normalize_context(raw: str) -> str:
-    """tag2 accepts a store, a country or a machine — nothing else.
+    """iq2 accepts a store, a country or a machine — nothing else.
 
     Left open, the model filled it with whatever it had at hand: "Comparación"
     91 times, "Automation" 76, "WebHosting" 25. Those are intentions and

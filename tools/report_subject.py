@@ -35,7 +35,7 @@ from adapters.hermes import attach_messages, discover_databases, read_sessions  
 
 TITLE_RE = re.compile(
     r"^(?P<nnn>\d{3,4})\s+\[(?P<subject>.+?)\s+(?P<mmm>\d{3,4})\]\s*"
-    r"(?:\[(?P<tag1>[^\]]*)\])?\s*(?:\[(?P<tag2>[^\]]*)\])?\s*"
+    r"(?:\[(?P<iq1>[^\]]*)\])?\s*(?:\[(?P<iq2>[^\]]*)\])?\s*"
     r"(?P<desc>.*?)(?:\s*·\s*(?P<verb>[^·]+))?\s*$"
 )
 
@@ -67,8 +67,8 @@ def collect(with_bodies: bool = False) -> list[dict]:
                     "nnn": int(g["nnn"]),
                     "mmm": int(g["mmm"]),
                     "subject": g["subject"].strip(),
-                    "tag1": (g["tag1"] or "").strip(),
-                    "tag2": (g["tag2"] or "").strip(),
+                    "iq1": (g["iq1"] or "").strip(),
+                    "iq2": (g["iq2"] or "").strip(),
                     "description": (g["desc"] or "").strip(),
                     "verb": (g["verb"] or "").strip(),
                     "title": title,
@@ -108,8 +108,8 @@ def _is_human(message: str) -> bool:
 
 def render_report(subject: str, sessions: list[dict]) -> str:
     first, last = sessions[0], sessions[-1]
-    tags = sorted({s["tag1"] for s in sessions if s["tag1"]})
-    families = sorted({s["tag2"] for s in sessions if s["tag2"]})
+    tags = sorted({s["iq1"] for s in sessions if s["iq1"]})
+    families = sorted({s["iq2"] for s in sessions if s["iq2"]})
     posts = sum(s["posts"] or 0 for s in sessions)
     cost = sum(s["cost"] or 0 for s in sessions)
     tokens = sum(s["tokens"] or 0 for s in sessions)

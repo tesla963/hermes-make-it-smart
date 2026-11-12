@@ -26,15 +26,15 @@ OUT = Path.home() / "Documents" / "Reportes - [Lisa]" / datetime.now().strftime(
 
 # La paleta de los nueve tags: la misma que usa el simulador y el plugin.
 PALETTE = {
-    "tag1": ("#f0d48a", "#2a2210", "plataforma"),
-    "tag2": ("#d3e3f3", "#121d28", "familia"),
-    "tag3": ("#c9a8f0", "#221634", "pilar"),
-    "tag4": ("#96e0b0", "#0f2618", "país"),
-    "tag5": ("#f2a8c4", "#2b1220", "año"),
-    "tag6": ("#f5b98f", "#2b1a0f", "máquina"),
-    "tag7": ("#8fe6e0", "#0d2725", "libre"),
-    "tag8": ("#b8b8f5", "#1a1a33", "libre"),
-    "tag9": ("#d8ec8f", "#222b0f", "libre"),
+    "iq1": ("#f0d48a", "#2a2210", "plataforma"),
+    "iq2": ("#d3e3f3", "#121d28", "familia"),
+    "iq3": ("#c9a8f0", "#221634", "pilar"),
+    "iq4": ("#96e0b0", "#0f2618", "país"),
+    "iq5": ("#f2a8c4", "#2b1220", "año"),
+    "iq6": ("#f5b98f", "#2b1a0f", "máquina"),
+    "iq7": ("#8fe6e0", "#0d2725", "libre"),
+    "iq8": ("#b8b8f5", "#1a1a33", "libre"),
+    "iq9": ("#d8ec8f", "#222b0f", "libre"),
 }
 
 CSS = """
@@ -110,12 +110,12 @@ def report_tree() -> str:
     cards = []
     for pillar, rows in sorted(by_pillar.items(), key=lambda kv: -len(kv[1])):
         branches = []
-        t1 = Counter(r["tag1"] for r in rows if r["tag1"]).most_common(6)
-        t2 = Counter(r["tag2"] for r in rows if r["tag2"]).most_common(4)
+        t1 = Counter(r["iq1"] for r in rows if r["iq1"]).most_common(6)
+        t2 = Counter(r["iq2"] for r in rows if r["iq2"]).most_common(4)
         if t1:
-            branches.append("<b>tag1</b> " + " ".join(f"{html.escape(k)} <span class='num'>{v}</span>" for k, v in t1))
+            branches.append("<b>iq1</b> " + " ".join(f"{html.escape(k)} <span class='num'>{v}</span>" for k, v in t1))
         if t2:
-            branches.append("<b>tag2</b> " + " ".join(f"{html.escape(k)} <span class='num'>{v}</span>" for k, v in t2))
+            branches.append("<b>iq2</b> " + " ".join(f"{html.escape(k)} <span class='num'>{v}</span>" for k, v in t2))
         cards.append(
             f'<div class="pillar"><h4>{html.escape(pillar)}</h4>'
             f'<span class="n">{len(rows)}</span> <span style="color:#8b8095;font-size:11px">sesiones</span>'
@@ -124,9 +124,9 @@ def report_tree() -> str:
 
     transversal = []
     for key, label, tag in (
-        ("motor", "Motor de IA", "tag7"),
-        ("tag6", "Máquina", "tag6"),
-        ("prof", "Perfil", "tag8"),
+        ("motor", "Motor de IA", "iq7"),
+        ("iq6", "Máquina", "iq6"),
+        ("prof", "Perfil", "iq8"),
     ):
         rows = Counter(s.get(key) or "—" for s in sessions).most_common(9)
         transversal.append(
@@ -155,13 +155,13 @@ def report_tree() -> str:
 <h2>1 · El formato del título</h2>
 <div class="card"><span class="mono" style="font-size:14px">
 NNN <span style="color:#8fd0f5">[Sujeto]</span> <span style="color:#f0d48a">MMM</span>
-<span style="color:#f0d48a">[tag1]</span> <span style="color:#d3e3f3">[tag2]</span>
+<span style="color:#f0d48a">[iq1]</span> <span style="color:#d3e3f3">[iq2]</span>
 Descripción <span style="color:#8b8095">· Verbo</span></span></div>
 <p class="lead">El ordinal va <b>fuera</b> del corchete del sujeto: dentro, el lector cree que el número es parte del nombre.
 Sin fecha, sin costo, sin pilar. Límite duro de 100 caracteres.</p>
 
 <h2>2 · El árbol: pilares y sus ramas</h2>
-<p class="lead">{total} sesiones · {data['subjects']} sujetos · {len(by_pillar)} pilares. Cada tarjeta muestra con qué tag1 y tag2 se abre ese frente.</p>
+<p class="lead">{total} sesiones · {data['subjects']} sujetos · {len(by_pillar)} pilares. Cada tarjeta muestra con qué iq1 y iq2 se abre ese frente.</p>
 <div class="grid">{"".join(cards)}</div>
 
 <h2>3 · Filtros transversales</h2>
@@ -169,13 +169,13 @@ Sin fecha, sin costo, sin pilar. Límite duro de 100 caracteres.</p>
 <table><tbody>{"".join(transversal)}</tbody></table>
 
 <h2>4 · Los nueve tags</h2>
-<p class="lead">Solo tag1 y tag2 llegan al nombre. Los otros siete existen para que ganar inteligencia después no cueste una migración.</p>
+<p class="lead">Solo iq1 y iq2 llegan al nombre. Los otros siete existen para que ganar inteligencia después no cueste una migración.</p>
 <table><thead><tr><th>tag</th><th>eje</th><th>texto</th><th>fondo</th></tr></thead><tbody>{pal}</tbody></table>
 
 <h2>5 · El algoritmo, en cuatro etapas</h2>
 <ol>
 <li><b>Extracción.</b> doce <code>state.db</code> abiertas en solo lectura; los turnos del usuario se limpian de preámbulos de cron y volcados de skill.</li>
-<li><b>Comprensión.</b> el clasificador propone sujeto, tag1, tag2, pilar y descripción a partir de lo que la sesión hizo de verdad.</li>
+<li><b>Comprensión.</b> el clasificador propone sujeto, iq1, iq2, pilar y descripción a partir de lo que la sesión hizo de verdad.</li>
 <li><b>Curación determinista.</b> {len(rules)} reglas se aplican en orden: quitar la marca del sujeto, no dejar que un calificador nombre, unificar variantes, renumerar series.</li>
 <li><b>Presentación.</b> el índice se escribe en <code>plugin-data/</code> y la ventana solo pinta. El plugin nunca lee <code>state.db</code>.</li>
 </ol>

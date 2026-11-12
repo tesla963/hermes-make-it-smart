@@ -1,7 +1,7 @@
 """What did the user want done? The one judgement the script cannot make alone.
 
-tag3 is not a topic — it is an intention. "Electronica" says nothing; "Instalar"
-says the user had a box in his hands. The difference is what makes tag3 worth
+iq3 is not a topic — it is an intention. "Electronica" says nothing; "Instalar"
+says the user had a box in his hands. The difference is what makes iq3 worth
 filtering by.
 
 This module reads the intention in two passes:
@@ -23,7 +23,7 @@ import re
 from dataclasses import dataclass
 from typing import Any
 
-# Closed vocabulary. tag3 must be one of these seven or empty — a free-form tag
+# Closed vocabulary. iq3 must be one of these seven or empty — a free-form tag
 # is a filter that cannot be clicked twice. The seven come from the rule
 # `tag-structure-2026-11-10` in core/corrections.yaml, which outranks every older
 # intention rule: the older names (Update, Version, Feature, Costo, Administrar,

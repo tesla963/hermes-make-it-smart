@@ -20,7 +20,7 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 const ID = 'make-it-smart'
 const NAME = 'Hermes, Make it Smart!'
 const APP_TITLE = 'Make It Smart'
-const VERSION = '0.26.1'
+const VERSION = '0.27.0'
 const ROUTE = '/smart'
 
 /** jsx-runtime helper: keeps uncompiled React code compact and readable. */
@@ -270,9 +270,9 @@ function sin(t) {
 
 /* Title parser matching tools/build_index.py */
 const TITLE_RE =
-  /^(?<nnn>\d{3,4})\s+\[(?<subject>.+?)\]\s+(?<mmm>\d{3,4})\s*(?:\[(?<tag1>[^\]]*)\])?\s*(?:\[(?<tag2>[^\]]*)\])?\s*(?<desc>.*?)(?:\s*·\s*(?<verb>[^·]+))?\s*$/
+  /^(?<nnn>\d{3,4})\s+\[(?<subject>.+?)\]\s+(?<mmm>\d{3,4})\s*(?:\[(?<iq1>[^\]]*)\])?\s*(?:\[(?<iq2>[^\]]*)\])?\s*(?<desc>.*?)(?:\s*·\s*(?<verb>[^·]+))?\s*$/
 const TITLE_RE_LEGACY =
-  /^(?<nnn>\d{3,4})\s+\[(?<subject>.+?)\s+(?<mmm>\d{3,4})\]\s*(?:\[(?<tag1>[^\]]*)\])?\s*(?:\[(?<tag2>[^\]]*)\])?\s*(?<desc>.*?)(?:\s*·\s*(?<verb>[^·]+))?\s*$/
+  /^(?<nnn>\d{3,4})\s+\[(?<subject>.+?)\s+(?<mmm>\d{3,4})\]\s*(?:\[(?<iq1>[^\]]*)\])?\s*(?:\[(?<iq2>[^\]]*)\])?\s*(?<desc>.*?)(?:\s*·\s*(?<verb>[^·]+))?\s*$/
 
 function parseTitle(title) {
   const s = String(title || '').trim()
@@ -280,17 +280,36 @@ function parseTitle(title) {
   return m && m.groups ? m.groups : null
 }
 
+/**
+ * Accept both axis schemas. v0.26.x wrote `tag0`…`tag9`; v0.27.0 writes `iq0`…`iq9`.
+ * A new panel over an old data directory must not render an empty catalogue, so a
+ * missing `iqN` is filled from `tagN` before anything reads the row.
+ */
+function withAxes(row) {
+  if (!row || typeof row !== 'object') return row
+  for (let n = 0; n <= 9; n += 1) {
+    const axis = `iq${n}`
+    const legacy = `tag${n}`
+    const current = row[axis]
+    const old = row[legacy]
+    if ((current === undefined || current === null || current === '') && old !== undefined) {
+      row[axis] = old
+    }
+  }
+  return row
+}
+
 function canonicalTitle(d) {
   if (!d) return ''
   if (esIntocable(d)) return d.raw || ''
 
   const nnn = String(Number(d.n) || 0).padStart(3, '0')
-  const subj = (d.sujeto || d.tag0 || '').trim() || 'Sin sujeto'
+  const subj = (d.sujeto || d.iq0 || '').trim() || 'Sin sujeto'
   const mmm = String(Number(d.mmm) || 1).padStart(3, '0')
 
   let head = `${nnn} [${subj}] ${mmm}`
-  const t1 = (d.tag1 || '').trim()
-  const t2 = (d.tag2 || '').trim()
+  const t1 = (d.iq1 || '').trim()
+  const t2 = (d.iq2 || '').trim()
   if (t1) head += ` [${t1}]`
   if (t2) head += ` [${t2}]`
 
@@ -387,9 +406,9 @@ const I18N = {
     buscar: 'Buscar sujeto, tema, tag…',
     pilar: 'Pilar',
     frente: 'frente de trabajo',
-    tag1: 'Marca',
-    tag2: 'Contexto',
-    tag3: 'Intención',
+    iq1: 'Marca',
+    iq2: 'Contexto',
+    iq3: 'Intención',
     tema: 'Tema',
     itTema: 'IT · tema',
     fecha: 'Fecha',
@@ -414,7 +433,7 @@ const I18N = {
     pendHuerfanas: 'Sin sesión atribuible',
     pendFacet: 'Pendientes',
     pendFacetCount: 'con pendientes',
-    sujetoFacet: 'tag0 · Sujeto',
+    sujetoFacet: 'iq0 · Sujeto',
     sujetosCount: 'sujetos',
     copyIds: '⧉ Copiar IDs',
     kPend1: 'PENDIENTES',
@@ -438,7 +457,7 @@ const I18N = {
     ruta: 'Ruta',
     descripcion: 'descripción',
     adn: 'ADN de la sesión:',
-    adnNota: 'Solo tag1 y tag2 aparecen en el nombre; el resto son filtros.',
+    adnNota: 'Solo iq1 y iq2 aparecen en el nombre; el resto son filtros.',
     motores: 'motores',
     autores: 'autores',
     de1: '1 de ',
@@ -490,8 +509,8 @@ const I18N = {
     vVer: 'ESTA VERSIÓN',
     vReg: 'REGLAS QUE APRENDIÓ',
     vCerrar: 'Cerrar',
-    v1: 'Catálogo de sesiones · NNN [Sujeto] MMM [Tag1] [Tag2] Descripción · Verbo',
-    v2: 'Nueve tags declarados; tag1 y tag2 en el nombre, el resto filtros',
+    v1: 'Catálogo de sesiones · NNN [Sujeto] MMM [Iq1] [Iq2] Descripción · Verbo',
+    v2: 'Nueve tags declarados; iq1 y iq2 en el nombre, el resto filtros',
     v3: 'El ordinal <b>MMM</b> fuera del corchete del sujeto',
     v4: 'Sin fecha en el título; la fecha es columna y filtro',
     v5: 'Buscador numérico: <span class="mono">126,305</span> y <span class="mono">50-75</span>',
@@ -544,9 +563,9 @@ const I18N = {
     buscar: 'Search subject, topic, tag…',
     pilar: 'Pillar',
     frente: 'work front',
-    tag1: 'Maker',
-    tag2: 'Context',
-    tag3: 'Intention',
+    iq1: 'Maker',
+    iq2: 'Context',
+    iq3: 'Intention',
     tema: 'Theme',
     itTema: 'IT · topic',
     fecha: 'Date',
@@ -571,7 +590,7 @@ const I18N = {
     pendHuerfanas: 'Unattributed',
     pendFacet: 'Pending',
     pendFacetCount: 'with pending',
-    sujetoFacet: 'tag0 · Subject',
+    sujetoFacet: 'iq0 · Subject',
     sujetosCount: 'subjects',
     copyIds: '⧉ Copy IDs',
     kPend1: 'PENDING',
@@ -595,7 +614,7 @@ const I18N = {
     ruta: 'Path',
     descripcion: 'description',
     adn: 'Session DNA:',
-    adnNota: 'Only tag1 and tag2 appear in the name; the rest are filters.',
+    adnNota: 'Only iq1 and iq2 appear in the name; the rest are filters.',
     motores: 'engines',
     autores: 'authors',
     de1: '1 of ',
@@ -647,8 +666,8 @@ const I18N = {
     vVer: 'THIS VERSION',
     vReg: 'REGLAS QUE APRENDIÓ',
     vCerrar: 'Close',
-    v1: 'Session catalogue · NNN [Subject] MMM [Tag1] [Tag2] Description · Verb',
-    v2: 'Nine tags declared; tag1 and tag2 in the name, the rest are filters',
+    v1: 'Session catalogue · NNN [Subject] MMM [Iq1] [Iq2] Description · Verb',
+    v2: 'Nine tags declared; iq1 and iq2 in the name, the rest are filters',
     v3: 'The <b>MMM</b> ordinal sits outside the subject bracket',
     v4: 'No date in the title; the date is a column and a filter',
     v5: 'Numeric search: <span class="mono">126,305</span> and <span class="mono">50-75</span>',
@@ -836,15 +855,15 @@ position:relative;display:flex;flex-direction:column;width:100%;height:100%;min-
 .mmws .pill.pick:hover{filter:brightness(1.35);outline:1px solid var(--wine2);outline-offset:1px}
 .mmws .pill.s{color:#8fd0f5;background:#0f2431;border-color:#1f4a63;max-width:140px;overflow:hidden;text-overflow:ellipsis;vertical-align:bottom}
 .mmws .pill.s.del{opacity:.6;border-style:dashed}
-.mmws .pill.tag1{color:#f0d48a;background:#2a2210;border-color:#55461f}
-.mmws .pill.tag2{color:#d3e3f3;background:#121d28;border-color:#24404f}
-.mmws .pill.tag3{color:#c9a8f0;background:#221634;border-color:#453063}
-.mmws .pill.tag4{color:#96e0b0;background:#0f2618;border-color:#1f4a30}
-.mmws .pill.tag5{color:#f2a8c4;background:#2b1220;border-color:#55233d}
-.mmws .pill.tag6{color:#f5b98f;background:#2b1a0f;border-color:#553620}
-.mmws .pill.tag7{color:#8fe6e0;background:#0d2725;border-color:#1f4a46}
-.mmws .pill.tag8{color:#b8b8f5;background:#1a1a33;border-color:#33335f}
-.mmws .pill.tag9{color:#d8ec8f;background:#222b0f;border-color:#44551f}
+.mmws .pill.iq1{color:#f0d48a;background:#2a2210;border-color:#55461f}
+.mmws .pill.iq2{color:#d3e3f3;background:#121d28;border-color:#24404f}
+.mmws .pill.iq3{color:#c9a8f0;background:#221634;border-color:#453063}
+.mmws .pill.iq4{color:#96e0b0;background:#0f2618;border-color:#1f4a30}
+.mmws .pill.iq5{color:#f2a8c4;background:#2b1220;border-color:#55233d}
+.mmws .pill.iq6{color:#f5b98f;background:#2b1a0f;border-color:#553620}
+.mmws .pill.iq7{color:#8fe6e0;background:#0d2725;border-color:#1f4a46}
+.mmws .pill.iq8{color:#b8b8f5;background:#1a1a33;border-color:#33335f}
+.mmws .pill.iq9{color:#d8ec8f;background:#222b0f;border-color:#44551f}
 .mmws .langsw{margin-left:auto;display:inline-flex;gap:2px;padding:2px;align-items:center;border-radius:7px;background:transparent}
 .mmws .langsw span{padding:1px 6px;border-radius:4px;font-size:10px;letter-spacing:.06em;color:var(--tx3);font-weight:700}
 .mmws .langsw span.on{background:var(--wine);color:#fff}
@@ -1042,8 +1061,11 @@ async function loadCatalogue(ctx) {
   const idxById = new Map()
   if (idxData && Array.isArray(idxData.sessions)) {
     for (const s of idxData.sessions) {
-      if (s && s.id) idxById.set(s.id, s)
+      if (s && s.id) idxById.set(s.id, withAxes(s))
     }
+  }
+  if (facetsMap && typeof facetsMap === 'object') {
+    for (const key of Object.keys(facetsMap)) withAxes(facetsMap[key])
   }
 
   // 1. Discover profiles via host.request('profiles.list')
@@ -1180,7 +1202,7 @@ async function loadCatalogue(ctx) {
     const fecha = String(idx.fecha || toFecha(live && live.started_at, '')).slice(0, 10)
     const mes = fecha ? fecha.slice(0, 7) : idx.mes || ''
     const semana = isoWeek(fecha) || idx.semana || ''
-    const anio = (ex.anio || idx.anio || ex.tag5 || idx.tag5 || (fecha ? fecha.slice(0, 4) : '') || '').trim()
+    const anio = (ex.anio || idx.anio || ex.iq5 || idx.iq5 || (fecha ? fecha.slice(0, 4) : '') || '').trim()
 
     const sujeto = (
       (g && g.subject) ||
@@ -1188,14 +1210,14 @@ async function loadCatalogue(ctx) {
       idx.sujeto ||
       (rawTitle ? rawTitle.slice(0, 36) : 'Sin título')
     ).trim()
-    const tag1 = ((g && g.tag1) || ex.tag1 || idx.tag1 || '').trim()
-    const tag2 = ((g && g.tag2) || ex.tag2 || idx.tag2 || '').trim()
-    const tag3 = (ex.tag3 || idx.tag3 || '').trim()
-    const pilar = (ex.pilar || idx.pilar || ex.tag4 || idx.tag4 || '').trim()
+    const iq1 = ((g && g.iq1) || ex.iq1 || idx.iq1 || '').trim()
+    const iq2 = ((g && g.iq2) || ex.iq2 || idx.iq2 || '').trim()
+    const iq3 = (ex.iq3 || idx.iq3 || '').trim()
+    const pilar = (ex.pilar || idx.pilar || ex.iq4 || idx.iq4 || '').trim()
     const pais = (ex.pais || idx.pais || '').trim()
-    const tag4 = (ex.tag4 || idx.tag4 || pais || pilar || '').trim()
-    const tag5 = (ex.tag5 || idx.tag5 || anio || '').trim()
-    const tag6 = (ex.tag6 || idx.tag6 || '').trim()
+    const iq4 = (ex.iq4 || idx.iq4 || pais || pilar || '').trim()
+    const iq5 = (ex.iq5 || idx.iq5 || anio || '').trim()
+    const iq6 = (ex.iq6 || idx.iq6 || '').trim()
     // A title that already parsed as canonical must never become its own
     // description: '925 [Sin título] 001' came out as
     // '925 [Sin título] 001 925 [Sin título] 001' on the next commit.
@@ -1239,16 +1261,16 @@ async function loadCatalogue(ctx) {
       n: g ? parseInt(g.nnn, 10) : Number(idx.n || 0),
       mmm: g ? parseInt(g.mmm, 10) : Number(idx.mmm || 1),
       sujeto,
-      tag0: sujeto,
-      tag1,
-      tag2,
-      tag3,
-      tag4,
-      tag5,
-      tag6,
-      tag7: ex.tag7 || idx.tag7 || '',
-      tag8: ex.tag8 || idx.tag8 || '',
-      tag9: pendTot > 0 ? 'Pending' : (ex.tag9 || idx.tag9 || ''),
+      iq0: sujeto,
+      iq1,
+      iq2,
+      iq3,
+      iq4,
+      iq5,
+      iq6,
+      iq7: ex.iq7 || idx.iq7 || '',
+      iq8: ex.iq8 || idx.iq8 || '',
+      iq9: pendTot > 0 ? 'Pending' : (ex.iq9 || idx.iq9 || ''),
       pendMem,
       pendSkl,
       pendTot,
@@ -1320,7 +1342,7 @@ async function loadCatalogue(ctx) {
   // Compute canonical simulated title and search synonym index per row once
   for (const d of merged) {
     d.canonTitle = canonicalTitle(d)
-    d._s = sin([d.raw, d.canonTitle, d.desc, d.resumen, d.tema, d.sujeto, d.tag1, d.tag2, d.pilar, d.n, d.id].join(' '))
+    d._s = sin([d.raw, d.canonTitle, d.desc, d.resumen, d.tema, d.sujeto, d.iq1, d.iq2, d.pilar, d.n, d.id].join(' '))
   }
 
   const vaciasCron = merged.filter((d) => esCron(d) && d.vacia).length
@@ -1357,15 +1379,15 @@ function App({ ctx }) {
   const [openOrphans, setOpenOrphans] = useState(false)
   const [q, setQ] = useState('')
   const [f, setF] = useState({
-    tag1: null,
-    tag2: null,
+    iq1: null,
+    iq2: null,
     tag3i: null,
-    tag3: null,
-    tag4: null,
-    tag5: null,
-    tag6: null,
-    tag8: null,
-    tag9: null,
+    iq3: null,
+    iq4: null,
+    iq5: null,
+    iq6: null,
+    iq8: null,
+    iq9: null,
     sujeto: null,
     motor: null,
     autor: null,
@@ -1376,7 +1398,7 @@ function App({ ctx }) {
     d1: '',
     d2: '',
   })
-  const [folded, setFolded] = useState(() => new Set(['tag2', 'tag3']))
+  const [folded, setFolded] = useState(() => new Set(['iq2', 'iq3']))
   const [expanded, setExpanded] = useState(() => new Set())
   const [openNodes, setOpenNodes] = useState(() => new Set())
   const [showElim, setShowElim] = useState(false)
@@ -1646,16 +1668,16 @@ function App({ ctx }) {
         if (!skips.includes('bots') && esBotSession(d)) return false
       }
     }
-    if (!skips.includes('tag3') && f.tag3 && d.pilar !== f.tag3) return false
-    if (!skips.includes('tag3i') && f.tag3i && d.tag3 !== f.tag3i) return false
-    if (!skips.includes('tag1') && f.tag1 && d.tag1 !== f.tag1) return false
-    if (!skips.includes('tag2') && f.tag2 && d.tag2 !== f.tag2) return false
-    if (!skips.includes('tag4') && f.tag4 && d.tag4 !== f.tag4) return false
-    if (!skips.includes('tag5') && f.tag5 && d.tag5 !== f.tag5) return false
-    if (!skips.includes('tag6') && f.tag6 && d.tag6 !== f.tag6) return false
-    if (!skips.includes('tag8') && f.tag8 && d.tag8 !== f.tag8) return false
-    if (!skips.includes('tag9') && f.tag9 && (d.pendTot > 0 ? 'Pending' : '') !== f.tag9) return false
-    if (!skips.includes('sujeto') && f.sujeto && norm(d.tag0 || d.sujeto) !== norm(f.sujeto)) return false
+    if (!skips.includes('iq3') && f.iq3 && d.pilar !== f.iq3) return false
+    if (!skips.includes('tag3i') && f.tag3i && d.iq3 !== f.tag3i) return false
+    if (!skips.includes('iq1') && f.iq1 && d.iq1 !== f.iq1) return false
+    if (!skips.includes('iq2') && f.iq2 && d.iq2 !== f.iq2) return false
+    if (!skips.includes('iq4') && f.iq4 && d.iq4 !== f.iq4) return false
+    if (!skips.includes('iq5') && f.iq5 && d.iq5 !== f.iq5) return false
+    if (!skips.includes('iq6') && f.iq6 && d.iq6 !== f.iq6) return false
+    if (!skips.includes('iq8') && f.iq8 && d.iq8 !== f.iq8) return false
+    if (!skips.includes('iq9') && f.iq9 && (d.pendTot > 0 ? 'Pending' : '') !== f.iq9) return false
+    if (!skips.includes('sujeto') && f.sujeto && norm(d.iq0 || d.sujeto) !== norm(f.sujeto)) return false
     if (!skips.includes('motor') && f.motor && (d.motor || 'Sin dato') !== f.motor) return false
     if (!skips.includes('autor') && f.autor && d.autor !== f.autor) return false
     if (!skips.includes('anio') && f.anio && (d.fecha || '').slice(0, 4) !== f.anio) return false
@@ -1693,11 +1715,11 @@ function App({ ctx }) {
         if (diff !== 0) return diff * (orden.asc ? 1 : -1)
         return b.n - a.n
       }
-      if (orden.k === 'tag1') {
-        const A = norm((a.tag1 || '') + ' ' + (a.tag2 || ''))
-        const B = norm((b.tag1 || '') + ' ' + (b.tag2 || ''))
-        if (!a.tag1 && b.tag1) return 1
-        if (a.tag1 && !b.tag1) return -1
+      if (orden.k === 'iq1') {
+        const A = norm((a.iq1 || '') + ' ' + (a.iq2 || ''))
+        const B = norm((b.iq1 || '') + ' ' + (b.iq2 || ''))
+        if (!a.iq1 && b.iq1) return 1
+        if (a.iq1 && !b.iq1) return -1
         return (A > B ? 1 : A < B ? -1 : 0) * (orden.asc ? 1 : -1)
       }
       let x = a[orden.k]
@@ -1748,14 +1770,14 @@ function App({ ctx }) {
   const activeChips = useMemo(() => {
     const out = []
     if (f.tag3i) out.push(['tag3i', f.tag3i])
-    if (f.tag3) out.push(['tag3', f.tag3])
-    if (f.tag1) out.push(['tag1', f.tag1])
-    if (f.tag2) out.push(['tag2', f.tag2])
-    if (f.tag4) out.push(['tag4', f.tag4])
-    if (f.tag5) out.push(['tag5', f.tag5])
-    if (f.tag6) out.push(['tag6', f.tag6])
-    if (f.tag8) out.push(['tag8', f.tag8])
-    if (f.tag9) out.push(['tag9', f.tag9])
+    if (f.iq3) out.push(['iq3', f.iq3])
+    if (f.iq1) out.push(['iq1', f.iq1])
+    if (f.iq2) out.push(['iq2', f.iq2])
+    if (f.iq4) out.push(['iq4', f.iq4])
+    if (f.iq5) out.push(['iq5', f.iq5])
+    if (f.iq6) out.push(['iq6', f.iq6])
+    if (f.iq8) out.push(['iq8', f.iq8])
+    if (f.iq9) out.push(['iq9', f.iq9])
     if (f.sujeto) out.push(['sujeto', f.sujeto])
     if (f.motor) out.push(['motor', f.motor])
     if (f.autor) out.push(['autor', f.autor])
@@ -1793,15 +1815,15 @@ function App({ ctx }) {
 
   const limpiar = () => {
     setF({
-      tag1: null,
-      tag2: null,
+      iq1: null,
+      iq2: null,
       tag3i: null,
-      tag3: null,
-      tag4: null,
-      tag5: null,
-      tag6: null,
-      tag8: null,
-      tag9: null,
+      iq3: null,
+      iq4: null,
+      iq5: null,
+      iq6: null,
+      iq8: null,
+      iq9: null,
       sujeto: null,
       motor: null,
       autor: null,
@@ -1833,8 +1855,8 @@ function App({ ctx }) {
       'fecha',
       'titulo_actual',
       'sujeto',
-      'tag1',
-      'tag2',
+      'iq1',
+      'iq2',
       'descripcion',
       'verbo',
       'pending',
@@ -1854,8 +1876,8 @@ function App({ ctx }) {
         d.fecha,
         d.raw,
         d.sujeto,
-        d.tag1,
-        d.tag2,
+        d.iq1,
+        d.iq2,
         d.desc,
         d.verb,
         d.pendTot || 0,
@@ -1909,10 +1931,10 @@ function App({ ctx }) {
     const L = [
       d.raw,
       t('sujeto').toLowerCase() + ': ' + d.sujeto + ' · ordinal ' + String(d.mmm).padStart(3, '0'),
-      'tag1 (' + t('lblPlataforma').toLowerCase() + '): ' + k(d.tag1) + ' | tag2 (' + t('lblFamilia').toLowerCase() + '): ' + k(d.tag2),
-      'tag3 (' + t('lblPilar').toLowerCase() + '): ' + k(d.pilar || d.tag3) + ' | tag4 (' + t('lblPais').toLowerCase() + '): ' + k(d.pais || d.tag4) + ' | tag5 (' + t('lblAnio').toLowerCase() + '): ' + k(d.anio || d.tag5),
-      'tag6 (' + t('lblMaquina').toLowerCase() + '): ' + k(d.tag6),
-      'tag7: ' + k(d.tag7) + ' | tag8 (' + t('lblProyecto').toLowerCase() + '): ' + k(d.tag8) + ' | tag9: ' + k(d.tag9),
+      'iq1 (' + t('lblPlataforma').toLowerCase() + '): ' + k(d.iq1) + ' | iq2 (' + t('lblFamilia').toLowerCase() + '): ' + k(d.iq2),
+      'iq3 (' + t('lblPilar').toLowerCase() + '): ' + k(d.pilar || d.iq3) + ' | iq4 (' + t('lblPais').toLowerCase() + '): ' + k(d.pais || d.iq4) + ' | iq5 (' + t('lblAnio').toLowerCase() + '): ' + k(d.anio || d.iq5),
+      'iq6 (' + t('lblMaquina').toLowerCase() + '): ' + k(d.iq6),
+      'iq7: ' + k(d.iq7) + ' | iq8 (' + t('lblProyecto').toLowerCase() + '): ' + k(d.iq8) + ' | iq9: ' + k(d.iq9),
       t('descripcion') + ': ' + k(d.desc),
       t('fecha').toLowerCase() + ': ' + k(d.fecha) + ' · ' + t('mensajes').toLowerCase() + ': ' + k(d.mc) + ' · posts: ' + k(d.posts),
       t('costo').toLowerCase() + ': ' + fmtC(d.costo) + ' · ' + t('horas').toLowerCase() + ': ' + fmtHoras(d.horas) + ' · tokens: ' + (d.tok_tot ? Math.round(d.tok_tot / 1000) + 'k' : '—'),
@@ -2058,11 +2080,11 @@ function App({ ctx }) {
       h(
         'div',
         { className: 'kv', id: 'pkv' },
-        h('div', null, 'tag0 · ' + t('sujeto')),
+        h('div', null, 'iq0 · ' + t('sujeto')),
         h(
           'div',
           null,
-          h('b', null, d.tag0 || d.sujeto),
+          h('b', null, d.iq0 || d.sujeto),
           ' · ' + String(d.mmm || 1).padStart(3, '0'),
           d.vacia
             ? h(
@@ -2181,27 +2203,27 @@ function App({ ctx }) {
               h('div', { key: 'pend-div', style: { gridColumn: '1/-1', borderTop: '1px solid var(--line)', margin: '6px 0 2px' } }),
             ]
           : null,
-        h('div', null, 'tag1 · ' + t('lblPlataforma')),
-        h('div', null, h('span', { className: 'pill tag1' }, d.tag1 || '—')),
-        h('div', null, 'tag2 · ' + t('lblFamilia')),
-        h('div', null, h('span', { className: 'pill tag2' }, d.tag2 || '—')),
-        h('div', null, 'tag3 · ' + t('lblPilar')),
-        h('div', null, h('span', { className: 'pill tag3' }, d.pilar || d.tag3 || '—')),
-        h('div', null, 'tag4 · ' + t('lblPais')),
-        h('div', null, d.pais || d.tag4 ? h('span', { className: 'pill tag4' }, d.pais || d.tag4) : '—'),
-        h('div', null, 'tag5 · ' + t('lblAnio')),
-        h('div', null, d.anio || d.tag5 ? h('span', { className: 'pill tag5' }, d.anio || d.tag5) : '—'),
-        h('div', null, 'tag6 · ' + t('lblMaquina')),
-        h('div', null, h('span', { className: 'pill tag6' }, d.tag6 || '—')),
-        h('div', null, 'tag7 · ' + t('lblLibre')),
-        h('div', null, d.tag7 || '—'),
-        h('div', null, 'tag8 · ' + t('lblProyecto')),
-        h('div', null, d.tag8 ? h('span', { className: 'pill tag8' }, d.tag8) : '—'),
-        h('div', null, 'tag9 · Pending'),
-        h('div', null, d.tag9 ? h('span', { className: 'pill tag9' }, d.tag9) : '—'),
+        h('div', null, 'iq1 · ' + t('lblPlataforma')),
+        h('div', null, h('span', { className: 'pill iq1' }, d.iq1 || '—')),
+        h('div', null, 'iq2 · ' + t('lblFamilia')),
+        h('div', null, h('span', { className: 'pill iq2' }, d.iq2 || '—')),
+        h('div', null, 'iq3 · ' + t('lblPilar')),
+        h('div', null, h('span', { className: 'pill iq3' }, d.pilar || d.iq3 || '—')),
+        h('div', null, 'iq4 · ' + t('lblPais')),
+        h('div', null, d.pais || d.iq4 ? h('span', { className: 'pill iq4' }, d.pais || d.iq4) : '—'),
+        h('div', null, 'iq5 · ' + t('lblAnio')),
+        h('div', null, d.anio || d.iq5 ? h('span', { className: 'pill iq5' }, d.anio || d.iq5) : '—'),
+        h('div', null, 'iq6 · ' + t('lblMaquina')),
+        h('div', null, h('span', { className: 'pill iq6' }, d.iq6 || '—')),
+        h('div', null, 'iq7 · ' + t('lblLibre')),
+        h('div', null, d.iq7 || '—'),
+        h('div', null, 'iq8 · ' + t('lblProyecto')),
+        h('div', null, d.iq8 ? h('span', { className: 'pill iq8' }, d.iq8) : '—'),
+        h('div', null, 'iq9 · Pending'),
+        h('div', null, d.iq9 ? h('span', { className: 'pill iq9' }, d.iq9) : '—'),
         h('div', { style: { gridColumn: '1/-1', borderTop: '1px solid var(--line)', margin: '6px 0 2px' } }),
         h('div', null, t('ruta')),
-        h('div', null, `${d.dom || 'Software'} › ${d.tag5 || '—'} › ${d.tag1 || '—'}`),
+        h('div', null, `${d.dom || 'Software'} › ${d.iq5 || '—'} › ${d.iq1 || '—'}`),
         h('div', null, t('costo')),
         h('div', null, fmtC(d.costo)),
         h('div', null, t('horas')),
@@ -2229,14 +2251,14 @@ function App({ ctx }) {
         h('b', null, t('adn') + ': '),
         t('sujeto').toLowerCase() + ' ',
         h('b', null, d.sujeto),
-        ' · tag1 ',
-        h('b', null, d.tag1 || '—'),
-        ' (' + t('lblPlataforma').toLowerCase() + ') · tag2 ',
-        h('b', null, d.tag2 || '—'),
-        ' (' + t('lblFamilia').toLowerCase() + ') · tag3 ',
-        h('b', null, d.pilar || d.tag3 || '—'),
+        ' · iq1 ',
+        h('b', null, d.iq1 || '—'),
+        ' (' + t('lblPlataforma').toLowerCase() + ') · iq2 ',
+        h('b', null, d.iq2 || '—'),
+        ' (' + t('lblFamilia').toLowerCase() + ') · iq3 ',
+        h('b', null, d.pilar || d.iq3 || '—'),
         ' · ' + t('lblMaquina').toLowerCase() + ' ',
-        h('b', null, d.tag6 || '—'),
+        h('b', null, d.iq6 || '—'),
         '. ' + t('adnNota')
       ),
       h(
@@ -2288,8 +2310,8 @@ function App({ ctx }) {
     if (g) {
       sel.sujeto = g.subject.trim()
       sel.mmm = parseInt(g.mmm, 10)
-      sel.tag1 = (g.tag1 || '').trim()
-      sel.tag2 = (g.tag2 || '').trim()
+      sel.iq1 = (g.iq1 || '').trim()
+      sel.iq2 = (g.iq2 || '').trim()
       sel.desc = (g.desc || '').trim()
       sel.verb = (g.verb || '').trim()
     }
@@ -2588,11 +2610,11 @@ function App({ ctx }) {
     })
   }
 
-  // Render a foldable radio facet block (tag1, tag2, tag3i, tag3/pilar)
+  // Render a foldable radio facet block (iq1, iq2, tag3i, iq3/pilar)
   const renderFacetBlock = (blockId, labelKey, stateKey, fieldName, sortSpecial) => {
     const isOff = folded.has(blockId)
-    const { c, allValues } = facetCounts([stateKey === 'tag3' ? 'tag3' : stateKey === 'tag3i' ? 'tag3i' : stateKey], fieldName)
-    const FIJOS1 = blockId === 'tag1' ? ['Bot'] : []
+    const { c, allValues } = facetCounts([stateKey === 'iq3' ? 'iq3' : stateKey === 'tag3i' ? 'tag3i' : stateKey], fieldName)
+    const FIJOS1 = blockId === 'iq1' ? ['Bot'] : []
     const allKeys = [...new Set([...allValues, ...FIJOS1])]
       .filter((k) => k && ((c[k] || 0) > 0 || f[stateKey] === k))
       .sort((a, b) => {
@@ -2604,7 +2626,7 @@ function App({ ctx }) {
       })
     const isExp = expanded.has(blockId) || allKeys.indexOf(f[stateKey]) >= 10
     let shown = isExp ? allKeys : allKeys.slice(0, 10)
-    if (blockId === 'tag1') {
+    if (blockId === 'iq1') {
       FIJOS1.forEach((fk) => {
         if (allKeys.includes(fk) && !shown.includes(fk)) shown = [...shown, fk]
       })
@@ -2839,13 +2861,13 @@ function App({ ctx }) {
     let n = 0
     for (const d of sessions) if (pass(d) && d.pendTot > 0) n++
     return n
-  }, [sessions, visible, f.tag9])
+  }, [sessions, visible, f.iq9])
 
   const sujetoStats = useMemo(() => {
     const cnt = {}
     for (const d of sessions) {
       if (pass(d)) {
-        const k = d.tag0 || d.sujeto || 'Sin sujeto'
+        const k = d.iq0 || d.sujeto || 'Sin sujeto'
         cnt[k] = (cnt[k] || 0) + 1
       }
     }
@@ -2858,7 +2880,7 @@ function App({ ctx }) {
   const hiddenByFilterCount = useMemo(() => {
     if (visible.length > 0 || !qNorm) return 0
     return sessions.filter((d) =>
-      norm([d.desc, d.tema, d.sujeto, d.tag1, d.tag2, d.pilar, d.n].join(' ')).includes(qNorm)
+      norm([d.desc, d.tema, d.sujeto, d.iq1, d.iq2, d.pilar, d.n].join(' ')).includes(qNorm)
     ).length
   }, [visible.length, qNorm, sessions])
 
@@ -2929,36 +2951,36 @@ function App({ ctx }) {
           isCanon
             ? h('span', { className: 'mono', style: { color: 'var(--tx3)' } }, String(d.mmm || 1).padStart(3, '0'))
             : null,
-          d.tag1
+          d.iq1
             ? h(
                 'span',
                 {
-                  className: 'pill tag1 pick',
+                  className: 'pill iq1 pick',
                   style: { marginLeft: '4px' },
-                  title: 'Filtrar por tag1',
+                  title: 'Filtrar por iq1',
                   onClick: (e) => {
                     e.stopPropagation()
-                    setF((p) => ({ ...p, tag1: p.tag1 === d.tag1 ? null : d.tag1 }))
+                    setF((p) => ({ ...p, iq1: p.iq1 === d.iq1 ? null : d.iq1 }))
                     setSel(null)
                   },
                 },
-                d.tag1
+                d.iq1
               )
             : null,
-          d.tag2
+          d.iq2
             ? h(
                 'span',
                 {
-                  className: 'pill tag2 pick',
+                  className: 'pill iq2 pick',
                   style: { marginLeft: '4px' },
-                  title: 'Filtrar por tag2',
+                  title: 'Filtrar por iq2',
                   onClick: (e) => {
                     e.stopPropagation()
-                    setF((p) => ({ ...p, tag2: p.tag2 === d.tag2 ? null : d.tag2 }))
+                    setF((p) => ({ ...p, iq2: p.iq2 === d.iq2 ? null : d.iq2 }))
                     setSel(null)
                   },
                 },
-                d.tag2
+                d.iq2
               )
             : null
         ),
@@ -2974,7 +2996,7 @@ function App({ ctx }) {
                 ? h(
                     'span',
                     {
-                      className: 'pill tag9',
+                      className: 'pill iq9',
                       title: `(mem) ${(d.pendMem || []).length} · (skills) ${(d.pendSkl || []).length}`,
                     },
                     'Pending'
@@ -3011,7 +3033,7 @@ function App({ ctx }) {
           'span',
           { className: 'sub' },
           h('b', null, loading ? '—' : sessions.length),
-          ' sesiones · NNN [Sujeto] MMM [Tag1] [Tag2] Descripción · Verbo'
+          ' sesiones · NNN [Sujeto] MMM [Iq1] [Iq2] Descripción · Verbo'
         ),
         h(
           'div',
@@ -3157,13 +3179,13 @@ function App({ ctx }) {
                   h(
                     'label',
                     {
-                      className: 'opt' + (f.tag9 === 'Pending' ? ' sel' : ''),
+                      className: 'opt' + (f.iq9 === 'Pending' ? ' sel' : ''),
                       onClick: (e) => {
                         e.preventDefault()
-                        setF((p) => ({ ...p, tag9: p.tag9 === 'Pending' ? null : 'Pending' }))
+                        setF((p) => ({ ...p, iq9: p.iq9 === 'Pending' ? null : 'Pending' }))
                       },
                     },
-                    h('input', { type: 'radio', checked: f.tag9 === 'Pending', readOnly: true }),
+                    h('input', { type: 'radio', checked: f.iq9 === 'Pending', readOnly: true }),
                     h('span', null, 'Pending'),
                     h('span', { className: 'n' }, pendStats)
                   )
@@ -3217,11 +3239,11 @@ function App({ ctx }) {
               : null
           ),
 
-          renderFacetBlock('tag1', 'tag1', 'tag1', 'tag1', false),
-          renderFacetBlock('tag2', 'tag2', 'tag2', 'tag2', false),
-          renderFacetBlock('tag3', 'tag3', 'tag3i', 'tag3', false),
-          renderFacetBlock('tag4', 'tema', 'tag3', 'pilar', true),
-          renderFacetBlock('tag8', 'lblProyecto', 'tag8', 'tag8', false),
+          renderFacetBlock('iq1', 'iq1', 'iq1', 'iq1', false),
+          renderFacetBlock('iq2', 'iq2', 'iq2', 'iq2', false),
+          renderFacetBlock('iq3', 'iq3', 'tag3i', 'iq3', false),
+          renderFacetBlock('iq4', 'tema', 'iq3', 'pilar', true),
+          renderFacetBlock('iq8', 'lblProyecto', 'iq8', 'iq8', false),
 
           h('h4', null, t('fecha')),
           h('div', null, renderFechaTree()),
@@ -3478,15 +3500,15 @@ function App({ ctx }) {
                         className: 'qshow',
                         onClick: () =>
                           setF({
-                            tag1: null,
-                            tag2: null,
+                            iq1: null,
+                            iq2: null,
                             tag3i: null,
-                            tag3: null,
-                            tag4: null,
-                            tag5: null,
-                            tag6: null,
-                            tag8: null,
-                            tag9: null,
+                            iq3: null,
+                            iq4: null,
+                            iq5: null,
+                            iq6: null,
+                            iq8: null,
+                            iq9: null,
                             sujeto: null,
                             motor: null,
                             autor: null,
@@ -3644,8 +3666,8 @@ function App({ ctx }) {
           ? h(
               'div',
               {
-                className: 'kpi pend clickable' + (f.tag9 === 'Pending' ? ' active' : ''),
-                onClick: () => setF((p) => ({ ...p, tag9: p.tag9 === 'Pending' ? null : 'Pending' })),
+                className: 'kpi pend clickable' + (f.iq9 === 'Pending' ? ' active' : ''),
+                onClick: () => setF((p) => ({ ...p, iq9: p.iq9 === 'Pending' ? null : 'Pending' })),
                 title: t('kPendTitle'),
               },
               h('b', null, (pendData.counts && pendData.counts.total) || 0),

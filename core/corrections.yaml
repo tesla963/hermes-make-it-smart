@@ -41,7 +41,7 @@
 - id: subject-is-never-the-program
   taught: 2026-11-07
   rule: >
-    The subject names the object, problem or symptom. The platform goes in Tag1.
+    The subject names the object, problem or symptom. The platform goes in Iq1.
     If they are nearly the same, something is wrong.
   examples:
   note: 187 sessions corrected on this rule.
@@ -120,7 +120,7 @@
 - id: troubleshooting-only-on-complaint
   taught: 2026-11-08
   rule: >
-    Tag3 is Troubleshooting only when the user reports something failing, or is
+    Iq3 is Troubleshooting only when the user reports something failing, or is
     determining whether a configuration he made actually works — not when the
     topic is merely mentioned.
   note: 98 candidates reviewed; 28 confirmed, 5 reverted.
@@ -140,7 +140,7 @@
 - id: product-marketplace-shape
   taught: 2026-11-09
   rule: >
-    When the session evaluates a product, Tag1 is the brand and Tag2 is the
+    When the session evaluates a product, Iq1 is the brand and Iq2 is the
     marketplace. Subject is the product itself.
   examples:
   control_question: "Does the tag tell me who makes it, or where we looked?"
@@ -149,7 +149,7 @@
   taught: 2026-11-09
   rule: >
     For a product being evaluated or bought inside a marketplace session: the
-    subject is the generic thing ("Teclado"), Tag1 is the brand ("Steren"),
+    subject is the generic thing ("Teclado"), Iq1 is the brand ("Steren"),
     the MODEL ("COM-6900") trails the subject in the description, and the theme is
     "Productos". The model is
     not part of the subject — it is the second tag, which is what distinguishes
@@ -161,8 +161,8 @@
   taught: 2026-11-09
   rule: >
     When the subject is a component or specification of a piece of equipment,
-    the subject is the concrete spec ("16 GB Ram") and Tag2 names the equipment
-    ("Mac mini M4"). Tag2 is not only computers: a monitor, a blender, a washing
+    the subject is the concrete spec ("16 GB Ram") and Iq2 names the equipment
+    ("Mac mini M4"). Iq2 is not only computers: a monitor, a blender, a washing
     machine, a book — anything a spec can belong to.
   examples:
 
@@ -176,10 +176,10 @@
     Abbreviate when the long form is redundant for someone who lives in the
     domain: "MacOS Tahoe" is just "Tahoe". But NEVER abbreviate what is not
     common vocabulary: "Gorgon Halo" and "Strix Halo" mean nothing when
-    shortened, so they stay whole and Tag1 carries the maker ("AMD").
+    shortened, so they stay whole and Iq1 carries the maker ("AMD").
   examples:
     - { long: "MacOS Tahoe", short: "Tahoe" }
-    - { keep: "Gorgon Halo", tag1: "AMD" }
+    - { keep: "Gorgon Halo", iq1: "AMD" }
   control_question: "Would a knowledgeable reader lose meaning if I shorten this?"
 
 - id: country-goes-in-its-own-tag
@@ -199,15 +199,15 @@
 - id: no-redundant-tag
   taught: 2026-11-09
   rule: >
-    If Tag2 only repeats what the subject or Tag1 already says, leave it empty.
+    If Iq2 only repeats what the subject or Iq1 already says, leave it empty.
     A tag that adds nothing is noise in the filter list.
   examples:
-  control_question: "Does this tag tell me something the subject and Tag1 did not?"
+  control_question: "Does this tag tell me something the subject and Iq1 did not?"
 
-- id: subject-does-not-repeat-tag1
+- id: subject-does-not-repeat-iq1
   taught: 2026-11-08
   rule: >
-    If Tag1 is YouTube, the subject does not say "Video"; it says
+    If Iq1 is YouTube, the subject does not say "Video"; it says
     "Transcripción".
   examples:
 
@@ -225,7 +225,7 @@
     Permission dialogs are a recurring theme across months of work, not a
     one-off. They form one series.
   examples:
-    - { ssns: [10, 13, 90, 533, 720, 821, 877], subject: "Ventana Permisos", tag1: "Hermes Agent", tag2: "Data Security" }
+    - { ssns: [10, 13, 90, 533, 720, 821, 877], subject: "Ventana Permisos", iq1: "Hermes Agent", iq2: "Data Security" }
 
 # --------------------------------------------------------------------------- #
 # LANGUAGE
@@ -262,25 +262,25 @@
     An extra specification of the subject belongs in the description, not in
     the subject. "Gorgon Halo 192GB" should be "Gorgon Halo". EXCEPTION: when
     the specification IS the subject of the session ("16 GB Ram"), then it stays
-    and Tag6 names the machine it belongs to.
+    and Iq6 names the machine it belongs to.
   examples:
   control_question: "Is the session ABOUT the number, or about the thing that has the number?"
 
 - id: brand-never-in-subject
   taught: 2026-11-09
   rule: >
-    The brand goes in Tag1, never in the subject. "Dell Precision 7760" splits
-    into Tag1 "Dell" and subject "Precision 7760". When Tag2 is "Review", the
-    work is the agent evaluating something — that is what Tag2 says, not the
+    The brand goes in Iq1, never in the subject. "Dell Precision 7760" splits
+    into Iq1 "Dell" and subject "Precision 7760". When Iq2 is "Review", the
+    work is the agent evaluating something — that is what Iq2 says, not the
     subject.
   examples:
 
-- id: third-party-program-is-tag1-not-subject
+- id: third-party-program-is-iq1-not-subject
   taught: 2026-11-09
   rule: >
-    A third-party program or skill is never the tag1 of a Hermes session, and
+    A third-party program or skill is never the iq1 of a Hermes session, and
     not the subject either when the work is about evaluating it. The program
-    goes in the description, the maker in Tag1 when it is known, and the subject
+    goes in the description, the maker in Iq1 when it is known, and the subject
     is the thing being assessed. Never assign "Hermes Agent" to a session whose
     protagonist is someone else's software.
   examples:
@@ -289,9 +289,9 @@
 - id: brand-equals-subject-exception
   taught: 2026-11-09
   rule: >
-    The "subject must not repeat Tag1" rule has one exception: when the brand
+    The "subject must not repeat Iq1" rule has one exception: when the brand
     and the product share the same name and the subject adds a version or
-    generation, the repetition is correct. "Ornith 2.0" with Tag1 "Ornith" is
+    generation, the repetition is correct. "Ornith 2.0" with Iq1 "Ornith" is
     right — the version is the information, and inventing a synonym
     ("Lanzamiento 2.0") destroys the filter. Same for a model line whose name is
     the maker's name.
@@ -332,7 +332,7 @@
     " a ", " vs ", " versus ". ("Cierre de sesión" is fine: "de" names a thing.)
     (S3) length: median is 17 characters; past 26 is suspect, past 30 is a
     sentence in disguise;
-    (S4) it never repeats Tag1 unless the difference is a version.
+    (S4) it never repeats Iq1 unless the difference is a version.
   examples:
   control_question: "Could this be a filter chip someone clicks, or is it a heading?"
   audit: tools/audit_subjects.py
@@ -353,10 +353,10 @@
 - id: hermes-agent-is-not-the-default
   taught: 2026-11-09
   rule: >
-    Do not assign "Hermes Agent" as Tag1 just because the agent ran the session.
+    Do not assign "Hermes Agent" as Iq1 just because the agent ran the session.
     The subject is the PATIENT — the thing with the problem — and the agent is
     the tool. If the session is about another product's memory, state or health,
-    that product is Tag1. "Memoria Persistente" belongs to HermesOffice, not to
+    that product is Iq1. "Memoria Persistente" belongs to HermesOffice, not to
     Hermes Agent. When in doubt, ask who is sick, not who is holding the chart.
   examples:
   control_question: "Whose problem is this — mine, or someone else's?"
@@ -365,7 +365,7 @@
   taught: 2026-11-09
   rule: >
     Every time the owner asks to compare two things, or the requirement contains
-    " vs ", "versus" or "frente a": Tag3 is "Comparar", the subject is the
+    " vs ", "versus" or "frente a": Iq3 is "Comparar", the subject is the
     first thing compared, and the DESCRIPTION carries the full "A vs B". The
     comparison itself is never the subject.
   examples:
@@ -376,14 +376,14 @@
   rule: >
     When the session exercises the assistant itself — presenting it, testing
     whether it answers, checking its behaviour — the subject is the assistant's
-    NAME ("Lisa"), and Tag2 is "Testing". Not "Presentación del agente", not
+    NAME ("Lisa"), and Iq2 is "Testing". Not "Presentación del agente", not
     "Identidad y modelo".
   examples:
 
-- id: tag2-follows-the-context
+- id: iq2-follows-the-context
   taught: 2026-11-09
   rule: >
-    Tag2 is not inherited from the platform or the pillar: it is read from what
+    Iq2 is not inherited from the platform or the pillar: it is read from what
     the session actually does. A session about controlling CyberPanel over SSH
     and the safe ways to do it is "Data Security", not "VPS". When two families
     fit, choose the one that describes the WORK, not the place.
@@ -456,8 +456,8 @@
   taught: 2026-11-09
   rule: >
     When a brand owns a product with its own name, they are two things:
-    Tag1 is the brand, the subject is the product. "USPS Ground Advantage" is
-    Tag1 "USPS" with subject "Ground Advantage". The same holds for "FedEx
+    Iq1 is the brand, the subject is the product. "USPS Ground Advantage" is
+    Iq1 "USPS" with subject "Ground Advantage". The same holds for "FedEx
     Ground", "UPS Ground", "DHL Express", "Adobe Acrobat", "Microsoft 365".
     A brand never stays inside a subject when the product can stand alone.
   examples:
@@ -479,7 +479,7 @@
     THE USER — the one he already owns or is about to use — never the accessory
     under evaluation. Asking "do these RayNeo glasses work with my DJI RC 2"
     is a session about the RC 2: the controller is the thing he flies, the
-    glasses are the candidate. Tag1 is the maker of the subject (DJI), and the
+    glasses are the candidate. Iq1 is the maker of the subject (DJI), and the
     candidate goes in the description with its brand intact.
   why: >
     The old rule keyed on brand and turned every DJI-adjacent session into
@@ -494,16 +494,16 @@
     For a programme or app, the brand is the COMPANY behind it, and that is
     found at the programme's official site — not in the programme's own name.
     DEVONthink is the programme; devontechnologies.com says the company is
-    Devon Technologies, so Tag1 is "Devon Technologies" and the subject stays
+    Devon Technologies, so Iq1 is "Devon Technologies" and the subject stays
     "DEVONthink". When the script cannot name the company from the batería, it
     asks the model to look up the official site before it names anything.
   examples:
   control_question: "Whose site is the download page on?"
 
-- id: tag2-carries-the-intent
+- id: iq2-carries-the-intent
   taught: 2026-11-10
   rule: >
-    Tag3 names the kind of work the user actually asked for, in the tense of the
+    Iq3 names the kind of work the user actually asked for, in the tense of the
     request, and it is one of exactly seven: Comparar, Instalar, Investigar,
     Testear, Cotizar, Troubleshooting, Compatibilidad. "Instalar" when he is
     installing something, when he asks what a programme can do or whether a
@@ -514,7 +514,7 @@
     broken, misconfigured or unbacked. The older names (Update, Version,
     Feature, Costo, Administrar, Respaldar, Comparación, Diagnosticar) are not
     tags: each is a signal of the canonical intention it belongs to.
-    A generic family ("Electronica", "IA") is what Tag2 says when the intent was
+    A generic family ("Electronica", "IA") is what Iq2 says when the intent was
     never read — not what it says when the intent is obvious.
   examples:
   control_question: "What verb would the user put in front of this session if he named it himself?"
@@ -547,9 +547,9 @@
     with a single word from a closed vocabulary. The model is never asked to
     name anything, because naming is the half that can be looked up.
   why: >
-    Asking the model for everything produced brands inside Tag1 ("DJI Avata 360"),
+    Asking the model for everything produced brands inside Iq1 ("DJI Avata 360"),
     products swallowed by their maker ("[DJI]" for a controller comparison) and a
-    Tag2 that described a topic instead of an intention ("Electronica" where the
+    Iq2 that described a topic instead of an intention ("Electronica" where the
     user was installing a box he had just received). The names were knowable; the
     model was being asked to guess what a YAML file already held.
   examples:
@@ -565,12 +565,12 @@
 - id: intent-not-topic
   taught: 2026-11-10
   rule: >
-    Tag3 is the verb, never the shelf. "Electronica" is where the object would
-    sit in a shop; "Instalar" is what the user did with it. When a Tag2 could
+    Iq3 is the verb, never the shelf. "Electronica" is where the object would
+    sit in a shop; "Instalar" is what the user did with it. When a Iq2 could
     describe a hundred unrelated sessions, it is not a tag — it is a category
     that escaped.
   examples:
-  control_question: "Could this same Tag2 label a session about something completely different?"
+  control_question: "Could this same Iq2 label a session about something completely different?"
 
 # --------------------------------------------------------------------------- #
 # THE STRUCTURE (2026-11-10). This rule outranks every older tag rule.
@@ -580,15 +580,15 @@
   taught: 2026-11-10
   rule: >
     The five tags have ONE meaning each, and an older rule that says otherwise
-    is superseded. tag1 is the maker of the subject, an adjective, never the
-    assistant. tag2 is CONTEXT and only context: a store ("Ebay", "Amazon"), a
-    country ("Panamá") or a machine ("Mac mini M4"). tag3 is the INTENTION and
+    is superseded. iq1 is the maker of the subject, an adjective, never the
+    assistant. iq2 is CONTEXT and only context: a store ("Ebay", "Amazon"), a
+    country ("Panamá") or a machine ("Mac mini M4"). iq3 is the INTENTION and
     nothing else, one of exactly seven: Comparar, Instalar, Investigar, Testear,
-    Cotizar, Troubleshooting, Compatibilidad. tag4 is the THEME, with the
-    subcategories of IT Manager. tag5 is the year. The model carries nine slots and
-    slots 6 to 9 are reserved; the machine belongs in tag2, not in tag6. An intention ("Comparar"), a family ("WebHosting") or a
-    theme ("Hardware") in tag2 is an error, not a judgement call. When a field
+    Cotizar, Troubleshooting, Compatibilidad. iq4 is the THEME, with the
+    subcategories of IT Manager. iq5 is the year. The model carries nine slots and
+    slots 6 to 9 are reserved; the machine belongs in iq2, not in iq6. An intention ("Comparar"), a family ("WebHosting") or a
+    theme ("Hardware") in iq2 is an error, not a judgement call. When a field
     has nothing honest to say, leave it empty: an empty field is data, a filled
     one that lies is not.
   examples:
-  control_question: "Is the value I am about to write in tag2 a store, a country or a machine — or is it something else wearing its clothes?"
+  control_question: "Is the value I am about to write in iq2 a store, a country or a machine — or is it something else wearing its clothes?"

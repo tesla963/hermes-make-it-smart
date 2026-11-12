@@ -36,8 +36,8 @@ from core.classify import ClassifyConfig, classify_one  # noqa: E402
 from core.prompt import prompt_fingerprint  # noqa: E402
 from core.taxonomy import normalize_family, normalize_platform, normalize_verb  # noqa: E402
 
-FIELDS = ("subject", "tag1", "tag2", "pillar", "verb")
-STRICT_FIELDS = ("subject", "tag1", "tag2")
+FIELDS = ("subject", "iq1", "iq2", "pillar", "verb")
+STRICT_FIELDS = ("subject", "iq1", "iq2")
 
 # Exact match is only meaningful on closed vocabularies. `subject` is free text
 # and the model is NOT deterministic even at temperature 0 (measured: the same
@@ -80,9 +80,9 @@ def load_index() -> dict[str, tuple[str, Path]]:
 
 def norm(field: str, value: str | None) -> str:
     v = (value or "").strip()
-    if field == "tag1":
+    if field == "iq1":
         return normalize_platform(v).lower()
-    if field == "tag2":
+    if field == "iq2":
         return normalize_family(v).lower()
     if field == "verb":
         return normalize_verb(v).lower()
@@ -139,8 +139,8 @@ def main() -> int:
             continue
         got = {
             "subject": res.facets.subject,
-            "tag1": res.facets.tag1,
-            "tag2": res.facets.tag2,
+            "iq1": res.facets.iq1,
+            "iq2": res.facets.iq2,
             "pillar": res.facets.pillar,
             "verb": res.facets.verb,
         }
@@ -192,7 +192,7 @@ def main() -> int:
     print("=" * 66)
 
     if misses:
-        print(f"\n{len(misses)} miss(es) on subject/tag1/tag2:\n")
+        print(f"\n{len(misses)} miss(es) on subject/iq1/iq2:\n")
         for m in misses:
             print(f"  #{m['n']:>2} {m['field']:<8} want={m['want']!r} got={m['got']!r}")
             if m["msgs"]:

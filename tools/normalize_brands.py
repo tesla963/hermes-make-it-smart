@@ -8,14 +8,14 @@ Dry-run by default. `--apply` performs the rename after a verified backup.
 
 Rules applied
 -------------
-R1  A corporate brand never lives in the subject; it belongs in Tag1.
-    "Dell Inspiron 5570" -> Tag1 Dell, subject "Inspiron 5570".
-    Exception: a product LINE stays in the subject ("ThinkPad P53", Tag1 Lenovo).
+R1  A corporate brand never lives in the subject; it belongs in Iq1.
+    "Dell Inspiron 5570" -> Iq1 Dell, subject "Inspiron 5570".
+    Exception: a product LINE stays in the subject ("ThinkPad P53", Iq1 Lenovo).
 R2  A numeric spec does not live in the subject unless the session is about it.
     "Gorgon Halo 192GB" -> "Gorgon Halo".  "16 GB Ram" stays.
-R3  When the subject equals Tag1, Tag1 moves to the maker (or to the software's
+R3  When the subject equals Iq1, Iq1 moves to the maker (or to the software's
     own name when it has no corporate owner, as is usual with open source).
-R4  Every brand found in a subject gets a Tag1 even when the title was fine.
+R4  Every brand found in a subject gets a Iq1 even when the title was fine.
 """
 
 from __future__ import annotations
@@ -34,13 +34,13 @@ from core.normalize import Facets, render, short_date  # noqa: E402
 
 TITLE_RE = re.compile(
     r"^(?P<nnn>\d{3,4})\s+\[(?P<subject>.+?)\s+(?P<mmm>\d{3,4})\]\s*"
-    r"(?:\[(?P<tag1>[^\]]*)\])?\s*"
-    r"(?:\[(?P<tag2>[^\]]*)\])?\s*"
+    r"(?:\[(?P<iq1>[^\]]*)\])?\s*"
+    r"(?:\[(?P<iq2>[^\]]*)\])?\s*"
     r"(?P<date>\d{2}[a-z]{3})?\s*"
     r"(?P<desc>.*?)(?:\s*·\s*(?P<verb>[^·]+))?\s*$"
 )
 
-# brand name as it appears at the start of a subject -> (Tag1, strip_from_subject)
+# brand name as it appears at the start of a subject -> (Iq1, strip_from_subject)
 BRANDS: dict[str, tuple[str, bool]] = {
     "dell": ("Dell", True),
     "gemini": ("Google", True),
@@ -82,12 +82,12 @@ SPEC_IS_THE_SUBJECT = re.compile(r"^\d+\s?(?:GB|TB|MB)\s+RAM$", re.I)
 
 # Owner-dictated exact fixes.
 OVERRIDES: dict[str, tuple[str, str, str]] = {
-    # subject (lower) -> (new subject, new tag1, note)
-    "dell inspiron 5570": ("Inspiron 5570", "Dell", "marca al tag1"),
-    "gemini flash lite": ("Flash Lite", "Google", "marca al tag1"),
-    "pinokio": ("Control CLI", "Pinokio", "sujeto no repite tag1"),
+    # subject (lower) -> (new subject, new iq1, note)
+    "dell inspiron 5570": ("Inspiron 5570", "Dell", "marca al iq1"),
+    "gemini flash lite": ("Flash Lite", "Google", "marca al iq1"),
+    "pinokio": ("Control CLI", "Pinokio", "sujeto no repite iq1"),
     "gorgon halo 192gb": ("Gorgon Halo", "AMD", "spec a la descripción"),
-    "thinkpad p53": ("ThinkPad P53", "Lenovo", "marca corporativa al tag1"),
+    "thinkpad p53": ("ThinkPad P53", "Lenovo", "marca corporativa al iq1"),
 }
 
 
@@ -118,14 +118,14 @@ def parse(title: str) -> dict | None:
 
 def fix(parts: dict) -> tuple[dict, str] | None:
     subject = (parts["subject"] or "").strip()
-    tag1 = (parts["tag1"] or "").strip()
-    tag2 = (parts["tag2"] or "").strip()
+    iq1 = (parts["iq1"] or "").strip()
+    iq2 = (parts["iq2"] or "").strip()
     low = subject.lower()
     reasons: list[str] = []
 
     if low in OVERRIDES:
-        new_subject, new_tag1, note = OVERRIDES[low]
-        subject, tag1 = new_subject, new_tag1
+        new_subject, new_iq1, note = OVERRIDES[low]
+        subject, iq1 = new_subject, new_iq1
         reasons.append(f"override: {note}")
     else:
         # R2 — a trailing numeric spec leaves the subject
@@ -143,19 +143,19 @@ def fix(parts: dict) -> tuple[dict, str] | None:
                     if _usable_subject(rest):
                         subject = rest
                         reasons.append(f"marca {brand.title()} fuera del sujeto")
-                if tag1.lower() != maker.lower():
-                    tag1 = maker
-                    reasons.append(f"tag1 -> {maker}")
+                if iq1.lower() != maker.lower():
+                    iq1 = maker
+                    reasons.append(f"iq1 -> {maker}")
                 break
 
-        # R3 — subject equals tag1
-        if subject and tag1 and subject.strip().lower() == tag1.strip().lower():
+        # R3 — subject equals iq1
+        if subject and iq1 and subject.strip().lower() == iq1.strip().lower():
             maker = BRANDS.get(subject.lower(), (None, False))[0]
             if maker and maker.lower() != subject.lower():
-                tag1 = maker
-                reasons.append(f"tag1 -> {maker} (no repetir el sujeto)")
+                iq1 = maker
+                reasons.append(f"iq1 -> {maker} (no repetir el sujeto)")
             else:
-                reasons.append("sujeto == tag1: requiere revisión")
+                reasons.append("sujeto == iq1: requiere revisión")
 
     if not reasons:
         return None
@@ -163,8 +163,8 @@ def fix(parts: dict) -> tuple[dict, str] | None:
         {
             "subject": subject,
             "mmm": int(parts["mmm"]),
-            "tag1": tag1,
-            "tag2": tag2,
+            "iq1": iq1,
+            "iq2": iq2,
             "date": parts["date"] or "",
             "desc": (parts["desc"] or "").strip(),
             "verb": (parts["verb"] or "").strip(),
@@ -177,8 +177,8 @@ def build_title(nnn: str, p: dict) -> str:
     f = Facets(
         subject=p["subject"],
         subject_ordinal=p["mmm"],
-        tag1=p["tag1"],
-        tag2=p["tag2"],
+        iq1=p["iq1"],
+        iq2=p["iq2"],
         description=p["desc"],
         verb=p["verb"],
     )

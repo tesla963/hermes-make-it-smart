@@ -31,7 +31,7 @@ from core.paths import data_dir, ui_data_dir  # noqa: E402
 # The ordinal sits OUTSIDE the subject bracket: 001 [Chat en Telegram] 001 [Tag] …
 TITLE_RE = re.compile(
     r"^(?P<nnn>\d{3,4})\s+\[(?P<subject>.+?)\]\s+(?P<mmm>\d{3,4})\s*"
-    r"(?:\[(?P<tag1>[^\]]*)\])?\s*(?:\[(?P<tag2>[^\]]*)\])?\s*"
+    r"(?:\[(?P<iq1>[^\]]*)\])?\s*(?:\[(?P<iq2>[^\]]*)\])?\s*"
     r"(?P<desc>.*?)(?:\s*·\s*(?P<verb>[^·]+))?\s*$"
 )
 
@@ -40,7 +40,7 @@ TITLE_RE = re.compile(
 # shape is tried only when the new one fails.
 TITLE_RE_LEGACY = re.compile(
     r"^(?P<nnn>\d{3,4})\s+\[(?P<subject>.+?)\s+(?P<mmm>\d{3,4})\]\s*"
-    r"(?:\[(?P<tag1>[^\]]*)\])?\s*(?:\[(?P<tag2>[^\]]*)\])?\s*"
+    r"(?:\[(?P<iq1>[^\]]*)\])?\s*(?:\[(?P<iq2>[^\]]*)\])?\s*"
     r"(?P<desc>.*?)(?:\s*·\s*(?P<verb>[^·]+))?\s*$"
 )
 
@@ -78,12 +78,31 @@ def load_facets() -> dict:
     if not path.exists():
         return {}
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
+        data = json.loads(path.read_text(encoding="utf-8"))
     except (ValueError, OSError):
         return {}
+    # v0.26.x wrote tagN, v0.27.0 writes iqN: read either, so an old facets file still
+    # builds a complete index while the migration catches up.
+    if isinstance(data, dict):
+        for value in data.values():
+            if isinstance(value, dict):
+                for n in range(10):
+                    if value.get(f"iq{n}") in (None, "") and value.get(f"tag{n}") is not None:
+                        value[f"iq{n}"] = value[f"tag{n}"]
+    return data
 
 
 def build(with_messages: bool = True) -> dict:
+    # Bring any older artefact to the iqN schema before reading it. A failure here is
+    # not fatal: load_facets() accepts both key sets.
+    try:
+        import sys as _sys  # noqa: PLC0415
+        _sys.path.insert(0, str(Path(__file__).resolve().parent))
+        from migrate_axes import ensure_current  # noqa: PLC0415
+
+        ensure_current()
+    except Exception:  # noqa: BLE001
+        pass
     extra = load_facets()
     rows: list[dict] = []
     for profile, path in discover_databases():
@@ -93,7 +112,7 @@ def build(with_messages: bool = True) -> dict:
             # A session without the canonical shape is still a session: it enters
             # with n=0 and gets a number after the highest one in use, below.
             g = m.groupdict() if m else {"nnn": "0", "mmm": "1", "subject": "",
-                                         "tag1": "", "tag2": "", "desc": "", "verb": ""}
+                                         "iq1": "", "iq2": "", "desc": "", "verb": ""}
             if with_messages:
                 rec = attach_messages(rec, path)
             msgs = [re.sub(r"\s+", " ", x)[:400] for x in (rec.messages or []) if is_human(x)]
@@ -106,17 +125,17 @@ def build(with_messages: bool = True) -> dict:
                     "n": int(g["nnn"]),
                     "mmm": int(g["mmm"]),
                     "sujeto": g["subject"].strip() or (ex.get("sujeto") or "").strip(),
-                    "tag1": (g["tag1"] or "").strip() or (ex.get("tag1") or "").strip(),
-                    "tag2": (g["tag2"] or "").strip() or (ex.get("tag2") or "").strip(),
+                    "iq1": (g["iq1"] or "").strip() or (ex.get("iq1") or "").strip(),
+                    "iq2": (g["iq2"] or "").strip() or (ex.get("iq2") or "").strip(),
                     # Nine slots always, empty when unused: gaining an axis later
                     # must not cost a migration of every record.
-                    "tag3": extra.get(rec.id, {}).get("tag3", ""),
-                    "tag4": extra.get(rec.id, {}).get("tag4", ""),
-                    "tag5": extra.get(rec.id, {}).get("tag5", ""),
-                    "tag6": "",
-                    "tag7": extra.get(rec.id, {}).get("tag7", ""),
-                    "tag8": extra.get(rec.id, {}).get("tag8", ""),
-                    "tag9": extra.get(rec.id, {}).get("tag9", ""),
+                    "iq3": extra.get(rec.id, {}).get("iq3", ""),
+                    "iq4": extra.get(rec.id, {}).get("iq4", ""),
+                    "iq5": extra.get(rec.id, {}).get("iq5", ""),
+                    "iq6": "",
+                    "iq7": extra.get(rec.id, {}).get("iq7", ""),
+                    "iq8": extra.get(rec.id, {}).get("iq8", ""),
+                    "iq9": extra.get(rec.id, {}).get("iq9", ""),
                     "desc": (g["desc"] or "").strip(),
                     "verb": (g["verb"] or "").strip(),
                     "raw": title,
@@ -142,8 +161,8 @@ def build(with_messages: bool = True) -> dict:
     rows.sort(key=lambda r: r["n"])
     subjects = Counter(r["sujeto"] for r in rows)
     facets = {
-        "tag1": dict(Counter(r["tag1"] for r in rows if r["tag1"]).most_common()),
-        "tag2": dict(Counter(r["tag2"] for r in rows if r["tag2"]).most_common()),
+        "iq1": dict(Counter(r["iq1"] for r in rows if r["iq1"]).most_common()),
+        "iq2": dict(Counter(r["iq2"] for r in rows if r["iq2"]).most_common()),
         "prof": dict(Counter(r["prof"] for r in rows).most_common()),
     }
     # Number the untitled ones after the last number in use, oldest first.
@@ -153,6 +172,7 @@ def build(with_messages: bool = True) -> dict:
         siguientes += 1
 
     return {
+        "schema": 2,  # iq0…iq9. v1 (tag0…tag9) is migrated on read by tools/migrate_axes.py.
         "generated": datetime.now().isoformat(timespec="seconds"),
         "count": len(rows),
         "subjects": len(subjects),
