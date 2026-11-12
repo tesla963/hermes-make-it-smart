@@ -6,13 +6,13 @@ catalog stops being navigable and becomes a list. This is the rule that governs 
 ## 1. The format
 
 ```
-NNN [Subject MMM] [Tag1] [Tag2] Date Description · Verb
+NNN [Subject MMM] [Iq1] [Iq2] Date Description · Verb
 ```
 
 Hard limit: **100 characters**. Priority when space runs out:
 
 ```
-Subject  >  Tag1  >  Tag2  >  Date  >  Description  >  Verb
+Subject  >  Iq1  >  Iq2  >  Date  >  Description  >  Verb
 ```
 
 The subject and the tags are never truncated. The description is compressed (telegram
@@ -43,7 +43,7 @@ The **object, problem or symptom**, in 2–4 words. Never the program.
 | Strip the action prefix, keep the core | The verb goes to the description | `Suplemento Vitamina C` → `Vitamina C` |
 | Drop state adjectives | "inusual", "trancado", "con error" describe, not name | `Dolor Interoseos` → `Interoseos` |
 | Name the failure point | It is what you will search for later | `Protocolo` for a broken gateway |
-| Never repeat Tag1 | Two fields, one answer = not navigable | If Tag1 is YouTube, the subject is `Transcripción` |
+| Never repeat Iq1 | Two fields, one answer = not navigable | If Iq1 is YouTube, the subject is `Transcripción` |
 | Never repeat the platform in the subject | Same reason | `Video` was removed from a YouTube subject |
 
 **The control question:** *would this subject help me find this session in six months?*
@@ -62,7 +62,7 @@ This is what makes the catalog a *history* rather than a list.
 **The value:** it unifies historical sessions that predate the taxonomy. Nothing is
 merged or deleted; the ordinal simply says *these belong together, and in this order*.
 
-## 5. Tag1 — the protagonist
+## 5. Iq1 — the protagonist
 
 **Who or what is really doing the work.**
 
@@ -70,7 +70,7 @@ merged or deleted; the ordinal simply says *these belong together, and in this o
   `Brave`, `Logseq`.
 - If nothing fits, **leave it empty**. `Hermes Agent` as a fallback is banned: the
   assistant does the work in every session, which makes it the author, never the maker.
-  An empty Tag1 is honest — it says nobody knew, and it leaves the slot free.
+  An empty Iq1 is honest — it says nobody knew, and it leaves the slot free.
 - **Never** the operating system by default. "macOS" explains almost every session and
   therefore explains nothing.
 - Use the full product name, never an abbreviation: `Hermes Agent`, `Hermes Desktop`,
@@ -81,23 +81,23 @@ merged or deleted; the ordinal simply says *these belong together, and in this o
 When the session is about evaluating or buying a product, the shape is:
 
 ```
-Tag1 = the brand        Tag2 = the marketplace
+Iq1 = the brand        Iq2 = the marketplace
 ```
 
-| Session | Subject | Tag1 | Tag2 |
+| Session | Subject | Iq1 | Iq2 |
 |---|---|---|---|
 | Used drone listing | `Air 2S` | `DJI` | `Ebay` |
 | Supplement research | `Trace Minerals` | `Dr. Berg` | `Amazon` |
-| USB-C enclosure | `Case USB` | `ORICO` | — (the comparison is Tag3) |
+| USB-C enclosure | `Case USB` | `ORICO` | — (the comparison is Iq3) |
 
 Read in one breath: **what** it is, **who** makes it, **where** we looked.
 
 This is the strongest expression of the algorithm: three fields, a complete idea,
 telegraphic, in under 40 characters.
 
-## 6. Tag2 — context, and only context
+## 6. Iq2 — context, and only context
 
-Tag2 is what sits *around* the subject and changes how you read it. Three things,
+Iq2 is what sits *around* the subject and changes how you read it. Three things,
 nothing else:
 
 | Kind | Values | Example |
@@ -107,14 +107,14 @@ nothing else:
 | **Machine** | Mac mini M4, VPS, P53, … | `16 GB Ram` · — · **Mac mini M4** |
 
 A work family (`WebHosting`), an intention (`Comparar`) or a theme (`Hardware`) in
-Tag2 is an **error, not a judgement call**. Those used to live here and the field
+Iq2 is an **error, not a judgement call**. Those used to live here and the field
 became a sack: it mixed families, topics and intentions in one column, so no filter
 built on it could be trusted.
 
 **The control question:** *would this value still make sense printed next to the
 subject on a shelf label?*
 
-## 6b. Tag3 — the intention (seven, closed)
+## 6b. Iq3 — the intention (seven, closed)
 
 Comparar · Instalar · Investigar · Testear · Cotizar · Troubleshooting ·
 Compatibilidad.
@@ -123,7 +123,7 @@ Compatibilidad.
 - **Empty is a valid answer.** It says nobody read an intention here, which is true.
 - `Administrar` was retired; `Feature` and `Version` do not exist.
 
-## 6c. Tag4 — the theme
+## 6c. Iq4 — the theme
 
 The work front, with the subcategories of IT Manager: IA Bot, VPS, Data Backup,
 Hardware, MindMap, Network, OS. `Data Mining` and `Data Security` are themes, not
@@ -137,11 +137,11 @@ families.
 | Tag 4 · Theme | which work front | IT Manager and its subcategories |
 | Tag 5 · Year | which edition | 2026, … |
 
-**Tag 6 no longer means the machine** — the machine belongs in Tag2, next to the
+**Tag 6 no longer means the machine** — the machine belongs in Iq2, next to the
 store and the country. Slots 6 to 9 are reserved: present in the model, empty in
 the data, waiting for an axis that earns its place.
 
-None of these is written into the title except Tag1 and Tag2. Measured: adding the
+None of these is written into the title except Iq1 and Iq2. Measured: adding the
 theme leaves 877 of 884 titles with no description at all.
 
 ## 8. The date
@@ -188,7 +188,7 @@ dot and capitalised. It is the last field to survive and the first to be dropped
 
 Description: `Compare the Fly More bundle`. Verb: `Comparar`.
 
-## 10. When subject and Tag1 collide
+## 10. When subject and Iq1 collide
 
 If they are nearly the same, **something is wrong**. The subject names a *thing or a
 problem*; the tag names the *platform*. 187 sessions were corrected on this rule alone.

@@ -30,12 +30,12 @@ import re  # noqa: E402
 
 TITLE_RE = re.compile(
     r"^(?P<nnn>\d{3,4})\s+\[(?P<subject>.+?)\s+(?P<mmm>\d{3,4})\]\s*"
-    r"(?:\[(?P<tag1>[^\]]*)\])?\s*(?:\[(?P<tag2>[^\]]*)\])?\s*"
+    r"(?:\[(?P<iq1>[^\]]*)\])?\s*(?:\[(?P<iq2>[^\]]*)\])?\s*"
     r"(?P<desc>.*?)(?:\s*·\s*(?P<verb>[^·]+))?\s*$"
 )
 
 COLUMNS = [
-    "n", "id", "fecha", "titulo_actual", "sujeto", "tag1", "tag2", "descripcion", "verbo",
+    "n", "id", "fecha", "titulo_actual", "sujeto", "iq1", "iq2", "descripcion", "verbo",
     "sujeto_nuevo", "tag1_nuevo", "tag2_nuevo", "descripcion_nueva", "verbo_nuevo",
     "observaciones",
 ]
@@ -65,8 +65,8 @@ def main() -> int:
                     "fecha": str(rec.created_at or "")[:10],
                     "titulo_actual": title,
                     "sujeto": g["subject"].strip(),
-                    "tag1": (g["tag1"] or "").strip(),
-                    "tag2": (g["tag2"] or "").strip(),
+                    "iq1": (g["iq1"] or "").strip(),
+                    "iq2": (g["iq2"] or "").strip(),
                     "descripcion": (g["desc"] or "").strip(),
                     "verbo": (g["verb"] or "").strip(),
                     "sujeto_nuevo": "",

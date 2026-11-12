@@ -18,12 +18,12 @@ The row is two lines, and each line has a job:
 
 | Line | Carries |
 |---|---|
-| **1 — the name** | the whole title, unadorned: `NNN` · `[Sujeto] MMM` · `[tag1]` · `[tag2]` · description in bold. **No pills here.** |
-| **2 — the data** | date · subject pill with its `MMM` · **tag1 and tag2 as coloured pills right after the MMM** · cost · hours · tokens · posts |
+| **1 — the name** | the whole title, unadorned: `NNN` · `[Sujeto] MMM` · `[iq1]` · `[iq2]` · description in bold. **No pills here.** |
+| **2 — the data** | date · subject pill with its `MMM` · **iq1 and iq2 as coloured pills right after the MMM** · cost · hours · tokens · posts |
 
 **There is no TAGS column.** The pills live inside the subject cell of the
 second line, after the `MMM`, so the two tags stay readable as colour without
-polluting the name. Anything that does not appear in the name —pillar (tag3),
+polluting the name. Anything that does not appear in the name —pillar (iq3),
 country, year, machine, tags 7-9— lives in the detail card and in the filters,
 never in the list.
 
@@ -37,18 +37,18 @@ Same lightness and saturation across the set: one hue each, none shouts on
 
 | Tag | Axis | Text | Background | Border |
 |---|---|---|---|---|
-| **tag1** | platform | `#f0d48a` amber | `#2a2210` | `#55461f` |
-| **tag2** | family | `#d3e3f3` pale blue | `#121d28` | `#24404f` |
-| **tag3** | pillar | `#c9a8f0` violet | `#221634` | `#453063` |
-| **tag4** | country | `#96e0b0` green | `#0f2618` | `#1f4a30` |
-| **tag5** | year | `#f2a8c4` pink | `#2b1220` | `#55233d` |
-| **tag6** | machine | `#f5b98f` orange | `#2b1a0f` | `#553620` |
-| **tag7** | free | `#8fe6e0` turquoise | `#0d2725` | `#1f4a46` |
-| **tag8** | free | `#b8b8f5` lavender | `#1a1a33` | `#33335f` |
-| **tag9** | free | `#d8ec8f` lime | `#222b0f` | `#44551f` |
+| **iq1** | platform | `#f0d48a` amber | `#2a2210` | `#55461f` |
+| **iq2** | family | `#d3e3f3` pale blue | `#121d28` | `#24404f` |
+| **iq3** | pillar | `#c9a8f0` violet | `#221634` | `#453063` |
+| **iq4** | country | `#96e0b0` green | `#0f2618` | `#1f4a30` |
+| **iq5** | year | `#f2a8c4` pink | `#2b1220` | `#55233d` |
+| **iq6** | machine | `#f5b98f` orange | `#2b1a0f` | `#553620` |
+| **iq7** | free | `#8fe6e0` turquoise | `#0d2725` | `#1f4a46` |
+| **iq8** | free | `#b8b8f5` lavender | `#1a1a33` | `#33335f` |
+| **iq9** | free | `#d8ec8f` lime | `#222b0f` | `#44551f` |
 
 **The subject carries the brightest blue** — `#8fd0f5` on `#0f2431` — because it
-is the heaviest word in the row and deserves the strongest colour. tag2 keeps a
+is the heaviest word in the row and deserves the strongest colour. iq2 keeps a
 paler blue so it reads as related but subordinate.
 
 Tags 7, 8 and 9 have a colour reserved and no meaning yet: the slots exist so
@@ -106,8 +106,8 @@ Never one button visibly larger than its neighbour.
 ## 7 · The detail card
 
 Title at 1.5× the list size, wrapped in its own bordered block. Below it the
-nine tags with their **internal name** (`tag1 · platform`, `tag3 · pillar`,
-`tag7 · free`…), so it is visible at a glance which axes exist and which are
+nine tags with their **internal name** (`iq1 · platform`, `iq3 · pillar`,
+`iq7 · free`…), so it is visible at a glance which axes exist and which are
 still empty.
 
 Then cost, hours, messages, date, engine, author, profile, and the user's own

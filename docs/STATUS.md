@@ -40,7 +40,7 @@ removes `[IMPORTANT:`, `[SYSTEM:` and `[REMINDER:` preambles before the text rea
 model.
 
 **3. The model invents brands.**
-Asked about "a new drive case", it answered `tag1: ORICO` because ORICO is in the platform
+Asked about "a new drive case", it answered `iq1: ORICO` because ORICO is in the platform
 list. A plausible brand is worse than no brand. The prompt now forbids naming a brand the
 messages do not evidence, and the fallback folds unknown platforms to `Hermes Agent`.
 

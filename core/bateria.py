@@ -99,7 +99,7 @@ def load_bateria(path: str | None = None, merge_personal: bool = True) -> dict[s
 
 
 def brand_of(subject: str, bateria: dict[str, Any] | None = None) -> tuple[str, bool] | None:
-    """(Tag1, strip_from_subject) for a subject, or None when unknown.
+    """(Iq1, strip_from_subject) for a subject, or None when unknown.
 
     Longest key wins, so "gorgon halo" beats "amd" and "mac mini" beats "apple".
     """
@@ -116,7 +116,7 @@ def brand_of(subject: str, bateria: dict[str, Any] | None = None) -> tuple[str, 
         names += [str(x).lower() for x in (spec.get("lineas") or [])]
         for name in names:
             if name and low.startswith(name):
-                candidates.append((name, str(spec.get("tag1") or key.title()), bool(spec.get("strip"))))
+                candidates.append((name, str(spec.get("iq1") or key.title()), bool(spec.get("strip"))))
 
     for key, spec in (b.get("programas") or {}).items():
         spec = spec or {}
@@ -128,32 +128,32 @@ def brand_of(subject: str, bateria: dict[str, Any] | None = None) -> tuple[str, 
     if not candidates:
         return None
     candidates.sort(key=lambda c: -len(c[0]))
-    _, tag1, strip = candidates[0]
-    return tag1, strip
+    _, iq1, strip = candidates[0]
+    return iq1, strip
 
 
 def strip_brand(subject: str, bateria: dict[str, Any] | None = None) -> tuple[str, str]:
     """Remove the brand from the subject when the batería says it should leave.
 
-    Returns (new_subject, tag1). Unchanged subject when the rule does not apply
+    Returns (new_subject, iq1). Unchanged subject when the rule does not apply
     or when stripping would leave something meaningless.
     """
     found = brand_of(subject, bateria)
     if not found:
         return subject, ""
-    tag1, strip = found
+    iq1, strip = found
     if not strip:
-        return subject, tag1
+        return subject, iq1
     low = subject.lower()
     b = bateria if bateria is not None else load_bateria()
 
-    # Every name that maps to this Tag1: the brand key, its products and its lines.
+    # Every name that maps to this Iq1: the brand key, its products and its lines.
     names: set[str] = set()
     for group in ("marcas", "programas"):
         for key, spec in (b.get(group) or {}).items():
             spec = spec or {}
-            owner = str(spec.get("tag1") or spec.get("marca") or key).lower()
-            if owner != tag1.lower():
+            owner = str(spec.get("iq1") or spec.get("marca") or key).lower()
+            if owner != iq1.lower():
                 continue
             names.add(key.lower())
             for field in ("productos", "lineas"):
@@ -170,8 +170,8 @@ def strip_brand(subject: str, bateria: dict[str, Any] | None = None) -> tuple[st
     # A remainder that starts with a digit ("3.8 27B", "5570") is not a subject:
     # keep the brand in place rather than leave something unreadable.
     if len(rest) < 4 or not any(c.isalpha() for c in rest) or rest[0].isdigit():
-        return subject, tag1
-    return rest, tag1
+        return subject, iq1
+    return rest, iq1
 
 
 def for_prompt(bateria: dict[str, Any] | None = None, limit: int = 42) -> str:
@@ -181,16 +181,16 @@ def for_prompt(bateria: dict[str, Any] | None = None, limit: int = 42) -> str:
 
     marcas = b.get("marcas") or {}
     if marcas:
-        lines.append("Known brands (Tag1):")
+        lines.append("Known brands (Iq1):")
         for key, spec in list(marcas.items())[:limit]:
             spec = spec or {}
-            tag1 = spec.get("tag1") or key.title()
+            iq1 = spec.get("iq1") or key.title()
             extra = ""
             if spec.get("productos"):
                 extra = " · " + ", ".join(str(x) for x in spec["productos"][:5])
             elif spec.get("lineas"):
                 extra = " · lines: " + ", ".join(str(x) for x in spec["lineas"][:4])
-            lines.append(f"  {key} -> {tag1}{extra}")
+            lines.append(f"  {key} -> {iq1}{extra}")
 
     programas = b.get("programas") or {}
     if programas:
@@ -217,7 +217,7 @@ def for_prompt(bateria: dict[str, Any] | None = None, limit: int = 42) -> str:
     productos = b.get("productos") or {}
     if productos:
         lines.append("")
-        lines.append("Product shape: subject = the generic object, Tag1 = brand, Tag2 = model.")
+        lines.append("Product shape: subject = the generic object, Iq1 = brand, Iq2 = model.")
         for key, spec in list(productos.items())[:10]:
             spec = spec or {}
             if spec.get("nota"):

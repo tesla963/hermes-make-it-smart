@@ -10,7 +10,7 @@ A subject competes with the description when it reads like a phrase. The rules:
       " a ", " vs ", " versus ". ("Cierre de sesión" is fine: "de" names a thing.)
   S3  Length. Median is 17 characters. Anything past 26 is suspect; past 30 is a
       sentence in disguise.
-  S4  It must not repeat Tag1.
+  S4  It must not repeat Iq1.
   S5  ALL CAPS or Title Case noise is normalised.
 
 Usage
@@ -37,7 +37,7 @@ from adapters.hermes import discover_databases, read_sessions  # noqa: E402
 
 TITLE_RE = re.compile(
     r"^(?P<nnn>\d{3,4})\s+\[(?P<subject>.+?)\s+(?P<mmm>\d{3,4})\]\s*"
-    r"(?:\[(?P<tag1>[^\]]*)\])?\s*(?:\[(?P<tag2>[^\]]*)\])?\s*(?P<desc>.*?)(?:\s*·\s*(?P<verb>[^·]+))?\s*$"
+    r"(?:\[(?P<iq1>[^\]]*)\])?\s*(?:\[(?P<iq2>[^\]]*)\])?\s*(?P<desc>.*?)(?:\s*·\s*(?P<verb>[^·]+))?\s*$"
 )
 
 VERB_START = re.compile(
@@ -60,9 +60,9 @@ COMPARISON = re.compile(r"\s(vs\.?|versus|frente a)\s", re.I)
 MAX_OK = 26
 SENTENCE_OK = 30
 
-# The owner's dictated fixes: nnn -> (sujeto, tag1, tag2, country)
+# The owner's dictated fixes: nnn -> (sujeto, iq1, iq2, country)
 DICTATED: dict[int, dict[str, str]] = {
-    98: {"subject": "Samurái Ciego", "tag1": "Película", "tag2": "Serie", "country": "Japón"},
+    98: {"subject": "Samurái Ciego", "iq1": "Película", "iq2": "Serie", "country": "Japón"},
     97: {"subject": "Buscador OS"},
     96: {"subject": "Tarea Cron"},
     95: {"subject": "Programming Language"},
@@ -70,7 +70,7 @@ DICTATED: dict[int, dict[str, str]] = {
 }
 
 
-def flags(subject: str, tag1: str) -> list[str]:
+def flags(subject: str, iq1: str) -> list[str]:
     s = (subject or "").strip()
     out: list[str] = []
     if not s:
@@ -82,14 +82,14 @@ def flags(subject: str, tag1: str) -> list[str]:
     if LINKING.search(s) and s.lower() not in NAMED_CONCEPTS:
         out.append("S2 preposición")
     if COMPARISON.search(s):
-        # The comparison belongs in the description; Tag2 becomes "Comparación".
+        # The comparison belongs in the description; Iq2 becomes "Comparación".
         out.append("S5 comparación")
     if len(s) > SENTENCE_OK:
         out.append("S3 oración")
     elif len(s) > MAX_OK:
         out.append("S3 largo")
-    if tag1 and s.lower() == tag1.lower():
-        out.append("S4 = tag1")
+    if iq1 and s.lower() == iq1.lower():
+        out.append("S4 = iq1")
     if re.search(r"\bde\s+\w+", s) and len(s) > 22:
         out.append("S2 de+algo")
     return out
@@ -109,7 +109,7 @@ def main() -> int:
             if not m:
                 continue
             g = m.groupdict()
-            f = flags(g["subject"], g["tag1"] or "")
+            f = flags(g["subject"], g["iq1"] or "")
             rows.append(
                 {
                     "session_id": rec.id,
@@ -117,8 +117,8 @@ def main() -> int:
                     "nnn": g["nnn"],
                     "subject": g["subject"],
                     "len": len(g["subject"]),
-                    "tag1": g["tag1"] or "",
-                    "tag2": g["tag2"] or "",
+                    "iq1": g["iq1"] or "",
+                    "iq2": g["iq2"] or "",
                     "flags": f,  # list, so "S2 preposición" counts as one flag
                     "title": (rec.title or ""),
                 }
@@ -174,8 +174,8 @@ def main() -> int:
             f = Facets(
                 subject=d.get("subject", g["subject"]),
                 subject_ordinal=int(g["mmm"]),
-                tag1=d.get("tag1", g["tag1"] or ""),
-                tag2=d.get("tag2", g["tag2"] or ""),
+                iq1=d.get("iq1", g["iq1"] or ""),
+                iq2=d.get("iq2", g["iq2"] or ""),
                 country=d.get("country", ""),
                 description=(g["desc"] or "").strip(),
                 verb=(g["verb"] or "").strip(),

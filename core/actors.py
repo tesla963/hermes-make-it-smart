@@ -71,7 +71,7 @@ def _candidates(bateria: dict[str, Any]) -> list[tuple[str, str, list[str]]]:
     for key, val in (bateria.get("marcas") or {}).items():
         if not isinstance(val, dict):
             continue
-        name = val.get("tag1") or key
+        name = val.get("iq1") or key
         out.append((name, BRAND, [key]))
         # A product is its own actor, not an alias of its maker. "DJI Avata 360"
         # must resolve to the drone, never to the brand — otherwise every DJI
@@ -104,9 +104,9 @@ def _candidates(bateria: dict[str, Any]) -> list[tuple[str, str, list[str]]]:
         out.append((name, CONCEPT, [key.replace("_", " ")]))
 
     for key, val in (bateria.get("logistica") or {}).items():
-        if not isinstance(val, dict) or "tag1" not in val:
+        if not isinstance(val, dict) or "iq1" not in val:
             continue
-        out.append((val["tag1"], BRAND, [key]))
+        out.append((val["iq1"], BRAND, [key]))
         for pname, prod in (val.get("productos") or {}).items():
             if isinstance(prod, dict) and prod.get("sujeto"):
                 out.append((prod["sujeto"], PRODUCT, [pname]))

@@ -42,8 +42,8 @@ def test_titles_never_exceed_100() -> None:
     f = Facets(
         subject="Diagnóstico de red inalámbrica",
         subject_ordinal=12,
-        tag1="Hermes Agent",
-        tag2="Networking",
+        iq1="Hermes Agent",
+        iq2="Networking",
         description=long_desc,
         verb="Investigar",
     )
@@ -52,7 +52,7 @@ def test_titles_never_exceed_100() -> None:
 
 
 def test_short_title_keeps_full_description() -> None:
-    f = Facets(subject="Air 2S", subject_ordinal=3, tag1="DJI", tag2="Ebay",
+    f = Facets(subject="Air 2S", subject_ordinal=3, iq1="DJI", iq2="Ebay",
                description="Evaluar el bundle Fly More", verb="Comparar")
     t = render(748, f, "19ago")
     assert "Evaluar el bundle Fly More" in t
@@ -62,7 +62,7 @@ def test_short_title_keeps_full_description() -> None:
 
 def test_telegram_mode_when_it_does_not_fit() -> None:
     desc = "Evaluar el paquete de accesorios y comparar con la oferta del vendedor anterior"
-    f = Facets(subject="Air 2S", subject_ordinal=3, tag1="DJI", tag2="Ebay",
+    f = Facets(subject="Air 2S", subject_ordinal=3, iq1="DJI", iq2="Ebay",
                description=desc, verb="Comparar")
     t = render(748, f, "19ago")
     assert len(t) <= 100
@@ -88,8 +88,8 @@ def test_subject_strips_action_prefix() -> None:
 
 def test_subject_repeating_tag1_is_flagged() -> None:
     t = "748 [DJI 001] [DJI] 19ago algo que decir"
-    problems = validate(t, subject="DJI", tag1="DJI")
-    assert "subject repeats tag1" in problems
+    problems = validate(t, subject="DJI", iq1="DJI")
+    assert "subject repeats iq1" in problems
 
 
 # --------------------------------------------------------------------------- #

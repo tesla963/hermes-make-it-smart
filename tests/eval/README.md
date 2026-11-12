@@ -49,12 +49,12 @@ pass now fails:
 
 ## Reading the numbers
 
-`tag2` will always look worse than the rest: it is the most subjective field,
+`iq2` will always look worse than the rest: it is the most subjective field,
 and "is this Troubleshooting or Productivity?" has genuine disagreement. What
 matters is that **the misses stay stable** and that correcting one teaches the
 system permanently (see `docs/CORRECTIONS.md`).
 
-`subject` and `tag1` are the fields a user actually navigates by. A regression
+`subject` and `iq1` are the fields a user actually navigates by. A regression
 there is a release blocker.
 
 ## Cost

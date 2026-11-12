@@ -62,10 +62,10 @@ def _fmt_example(ex: dict[str, Any]) -> str:
         bits.append(f"subject={ex['right_subject']!r}")
     if "wrong_subject" in ex:
         bits.append(f"(not {ex['wrong_subject']!r})")
-    if "tag1" in ex:
-        bits.append(f"tag1={ex['tag1']!r}")
-    if "tag2" in ex:
-        bits.append(f"tag2={ex['tag2']!r}")
+    if "iq1" in ex:
+        bits.append(f"iq1={ex['iq1']!r}")
+    if "iq2" in ex:
+        bits.append(f"iq2={ex['iq2']!r}")
     if "pillar" in ex:
         bits.append(f"pillar={ex['pillar']!r}")
     if "description_ends" in ex:
@@ -143,7 +143,7 @@ subject     What the session is ABOUT: the object, the problem, the symptom.
             When the subject is a component or spec of a machine, use the
             concrete spec ("16 GB Ram") and put the machine in `machine`.
 
-tag1        THE MAKER OF THE SUBJECT — an adjective, not a noun.
+iq1        THE MAKER OF THE SUBJECT — an adjective, not a noun.
             It answers "whose is it?", never "what is it?".
             "Air 2S" -> "DJI". "Inspiron 5570" -> "Dell". "DEVONthink" ->
             "Devon Technologies". It goes ALONE: "DJI", never "DJI Avata 360".
@@ -152,17 +152,17 @@ tag1        THE MAKER OF THE SUBJECT — an adjective, not a noun.
             NEVER "Hermes Agent": the assistant does the work in every session,
             which makes it the AUTHOR, never the maker of the subject.
 
-tag2        THE CONTEXT that qualifies the subject. ONLY one of these kinds:
+iq2        THE CONTEXT that qualifies the subject. ONLY one of these kinds:
               - a marketplace or store   "Ebay", "Amazon", "AliExpress"
               - a country                "Panamá", "Estados Unidos"
               - a machine                "Mac mini M4", "ThinkPad P53"
-            "Air 2S" + tag1 "DJI" + tag2 "Ebay" reads: a DJI drone available
+            "Air 2S" + iq1 "DJI" + iq2 "Ebay" reads: a DJI drone available
             on eBay. Leave "" in EVERY other case. Never put an intention
-            ("Comparar"), a family ("WebHosting") or a theme in tag2:
-            those belong in tag3 and tag4, and a context the list does not
+            ("Comparar"), a family ("WebHosting") or a theme in iq2:
+            those belong in iq3 and iq4, and a context the list does not
             recognise is an empty context.
 
-tag3        THE INTENTION: what the user wanted DONE with the subject.
+iq3        THE INTENTION: what the user wanted DONE with the subject.
             Pick ONE from the intention list below, exactly as written.
             This is a verb, not a topic. "Electronica" is not an intention.
             MOST SESSIONS HAVE NO CLEAR VERB — leave it "" when the turn is a
@@ -171,7 +171,7 @@ tag3        THE INTENTION: what the user wanted DONE with the subject.
             "averigua", "busca información" or "investiga" in so many words.
             A field of 338 "Investigar" is a field nobody can filter by.
 
-tag4        THE WORK FRONT — one of the themes below, and when the theme has
+iq4        THE WORK FRONT — one of the themes below, and when the theme has
             subcategories, the SUBCATEGORY. "IT Manager" is the theme; "VPS",
             "Data Backup", "IA Bot" are its subcategories. When a session of
             IT Manager fits no subcategory, write "IT Manager" alone.
@@ -198,14 +198,14 @@ description What subject + tags could NOT say. One short telegraphic clause,
 verb        The ACTION taken, from the verb list below, or "".
             This becomes an appendix at the end of the title.
 
-## Intention list (tag3) — closed vocabulary, pick exactly one
+## Intention list (iq3) — closed vocabulary, pick exactly one
 {", ".join(INTENTIONS)}
 
-## Themes (tag4)
+## Themes (iq4)
 IT Manager: {", ".join(IT_SUBCATEGORIES)}
 Other themes: {", ".join(OTHER_THEMES)}
 
-## Context values seen in this catalogue (tag2)
+## Context values seen in this catalogue (iq2)
 Stores: {", ".join(MARKET_FAMILIES)}
 Countries: {", ".join(COUNTRIES)}
 Machines: {", ".join(MACHINES)}
@@ -232,8 +232,8 @@ Machines: {", ".join(MACHINES)}
 A thing someone buys has a shape of its own:
 
     subject = the generic thing      "Teclado"
-    tag1    = the brand              "Steren"
-    tag2    = the model              "COM-6900"
+    iq1    = the brand              "Steren"
+    iq2    = the model              "COM-6900"
     pillar  = "Productos"            (or "Servicios" for a service)
 
 The model is NOT part of the subject: it is the second tag, which is what
@@ -243,7 +243,7 @@ distinguishes two otherwise identical items.
 
 Shorten only what a knowledgeable reader would find redundant:
 "MacOS Tahoe" → "Tahoe". Never shorten what is not common vocabulary:
-"Gorgon Halo", "Strix Halo" stay whole, and Tag1 carries the maker ("AMD").
+"Gorgon Halo", "Strix Halo" stay whole, and Iq1 carries the maker ("AMD").
 
 ## Language
 
@@ -254,8 +254,8 @@ English in the same message; classify by meaning, not by the first word.
 
 Return ONE JSON object, nothing else, with exactly these keys:
 
-{{"subject": str, "tag1": str, "tag2": str, "tag3": str, "tag4": str,
- "tag5": str, "description": str}}
+{{"subject": str, "iq1": str, "iq2": str, "iq3": str, "iq4": str,
+ "iq5": str, "description": str}}
 
 No markdown, no comments, no explanation. Empty string when a field does not
 apply. If the messages are too thin to tell what the session is about, return

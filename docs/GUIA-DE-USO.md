@@ -117,7 +117,7 @@ code: it's a list of names with their context.
 ```yaml
 marcas:
   dji:
-    tag1: DJI
+    iq1: DJI
     productos: [Air 2S, Avata 360, RC 2]
 programas:
   devonthink:
@@ -138,7 +138,7 @@ classifier's memory.
 
 ### Rules for writing it well
 
-- **The brand goes in Tag1, alone.** `Ground Advantage` is the product; `USPS`
+- **The brand goes in Iq1, alone.** `Ground Advantage` is the product; `USPS`
   is the brand. Never `USPS Ground Advantage` in the same field.
 - **A program's brand is on its site, not in its name.** `DEVONthink` is the
   program; `devontechnologies.com` tells you the company is *Devon
@@ -162,7 +162,7 @@ The **Export** button generates a CSV with one row per session and empty
 columns for whatever you want to change:
 
 ```
-n, id, fecha, titulo_actual, sujeto, tag1, tag2, descripcion,
+n, id, fecha, titulo_actual, sujeto, iq1, iq2, descripcion,
 sujeto_nuevo, tag1_nuevo, tag2_nuevo, descripcion_nueva, observaciones
 ```
 
@@ -184,7 +184,7 @@ proposed changes with their reason:
 ```
 propuestas: 89 · sin cambio: 795
 
-    2  tag2: IA → Instalar
+    2  iq2: IA → Instalar
        - 002 [Hermes Desktop] 001 [Hermes Agent] [IA] Instalar la app…
        + 002 [Hermes Desktop] 001 [Hermes Agent] [Instalar] Instalar la app…
 ```
@@ -218,7 +218,7 @@ fixes the next hundred before they exist.
 ### The sign that it's trained
 
 - There are **few sessions in "Temas Varios"** and the ones there are recent.
-- The **Tag2 are verbs** (`Instalar`, `Testear`, `Cotizar`), not shelves
+- The **Iq2 are verbs** (`Instalar`, `Testear`, `Cotizar`), not shelves
   (`Electronica`, `IA`).
 - **Adding a new session doesn't require renaming any old one.**
 - A session's subject **doesn't repeat the brand** and carries no verbs.

@@ -33,70 +33,70 @@ owner: jorge
 # ---------------------------------------------------------------------------
 marcas:
   lenovo:
-    tag1: Lenovo
+    iq1: Lenovo
     strip: false
     lineas: [ThinkPad, ThinkCentre, Legion, IdeaPad]
     nota: "ThinkPad es la LÍNEA, no la marca. El sujeto conserva 'ThinkPad P53'."
   dell:
-    tag1: Dell
+    iq1: Dell
     strip: true
     lineas: [Inspiron, Latitude, Precision, XPS, OptiPlex]
   apple:
-    tag1: Apple
+    iq1: Apple
     strip: false
     lineas: [Mac mini, Mac Studio, MacBook, iPhone, iPad, Apple Watch]
     nota: "El nombre del equipo se queda en el sujeto: 'Mac mini M4'."
   amd:
-    tag1: AMD
+    iq1: AMD
     strip: false
     productos: [Gorgon Halo, Strix Halo, Ryzen AI Max, Ryzen, Threadripper]
     nota: "NO abreviar estos nombres: 'Gorgon' a secas no significa nada."
   nvidia:
-    tag1: NVIDIA
+    iq1: NVIDIA
     strip: false
     productos: [RTX 5090, RTX 4090, Quadro, A5000, A3000, Spark]
   primatelabs:
-    tag1: Primate Labs
+    iq1: Primate Labs
     sitio: https://www.geekbench.com/
     productos: [Geekbench]
     nota: Geekbench es el producto; la compania es Primate Labs (Toronto).
   gardengnome:
-    tag1: Garden Gnome
+    iq1: Garden Gnome
     sitio: https://ggnome.com/
     productos: [Pano2VR, Object2VR]
     nota: Pano2VR es de Garden Gnome GmbH (Viena).
   rtools:
-    tag1: R-Tools
+    iq1: R-Tools
     sitio: https://www.r-studio.com/
     productos: [R-Studio]
     nota: R-Studio es de R-Tools Technology, Inc.
   nous:
-    tag1: Nous Research
+    iq1: Nous Research
     sitio: https://nousresearch.com/
     productos: [Hermes Agent, Hermes Desktop, Hermes Terminal, Ornith]
     nota: >
-      Hermes y Ornith son de Nous Research. Pero "Hermes Agent" NUNCA es tag1
+      Hermes y Ornith son de Nous Research. Pero "Hermes Agent" NUNCA es iq1
       cuando el sujeto es otra cosa: el asistente es el AUTOR de la sesion.
       Solo va como marca cuando el sujeto ES un producto de Nous.
   samsung:
-    tag1: Samsung
+    iq1: Samsung
     sitio: https://www.samsung.com/
     productos: [Galaxy A55, Galaxy S, A55]
   iterm2:
-    tag1: ""
+    iq1: ""
     nota: >
       iTerm2 es software libre de George Nachman, sin compania detras. La
       regla del dueno: cuando el software libre no tiene empresa, el nombre ES
-      la marca y no se repite en tag1. Se deja vacio.
+      la marca y no se repite en iq1. Se deja vacio.
   goveelife:
-    tag1: GoveeLife
+    iq1: GoveeLife
     sitio: https://www.govee.com/
     productos: [Hygrometer, Thermometer, H5151, H5101]
     nota: >
       La marca es "GoveeLife", la linea domestica de Govee. Sus sensores llevan
       un gateway propio y se instalan por la app Govee Home.
   rayneo:
-    tag1: RayNeo
+    iq1: RayNeo
     sitio: https://www.rayneo.com/
     productos: [Air 2, Air 4 Pro, GT Max, X2]
     nota: >
@@ -105,54 +105,54 @@ marcas:
       DP Alt Mode, asi que funcionan con cualquier salida de video compatible,
       incluido el DJI RC 2.
   dji:
-    tag1: DJI
+    iq1: DJI
     strip: false
     productos: [Air 2S, Air 2, Avata 360, Osmo Pocket, Mini, Mavic, RC 2]
   insta360:
-    tag1: Insta360
+    iq1: Insta360
     strip: false
     productos: [X4, GO Ultra, Luna Ultra, Sphere]
   orico:
-    tag1: ORICO
+    iq1: ORICO
     strip: false
     productos: [Case USB, DD28C3C, 8628SUS3]
   google:
-    tag1: Google
+    iq1: Google
     sitio: https://www.google.com/
     strip: true
     productos: [Chrome, Chromium, Gemini, Gemini Desktop, Gemini Flash Lite,
                 Gemini Pro, Workspace, Drive, Pixel]
   anthropic:
-    tag1: Anthropic
+    iq1: Anthropic
     strip: true
     productos: [Claude, Claude Code, Haiku, Sonnet, Opus]
   openai:
-    tag1: OpenAI
+    iq1: OpenAI
     strip: true
     productos: [ChatGPT, GPT, o1, o3]
   moonshot:
-    tag1: Moonshot
+    iq1: Moonshot
     strip: true
     productos: [Kimi, K2, K3]
   alibaba:
-    tag1: Alibaba
+    iq1: Alibaba
     strip: true
     productos: [Qwen, Qwen3]
   xai:
-    tag1: xAI
+    iq1: xAI
     strip: true
     productos: [Grok]
   deepseek:
-    tag1: DeepSeek
+    iq1: DeepSeek
     strip: true
     sitio: https://www.deepseek.com/
     productos: [V4, V4 Flash, V4.1 Flash, V4 Pro, R1]
   microsoft:
-    tag1: Microsoft
+    iq1: Microsoft
     strip: true
     productos: [Windows, Office, Copilot, OneDrive, Teams]
   steren:
-    tag1: Steren
+    iq1: Steren
     strip: true
     productos: [Teclado, COM-6900]
 
@@ -212,43 +212,43 @@ programas:
   skillspector:
     marca: Nvidia
     programa: SkillSpector
-    nota: "Programa de Nvidia: el fabricante va en Tag1 y el nombre del programa en la descripción."
+    nota: "Programa de Nvidia: el fabricante va en Iq1 y el nombre del programa en la descripción."
   voicebox:
     marca: VoiceBox
 
 # ---------------------------------------------------------------------------
 # PRODUCTOS — things bought, with brand and model separated.
-# Tag1 = marca · Tag2 = modelo · Pilar = Productos
+# Iq1 = marca · Iq2 = modelo · Pilar = Productos
 # ---------------------------------------------------------------------------
 productos:
   teclado:
-    forma: "sujeto = el objeto genérico, Tag1 = marca, Tag2 = modelo"
+    forma: "sujeto = el objeto genérico, Iq1 = marca, Iq2 = modelo"
     ejemplos:
-      - { sujeto: Teclado, tag1: Steren, tag2: COM-6900 }
+      - { sujeto: Teclado, iq1: Steren, iq2: COM-6900 }
   laptop:
     ejemplos:
-      - { sujeto: Precision 7760, tag1: Dell }
-      - { sujeto: ThinkPad P53, tag1: Lenovo }
-      - { sujeto: ThinkPad E580, tag1: Lenovo }
+      - { sujeto: Precision 7760, iq1: Dell }
+      - { sujeto: ThinkPad P53, iq1: Lenovo }
+      - { sujeto: ThinkPad E580, iq1: Lenovo }
   dron:
     ejemplos:
-      - { sujeto: Air 2S, tag1: DJI, tag2: Ebay }
-      - { sujeto: Avata 360, tag1: DJI }
+      - { sujeto: Air 2S, iq1: DJI, iq2: Ebay }
+      - { sujeto: Avata 360, iq1: DJI }
   case_usb:
     ejemplos:
-      - { sujeto: Case USB, tag1: ORICO }
+      - { sujeto: Case USB, iq1: ORICO }
   disco:
     nota: "El disco es el objeto; la capacidad va en la descripción salvo que sea el tema."
     ejemplos:
-      - { sujeto: Hard Drive, tag1: Marca Desconocida, verbo: Falta de Espacio }
+      - { sujeto: Hard Drive, iq1: Marca Desconocida, verbo: Falta de Espacio }
   memoria:
     nota: "Aquí la spec SÍ es el sujeto, porque la sesión trata de ella."
     ejemplos:
-      - { sujeto: "16 GB Ram", tag6: Mac mini M4 }
+      - { sujeto: "16 GB Ram", iq6: Mac mini M4 }
   tarjeta_grafica:
     ejemplos:
-      - { sujeto: RTX 5090, tag1: NVIDIA }
-      - { sujeto: Quadro T1000, tag1: NVIDIA }
+      - { sujeto: RTX 5090, iq1: NVIDIA }
+      - { sujeto: Quadro T1000, iq1: NVIDIA }
 
 # ---------------------------------------------------------------------------
 # COMPAÑIAS — never a subject by accident.
@@ -279,18 +279,18 @@ conceptos:
       Archivo de amenazas, incidentes y exposición del agente: qué ataques se
       han documentado, qué vectores se han visto, qué se aprendió. Más propio
       del mundo OpenClaude, que tiene más historia en ese terreno.
-    tag2: Data Security
+    iq2: Data Security
     ejemplos: [872]
   ventana_permisos:
     nombre: Ventana Permisos
     que_es: "El diálogo de permisos del sistema. Tema recurrente a lo largo de meses."
-    tag1: Hermes Agent
-    tag2: Data Security
+    iq1: Hermes Agent
+    iq2: Data Security
     ejemplos: [10, 13, 90, 533, 720, 821, 877]
   protocolo:
     nombre: Protocolo
     que_es: "El gateway roto: se nombra el punto de falla, no el componente."
-    tag2: Troubleshooting
+    iq2: Troubleshooting
     ejemplos: [20, 81]
   flight_paths:
     nombre: Flight Paths
@@ -301,8 +301,8 @@ conceptos:
       llama Flight Paths. En este catálogo el sujeto es siempre "Flight Path",
       en singular — "Flight Paths", "Waypoints", "paths programables" y "rutas"
       son la misma cosa y no dividen el filtro.
-    tag1: [DJI, Antigravity A1]
-    tag2: [Multimedia, Automation]
+    iq1: [DJI, Antigravity A1]
+    iq2: [Multimedia, Automation]
     ejemplos: [157, 430, 585, 730, 773, 844]
     sinonimos: [waypoints, path programable, flight paths, rutas de vuelo]
     no_confundir: >
@@ -316,7 +316,7 @@ conceptos:
       Beneficio comercial y legal que rebaja el precio a personas jubiladas.
       La preposición "a" forma parte del nombre del concepto: no es una oración
       y no viola la regla de sujeto puntual.
-    tag1: Hermes Agent
+    iq1: Hermes Agent
     ejemplos: [267]
   harness_agent:
     nombre: Harness Agent
@@ -325,13 +325,13 @@ conceptos:
       permisos, el runtime. Cuando se comparan lenguajes o plataformas por su
       capacidad de correr agentes (Python frente a OpenClaw), el sujeto es
       "Harness Agent" — no "Motor", no "Lenguaje".
-    tag1: Hermes Agent
-    tag2: Programming
+    iq1: Hermes Agent
+    iq2: Programming
     ejemplos: [14]
   spotlight:
     nombre: Spotlight
     que_es: "El indexador de macOS. La acción de indexar va al verbo, no al sujeto."
-    tag1: Tahoe
+    iq1: Tahoe
     ejemplos: [19819]
 
 # ---------------------------------------------------------------------------
@@ -341,7 +341,7 @@ conceptos:
 logistica:
   # Carriers y sus productos. La marca va al Tag 1; el producto es el sujeto.
   usps:
-    tag1: USPS
+    iq1: USPS
     pais: Estados Unidos
     productos:
       "Ground Advantage":
@@ -361,7 +361,7 @@ logistica:
       "USPS Ground Advantage" se parte: Tag 1 = USPS, sujeto = "Ground Advantage".
       La marca nunca se queda dentro del sujeto cuando el producto tiene nombre.
   fedex:
-    tag1: FedEx
+    iq1: FedEx
     pais: Estados Unidos
     productos:
       "Ground":
@@ -374,14 +374,14 @@ logistica:
         es: Entrega residencial dentro de la red Ground.
         sujeto: Home Delivery
   ups:
-    tag1: UPS
+    iq1: UPS
     pais: Estados Unidos
     productos:
       "Ground":
         es: Red terrestre doméstica, 1–5 días. El estándar de confiabilidad.
         sujeto: UPS Ground
   dhl:
-    tag1: DHL
+    iq1: DHL
     pais: Internacional
     productos:
       "Express":
@@ -398,7 +398,7 @@ logistica:
 sin_marca:
   regla: >
     Si un producto o programa no tiene empresa detrás, su propio nombre es la
-    marca y va en Tag1. Nunca se deja vacío y nunca cae a "Hermes Agent".
+    marca y va en Iq1. Nunca se deja vacío y nunca cae a "Hermes Agent".
   ejemplos: [Pinokio, Ornith, Logseq, Obsidian, HandBrake, ComfyUI, RustDesk]
   error_comun: >
     Asignar "Hermes Agent" porque no se reconoce la marca. Eso convierte el

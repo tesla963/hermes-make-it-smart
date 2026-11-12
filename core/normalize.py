@@ -1,6 +1,6 @@
 """Title rendering: the canonical format and its invariants.
 
-NNN [Subject MMM] [Tag1] [Tag2] Date Description · Verb
+NNN [Subject MMM] [Iq1] [Iq2] Date Description · Verb
 
 Pure Python. No host imports.
 """
@@ -29,17 +29,17 @@ _FILLER = frozenset(
 class Facets:
     subject: str
     subject_ordinal: int
-    tag1: str                      # the maker — an adjective of the subject
-    tag2: str = ""                 # the context: store, country or machine
-    tag3: str = ""                 # the intention — a verb
-    tag4: str = ""                 # the work front (theme, with subcategory)
-    tag5: str = ""                 # the year
+    iq1: str                      # the maker — an adjective of the subject
+    iq2: str = ""                 # the context: store, country or machine
+    iq3: str = ""                 # the intention — a verb
+    iq4: str = ""                 # the work front (theme, with subcategory)
+    iq5: str = ""                 # the year
     # Reserved sockets. The model carries nine so that a new axis later does not
     # cost a schema migration; they stay empty until one earns its meaning.
-    tag6: str = ""
-    tag7: str = ""
-    tag8: str = ""
-    tag9: str = ""
+    iq6: str = ""
+    iq7: str = ""
+    iq8: str = ""
+    iq9: str = ""
     # Kept so older call sites keep working; they now mirror the new fields.
     pillar: str = ""
     country: str = ""
@@ -197,10 +197,10 @@ def render(
     # The ordinal sits OUTSIDE the subject bracket. Inside, a reader takes
     # "Chat en Telegram 001" for the subject's name instead of its counter.
     head = f"{nnn:03d} [{subject}] {facets.subject_ordinal:03d}"
-    if facets.tag1:
-        head += f" [{facets.tag1}]"
-    if facets.tag2:
-        head += f" [{facets.tag2}]"
+    if facets.iq1:
+        head += f" [{facets.iq1}]"
+    if facets.iq2:
+        head += f" [{facets.iq2}]"
     # The date is a first-class filter in the catalog, and repeating it inside
     # the title spends six of the hundred characters on a duplicate. It is off
     # by default; `with_date=True` restores the old shape.
@@ -226,7 +226,7 @@ def render(
     return head
 
 
-def validate(title: str, subject: str = "", tag1: str = "") -> list[str]:
+def validate(title: str, subject: str = "", iq1: str = "") -> list[str]:
     """Return a list of problems; empty means the title is sound."""
     problems: list[str] = []
     if len(title) > MAX_TITLE_LENGTH:
@@ -235,8 +235,8 @@ def validate(title: str, subject: str = "", tag1: str = "") -> list[str]:
         problems.append("leading or trailing whitespace")
     if re.search(r"\s{2,}", title):
         problems.append("double space")
-    if subject and tag1 and slug_key(core_subject(subject)) == slug_key(tag1):
-        problems.append("subject repeats tag1")
+    if subject and iq1 and slug_key(core_subject(subject)) == slug_key(iq1):
+        problems.append("subject repeats iq1")
     if "]" in title and title.count("[") != title.count("]"):
         problems.append("unbalanced brackets")
     return problems
