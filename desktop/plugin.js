@@ -20,7 +20,7 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 const ID = 'make-it-smart'
 const NAME = 'Hermes, Make it Smart!'
 const APP_TITLE = 'Make It Smart'
-const VERSION = '0.26.0'
+const VERSION = '0.26.1'
 const ROUTE = '/smart'
 
 /** jsx-runtime helper: keeps uncompiled React code compact and readable. */
@@ -134,13 +134,17 @@ const esBotChat = (d) => Boolean(d && /^\s*bot chat\b/i.test(String(d.raw || '')
 const esSubagent = (d) =>
   Boolean(
     d &&
-      (/^\s*subagent[\s:]/i.test(String(d.raw || '')) ||
+      (d.esBot === true ||
+        /^\s*subagent[\s:]/i.test(String(d.raw || '')) ||
         /^subagent/i.test(String(d.prof || '')) ||
         /^subagent/i.test(String(d.id || '')))
   )
 
 /** Anything the renamer must never touch: cron, empty, deleted, Bot Chat, subagent. */
 const esIntocable = (d) => Boolean(d && (esCron(d) || d.vacia || esBorrada(d) || esBotChat(d) || esSubagent(d)))
+
+/** Bot machinery: the canonical Bot Chat and subagent transcripts. Hidden by default. */
+const esBotSession = (d) => Boolean(d && (esBotChat(d) || esSubagent(d)))
 
 /* Bilingual synonym table */
 const SIN = {
@@ -375,6 +379,9 @@ const I18N = {
     hideDel: 'Borradas',
     showCron: 'Cron',
     hideCron: 'Cron',
+    showBots: 'Bots',
+    hideBots: 'Bots',
+    botsTitle: 'Mostrar u ocultar sesiones de bot (Bot Chat y subagentes)',
     showVacio: 'Vacío',
     hideVacio: 'Vacío',
     buscar: 'Buscar sujeto, tema, tag…',
@@ -502,6 +509,7 @@ const I18N = {
     tabTestingTitle: 'Simulación de nomenclatura canónica y herramientas de commit/revert',
     commitBtn: 'Commit Changes to Hermes DB',
     commitBtnCount: 'Commit Changes to Hermes DB ({n} sesiones por procesar)',
+    noSessions: 'No hay sesiones para procesar',
     commitBtnTitle: 'Escribe los títulos canónicos simulados en state.db vía session.title',
     revertBtn: 'Revert',
     revertBtnTitle: 'Restaura los títulos anteriores desde el último backup',
@@ -528,6 +536,9 @@ const I18N = {
     hideDel: 'Deleted',
     showCron: 'Cron',
     hideCron: 'Cron',
+    showBots: 'Bots',
+    hideBots: 'Bots',
+    botsTitle: 'Show or hide bot sessions (Bot Chat and subagent transcripts)',
     showVacio: 'Empty',
     hideVacio: 'Empty',
     buscar: 'Search subject, topic, tag…',
@@ -655,6 +666,7 @@ const I18N = {
     tabTestingTitle: 'Canonical nomenclature simulation and commit/revert tools',
     commitBtn: 'Commit Changes to Hermes DB',
     commitBtnCount: 'Commit Changes to Hermes DB ({n} Sessions to Process)',
+    noSessions: 'No sessions to process',
     commitBtnTitle: 'Write simulated canonical titles to state.db via session.title',
     revertBtn: 'Revert',
     revertBtnTitle: 'Restore previous titles from the last backup',
@@ -888,6 +900,7 @@ position:relative;display:flex;flex-direction:column;width:100%;height:100%;min-
 .mmws .updatebtn:hover:not(:disabled){border-color:var(--wine);color:#fff}
 .mmws .updatebtn:disabled{opacity:.5;cursor:default}
 .mmws .footmsg{font-size:11px;color:var(--tx2);margin-left:6px;white-space:nowrap}
+.mmws .footmsg.nopending{color:var(--tx);font-weight:700;font-size:14px;font-style:normal;margin-left:0;margin-right:12px}
 .mmws .kbar{flex:1 1 auto;display:flex;align-items:stretch;justify-content:flex-end;gap:0;padding:0 4px}
 .mmws .kbar .kpi{flex:1 1 0;position:relative;display:flex;flex-direction:row;align-items:flex-end;justify-content:flex-start;gap:6px;padding:7px 10px 8px}
 .mmws .kbar .kpi+.kpi::before{content:"";position:absolute;left:0;top:6px;bottom:6px;width:1px;background:linear-gradient(180deg,transparent,#4a3d5e 22%,#4a3d5e 78%,transparent)}
@@ -1266,6 +1279,7 @@ async function loadCatalogue(ctx) {
       resumen,
       vacia: Boolean(idx.vacia != null ? idx.vacia : mc <= 0 && (!claves || claves.length === 0)),
       esCron: Boolean(idx.esCron || /^cron[_-]/i.test(id) || /^cron[_-]/i.test(prof)),
+      esBot: Boolean(idx.esBot) || (live && String(live.source || '').toLowerCase() === 'subagent'),
       _canonical: Boolean(g),
       isLive,
       runtimeVivo: isLive,
@@ -1368,6 +1382,7 @@ function App({ ctx }) {
   const [showElim, setShowElim] = useState(false)
   const [showVacio, setShowVacio] = useState(false)
   const [showCron, setShowCron] = useState(false)
+  const [showBots, setShowBots] = useState(false)
   const [orden, setOrden] = useState({ k: 'fecha', asc: false })
   const [sel, setSel] = useState(null)
   const [editModal, setEditModal] = useState(false)
@@ -1563,10 +1578,12 @@ function App({ ctx }) {
     const yaActivo =
       (cual === 'elim' && showElim) ||
       (cual === 'vacio' && showVacio) ||
-      (cual === 'cron' && showCron)
+      (cual === 'cron' && showCron) ||
+      (cual === 'bots' && showBots)
     setShowElim(!yaActivo && cual === 'elim')
     setShowVacio(!yaActivo && cual === 'vacio')
     setShowCron(!yaActivo && cual === 'cron')
+    setShowBots(!yaActivo && cual === 'bots')
   }
 
   const copyPendingIds = async (ids, key) => {
@@ -1610,7 +1627,7 @@ function App({ ctx }) {
   const qNorm = useMemo(() => norm(q), [q])
 
   const pass = (d, ...skips) => {
-    const modo = showElim ? 'elim' : showVacio ? 'vacio' : showCron ? 'cron' : null
+    const modo = showElim ? 'elim' : showVacio ? 'vacio' : showCron ? 'cron' : showBots ? 'bots' : null
     if (!skips.includes('estado')) {
       if (modo === 'elim') {
         if (!esBorrada(d)) return false
@@ -1618,10 +1635,15 @@ function App({ ctx }) {
         if (!d.vacia) return false
       } else if (modo === 'cron') {
         if (!esCron(d)) return false
+      } else if (modo === 'bots') {
+        if (!esBotSession(d)) return false
       } else {
         if (!skips.includes('elim') && esBorrada(d)) return false
         if (!skips.includes('cron') && esCron(d)) return false
         if (!skips.includes('vacio') && d.vacia) return false
+        // Bot Chat and subagent transcripts stay out of the way until the Bots chip
+        // is switched on.
+        if (!skips.includes('bots') && esBotSession(d)) return false
       }
     }
     if (!skips.includes('tag3') && f.tag3 && d.pilar !== f.tag3) return false
@@ -1660,7 +1682,7 @@ function App({ ctx }) {
 
   const visible = useMemo(
     () => (activeTab === 'testing' ? pendingRows : sessions).filter((d) => pass(d)),
-    [sessions, pendingRows, activeTab, f, q, nums, qs, showElim, showVacio, showCron]
+    [sessions, pendingRows, activeTab, f, q, nums, qs, showElim, showVacio, showCron, showBots]
   )
 
   const sorted = useMemo(() => {
@@ -1720,6 +1742,7 @@ function App({ ctx }) {
   const nElim = useMemo(() => sessions.filter(esBorrada).length, [sessions])
   const nVacio = useMemo(() => sessions.filter((d) => d.vacia).length, [sessions])
   const nCron = useMemo(() => sessions.filter(esCron).length, [sessions])
+  const nBots = useMemo(() => sessions.filter(esBotSession).length, [sessions])
 
   // Active chips list
   const activeChips = useMemo(() => {
@@ -3401,6 +3424,16 @@ function App({ ctx }) {
               },
               (showCron ? t('hideCron') : t('showCron')) + ' · ' + nCron
             ),
+            h(
+              'button',
+              {
+                id: 'btnBots',
+                className: showBots ? 'on' : '',
+                onClick: () => setEstado('bots'),
+                title: t('botsTitle'),
+              },
+              (showBots ? t('hideBots') : t('showBots')) + ' · ' + nBots
+            ),
             h('span', { style: { flex: 1, minWidth: 0 } })
           ),
           h(
@@ -3551,6 +3584,9 @@ function App({ ctx }) {
         ? h(
             'div',
             { className: 'footbtns' },
+            pendingRows.length === 0 && !btnMsg.commit
+              ? h('span', { className: 'footmsg nopending', id: 'noPending' }, t('noSessions'))
+              : null,
             !canRevert
               ? h(
                   'button',
