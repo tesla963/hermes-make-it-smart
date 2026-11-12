@@ -1110,7 +1110,10 @@ async function loadCatalogue(ctx) {
     const ex = facetsMap[id] || {}
     const isLive = Boolean(live)
 
-    const rawTitle = String(idx.raw || (live && live.title) || '').trim()
+    // The live gateway title is the truth. index.json is a snapshot: if a commit
+    // is written after it was built, idx.raw still holds the pre-commit title and
+    // the session reappears as pending forever. Prefer the live title.
+    const rawTitle = String((live && live.title) || idx.raw || '').trim()
     const g = parseTitle(rawTitle)
 
     const fecha = String(idx.fecha || toFecha(live && live.started_at, '')).slice(0, 10)
@@ -1222,6 +1225,26 @@ async function loadCatalogue(ctx) {
   }
 
   merged.sort((a, b) => a.n - b.n)
+
+  // A commit written after index.json was built leaves idx.raw holding the old
+  // title. For sessions the gateway no longer lists live, the commit ledger
+  // records what was actually written, so it stands in for the live title.
+  if (filesApi && typeof filesApi.readText === 'function') {
+    try {
+      const ledRes = await filesApi.readText('data', 'commit-last.json')
+      if (ledRes && ledRes.ok && ledRes.text) {
+        const led = JSON.parse(ledRes.text)
+        if (led && led.committed && !led.reverted && Array.isArray(led.entries)) {
+          const written = new Map(led.entries.map((e) => [e.id, e.title_after]))
+          for (const d of merged) {
+            if (!d.vivo && written.has(d.id)) d.raw = written.get(d.id)
+          }
+        }
+      }
+    } catch (_) {
+      /* a missing or broken ledger is not fatal */
+    }
+  }
 
   // Compute canonical simulated title and search synonym index per row once
   for (const d of merged) {
@@ -2202,7 +2225,8 @@ function App({ ctx }) {
     }
   }
 
-  const createCommitBackup = async (sessionsList) => {
+  const createCommitBackup = async (sessionsList, opts) => {
+    const keepLedger = Boolean(opts && opts.keepLedger)
     const list = sessionsList || sessions || []
     const entries = list
       .filter((d) => !esCron(d) && !d.vacia && !esBorrada(d) && d.canonTitle && d.canonTitle !== d.raw)
@@ -2226,10 +2250,15 @@ function App({ ctx }) {
     if (filesApi && typeof filesApi.writeText === 'function') {
       try {
         await filesApi.writeText('data', fname, JSON.stringify(payload, null, 2))
-        await filesApi.writeText('data', 'commit-last.json', JSON.stringify(payload, null, 2))
+        // commit-last.json is the revert ledger. Do not overwrite it while it
+        // still holds a commit that has not been reverted: that would lose the
+        // only record Revert can restore from.
+        if (!keepLedger) {
+          await filesApi.writeText('data', 'commit-last.json', JSON.stringify(payload, null, 2))
+        }
       } catch (_) {}
     }
-    setLastBackup(payload)
+    if (!keepLedger) setLastBackup(payload)
     return payload
   }
 
@@ -2239,14 +2268,23 @@ function App({ ctx }) {
       localStorage.setItem('mmws_active_tab', tab)
     } catch (_) {}
     if (tab === 'testing') {
-      await createCommitBackup(sessions)
+      const pendingRevert = lastBackup && lastBackup.committed && !lastBackup.reverted
+      await createCommitBackup(sessions, { keepLedger: pendingRevert })
     }
   }
 
   const handleCommit = async () => {
     let curBackup = lastBackup
-    // If backup is missing or older than 10 minutes (600,000 ms), refresh before writing
-    if (!curBackup || !curBackup.ts || Date.now() - curBackup.ts > 600000) {
+    // Reuse a fresh backup only when it is still pending: one that is already
+    // committed describes titles that are already written, and re-applying it
+    // would report the previous commit's count as if it were new work.
+    if (
+      !curBackup ||
+      curBackup.committed ||
+      curBackup.reverted ||
+      !curBackup.ts ||
+      Date.now() - curBackup.ts > 600000
+    ) {
       curBackup = await createCommitBackup(sessions)
     }
     const targets = (curBackup && curBackup.entries) || []
