@@ -158,7 +158,7 @@ tag2        THE CONTEXT that qualifies the subject. ONLY one of these kinds:
               - a machine                "Mac mini M4", "ThinkPad P53"
             "Air 2S" + tag1 "DJI" + tag2 "Ebay" reads: a DJI drone available
             on eBay. Leave "" in EVERY other case. Never put an intention
-            ("Comparación"), a family ("WebHosting") or a theme in tag2:
+            ("Comparar"), a family ("WebHosting") or a theme in tag2:
             those belong in tag3 and tag4, and a context the list does not
             recognise is an empty context.
 

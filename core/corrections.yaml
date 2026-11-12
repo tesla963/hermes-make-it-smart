@@ -504,11 +504,18 @@
   taught: 2026-11-10
   rule: >
     Tag3 names the kind of work the user actually asked for, in the tense of the
-    request: "Instalar" when he is installing something, "Feature" when he asks
-    what a programme can do, "Version" when he asks whether a release exists,
-    "Compatibilidad" when he asks whether two things work together. A generic
-    family ("Electronica", "IA") is what Tag2 says when the intent was never
-    read — not what it says when the intent is obvious.
+    request, and it is one of exactly seven: Comparar, Instalar, Investigar,
+    Testear, Cotizar, Troubleshooting, Compatibilidad. "Instalar" when he is
+    installing something, when he asks what a programme can do or whether a
+    release exists; "Investigar" when he has a question and no object yet;
+    "Testear" when something has to be confirmed; "Cotizar" when money is at
+    stake — a price to pay or a cost already paid; "Compatibilidad" when he asks
+    whether two things work together; "Troubleshooting" when something is
+    broken, misconfigured or unbacked. The older names (Update, Version,
+    Feature, Costo, Administrar, Respaldar, Comparación, Diagnosticar) are not
+    tags: each is a signal of the canonical intention it belongs to.
+    A generic family ("Electronica", "IA") is what Tag2 says when the intent was
+    never read — not what it says when the intent is obvious.
   examples:
   control_question: "What verb would the user put in front of this session if he named it himself?"
 
