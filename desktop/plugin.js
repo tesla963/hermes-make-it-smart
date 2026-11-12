@@ -693,10 +693,20 @@ position:relative;display:flex;flex-direction:column;width:100%;height:100%;min-
 .mmws header.top{flex:0 0 auto;z-index:40;background:linear-gradient(180deg,#100d12,#0d0b0e);border-bottom:1px solid var(--line);padding:10px 18px}
 .mmws .brandrow{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .mmws .headtabs{display:inline-flex;align-items:flex-end;gap:2px;background:transparent;border:0;border-bottom:1px solid var(--line2);border-radius:0;padding:0;margin-left:10px}
-.mmws .headtab{position:relative;border:0;border-bottom:2px solid transparent;background:transparent;color:var(--tx3);font-size:11.5px;font-weight:600;padding:6px 14px 5px;border-radius:6px 6px 0 0;cursor:pointer;display:inline-flex;align-items:center;gap:6px;margin-bottom:-1px;transition:color .12s,background .12s,border-color .12s}
+.mmws .headtab{position:relative;border:0;border-bottom:2px solid transparent;background:transparent;color:var(--tx3);font-size:11.5px;font-weight:600;padding:6px 16px 5px;border-radius:6px 6px 0 0;cursor:pointer;display:inline-flex;align-items:center;gap:6px;margin-bottom:-1px;transition:color .12s,background .12s,border-color .12s}
+/* Cada pestaña lleva su color a los lados, como una pestaña de ventana:
+   verde la base real, amarillo la simulación. */
+.mmws .headtab::before,.mmws .headtab::after{content:'';position:absolute;top:5px;bottom:-1px;width:2px;border-radius:1px;opacity:.4;transition:opacity .12s,background .12s}
+.mmws .headtab::before{left:0}
+.mmws .headtab::after{right:0}
+.mmws .headtab:first-child::before,.mmws .headtab:first-child::after{background:var(--ok)}
+.mmws .headtab:last-child::before,.mmws .headtab:last-child::after{background:var(--gold)}
 .mmws .headtab:hover{color:var(--tx);background:rgba(255,255,255,.04)}
-.mmws .headtab.on{background:transparent;color:#fff;border-bottom-color:var(--wine2);box-shadow:none}
+.mmws .headtab:hover::before,.mmws .headtab:hover::after{opacity:.75}
+.mmws .headtab.on{background:transparent;color:#fff;border-bottom-color:var(--ok);box-shadow:none}
+.mmws .headtab.on::before,.mmws .headtab.on::after{opacity:1}
 .mmws .headtab.on.testing{background:transparent;color:var(--gold);border-bottom-color:var(--gold)}
+.mmws .headtab.on.testing::before,.mmws .headtab.on.testing::after{background:var(--gold);opacity:1}
 .mmws .bodywrap{flex:1 1 auto;min-height:0;display:flex;align-items:stretch;position:relative;overflow:hidden}
 .mmws .abarra{flex:none;padding:9px 0 8px;background:var(--bg2);border-bottom:1px solid var(--line);z-index:2}
 .mmws .ascroll{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;padding:8px 0 14px;scrollbar-width:none;-ms-overflow-style:none;overscroll-behavior:contain}
