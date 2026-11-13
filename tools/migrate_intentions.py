@@ -51,6 +51,36 @@ def main() -> int:
 
     ruta = Path(args.path).expanduser()
     datos = json.loads(ruta.read_text(encoding="utf-8"))
+
+    # facets.json es un dict id → campos; index.json tiene "sessions". Los dos guardan iq3.
+    if "sessions" not in datos and isinstance(datos, dict):
+        cambios, tocadas = {}, 0
+        for _id, campos in datos.items():
+            if not isinstance(campos, dict):
+                continue
+            actual = str(campos.get("iq3") or "").strip()
+            nuevo = MAP.get(actual.lower())
+            if nuevo and nuevo != actual:
+                cambios[(actual, nuevo)] = cambios.get((actual, nuevo), 0) + 1
+                tocadas += 1
+                if not args.dry_run:
+                    campos["iq3"] = nuevo
+        print(f"  facets: {len(datos)} entradas · a cambiar: {tocadas}")
+        for (v, n), k in sorted(cambios.items(), key=lambda x: -x[1]):
+            print(f"    {v:16s} → {n:16s} {k:4d}")
+        if args.dry_run or not tocadas:
+            print("  dry run — nada escrito" if args.dry_run else "  nada que hacer")
+            return 0
+        sello = time.strftime("%Y%m%d_%H%M%S")
+        backups = ruta.parent / "backups"; backups.mkdir(exist_ok=True)
+        respaldo = backups / f"facets.json.pre-intent_{sello}"
+        shutil.copy2(ruta, respaldo)
+        tmp = ruta.with_suffix(".tmp")
+        tmp.write_text(json.dumps(datos, ensure_ascii=False), encoding="utf-8")
+        tmp.replace(ruta)
+        print(f"  escrito · respaldo: {respaldo.name}")
+        return 0
+
     sesiones = datos.get("sessions", [])
 
     cambios: dict[tuple[str, str], int] = {}

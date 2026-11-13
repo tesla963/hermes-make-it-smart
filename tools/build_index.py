@@ -67,6 +67,26 @@ def is_human(message: str) -> bool:
     return not re.search(r'description:\s*"use when', t[:200], re.I)
 
 
+def _normalizar_intencion(valor: str) -> str:
+    """El vocabulario viejo nunca vuelve a entrar por la puerta del índice.
+
+    facets.json puede tener nombres retirados (Investigar, Testear...): copiarlos tal cual
+    reintroduce el problema en cada reconstrucción. Se pliegan al valor canónico aquí.
+    """
+    if not valor:
+        return ""
+    try:
+        import sys as _sys
+        _sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+        from core.taxonomy import normalize_intention
+        return normalize_intention(valor) or ""
+    except Exception:
+        mapa = {"investigar": "Web Search", "comparar": "Compare", "cotizar": "Quote",
+                "instalar": "Configuration", "testear": "Troubleshooting",
+                "compatibilidad": "Compatibility"}
+        return mapa.get(valor.strip().lower(), valor)
+
+
 def load_facets() -> dict:
     """Pillar, machine, engine and message count come from the curated index.
 
@@ -154,7 +174,7 @@ def build(with_messages: bool = True) -> dict:
                     "iq2": (g["iq2"] or "").strip() or (ex.get("iq2") or "").strip(),
                     # Nine slots always, empty when unused: gaining an axis later
                     # must not cost a migration of every record.
-                    "iq3": extra.get(rec.id, {}).get("iq3", ""),
+                    "iq3": _normalizar_intencion(str(extra.get(rec.id, {}).get("iq3", ""))),
                     "iq4": extra.get(rec.id, {}).get("iq4", ""),
                     "iq5": extra.get(rec.id, {}).get("iq5", ""),
                     "iq6": "",

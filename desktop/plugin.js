@@ -725,6 +725,11 @@ const I18N = {
     tabTesting: 'Process',
     tabNewRules: 'New Rules',
     tabNewRulesTitle: 'Aplicar las reglas nuevas a los títulos, con respaldo y revert',
+    tabIq: 'Plugin IQ',
+    tabIqTitle: 'Las reglas del algoritmo, los scripts y los documentos del plugin',
+    iqRules: 'Reglas', iqScripts: 'Scripts', iqDocs: 'Documentos',
+    iqNoData: 'Generá el inventario con: python3 tools/plugin_iq.py',
+    iqRuleOf: 'regla', iqOf: 'de',
     newRulesIdle: 'Sin propuesta. Generala con: python3 tools/propose_rename.py',
     newRulesApply: 'Apply New Rules en Session DB ({n})',
     newRulesApplyTitle: 'Escribe un respaldo de la base de títulos y después aplica los cambios',
@@ -914,6 +919,11 @@ const I18N = {
     tabTesting: 'Process',
     tabNewRules: 'New Rules',
     tabNewRulesTitle: 'Apply the new rules to the titles, with backup and revert',
+    tabIq: 'Plugin IQ',
+    tabIqTitle: 'The algorithm rules, the scripts and the documents of this plugin',
+    iqRules: 'Rules', iqScripts: 'Scripts', iqDocs: 'Documents',
+    iqNoData: 'Build the inventory with: python3 tools/plugin_iq.py',
+    iqRuleOf: 'rule', iqOf: 'of',
     newRulesIdle: 'No proposal. Generate it with: python3 tools/propose_rename.py',
     newRulesApply: 'Apply New Rules en Session DB ({n})',
     newRulesApplyTitle: 'Writes a backup of the title database, then applies the changes',
@@ -997,6 +1007,15 @@ position:relative;display:flex;flex-direction:column;width:100%;height:100%;min-
 .mmws .headtab.newruletab.on::before,.mmws .headtab.newruletab.on::after{background:#8b5cf6;opacity:.9}
 .mmws .headtab.newruletab:not(.on){color:#a98fd0}
 .mmws .headtab.newruletab:not(.on)::before,.mmws .headtab.newruletab:not(.on)::after{background:#5b3f86}
+.mmws .headtab.iqtab::before,.mmws .headtab.iqtab::after{background:#3fa8a0}
+.mmws .headtab.iqtab.on{color:#7fd6ce;background:#0f1d1c;border-bottom-color:#3fa8a0}
+.mmws .headtab.iqtab:not(.on){color:#6fa8a2}
+.mmws .iqpanel{position:absolute;inset:0;background:var(--bg);z-index:6;display:flex;flex-direction:column;gap:10px;padding:14px 18px;overflow:hidden}
+.mmws .iqpanel .iqhead{display:flex;gap:14px;align-items:center;font-size:12px;color:var(--tx3)}
+.mmws .iqpanel .iqstrip{display:flex;gap:6px;flex-wrap:wrap}
+.mmws .iqpanel .iqbtn{border:1px solid var(--line);background:#17141b;color:var(--tx2);font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer}
+.mmws .iqpanel .iqbtn.on{background:#13302e;color:#7fd6ce;border-color:#3fa8a0}
+.mmws .iqpanel pre{flex:1 1 auto;overflow:auto;background:#100d13;border:1px solid var(--line);border-radius:8px;padding:12px 14px;font-size:11.8px;line-height:1.5;color:var(--tx2);white-space:pre-wrap}
 .mmws .headtab:hover::before,.mmws .headtab:hover::after{opacity:.75}
 .mmws .headtab.on{color:#fff}
 .mmws .headtab.on::before,.mmws .headtab.on::after{opacity:1}
@@ -1662,6 +1681,10 @@ function App({ ctx }) {
   const [pendData, setPendData] = useState(null)
   // New Rules: a rename proposal produced by the Python side, approved here by a human.
   const [prop, setProp] = useState(null)
+  // Plugin IQ: the inventory of rules, scripts and documents, built by tools/plugin_iq.py.
+  const [iqData, setIqData] = useState(null)
+  const [iqView, setIqView] = useState('rules')
+  const [iqDoc, setIqDoc] = useState('README.md')
   const [propMsg, setPropMsg] = useState('')
   const [pendMap, setPendMap] = useState(null)
   const [pendAttr, setPendAttr] = useState(null)
@@ -2772,8 +2795,21 @@ function App({ ctx }) {
     setPropMsg(`aplicados ${ok} de ${cambios.length} · respaldo ${fname}`)
   }
 
+  const leerPluginIQ = async () => {
+    const filesApi = (ctx && ctx.files) || (host && host.files)
+    if (!filesApi || typeof filesApi.readText !== 'function') return
+    try {
+      const res = await filesApi.readText('data', 'plugin-iq.json')
+      if (res && res.ok && res.text) setIqData(JSON.parse(res.text))
+    } catch (_) {}
+  }
+
   const switchTab = async (tab) => {
     setActiveTab(tab)
+    if (tab === 'tabiq') {
+      await leerPluginIQ()
+      return
+    }
     if (tab === 'newrules') {
       await leerPropuesta()
       return
@@ -3624,6 +3660,16 @@ function App({ ctx }) {
               title: t('tabNewRulesTitle'),
             },
             t('tabNewRules')
+          ),
+          h(
+            'button',
+            {
+              role: 'tab',
+              className: 'headtab iqtab' + (activeTab === 'tabiq' ? ' on' : ''),
+              onClick: () => switchTab('tabiq'),
+              title: t('tabIqTitle'),
+            },
+            t('tabIq')
           )
         ),
         h(
@@ -3984,6 +4030,57 @@ function App({ ctx }) {
           h('p', { className: 'hint' }, t('hintUnica'))
         )
       ),
+
+      /* Plugin IQ: the inventory of the plugin, with one sub-tab per document */
+      activeTab === 'tabiq'
+        ? h(
+            'div',
+            { className: 'iqpanel' },
+            h(
+              'div',
+              { className: 'iqhead' },
+              h('b', null, t('tabIq')),
+              iqData
+                ? `${iqData.rules.length} ${t('iqRuleOf')} · ${iqData.scripts.length} scripts · ${iqData.docs.length} ${t('iqDocs')} · ${iqData.generated || ''}`
+                : t('iqNoData')
+            ),
+            h(
+              'div',
+              { className: 'iqstrip' },
+              ['rules', 'scripts', 'docs'].map((v) =>
+                h(
+                  'button',
+                  { key: v, className: 'iqbtn' + (iqView === v ? ' on' : ''), onClick: () => setIqView(v) },
+                  t(v === 'rules' ? 'iqRules' : v === 'scripts' ? 'iqScripts' : 'iqDocs')
+                )
+              )
+            ),
+            iqView === 'docs' && iqData
+              ? h(
+                  'div',
+                  { className: 'iqstrip' },
+                  iqData.docs.map((d) =>
+                    h(
+                      'button',
+                      { key: d.name, className: 'iqbtn' + (iqDoc === d.name ? ' on' : ''), onClick: () => setIqDoc(d.name) },
+                      d.name
+                    )
+                  )
+                )
+              : null,
+            h(
+              'pre',
+              null,
+              !iqData
+                ? t('iqNoData')
+                : iqView === 'rules'
+                ? iqData.rules.map((r) => `${r.id}\n  ${r.rule}\n  → ${r.control}`).join('\n\n')
+                : iqView === 'scripts'
+                ? iqData.scripts.map((s) => `${s.name.padEnd(26)} ${String(s.lines).padStart(4)} líneas   ${s.what}`).join('\n')
+                : (iqData.docs.find((d) => d.name === iqDoc) || iqData.docs[0] || {}).body || ''
+            )
+          )
+        : null,
 
       /* Main Session List */
       h(
