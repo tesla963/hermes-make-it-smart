@@ -286,7 +286,7 @@ def main() -> int:
             # La cola va a la descripción solo si es texto limpio: si trae corchetes o el
             # andamiaje del título viejo, se descarta. Duplicar es peor que no describir.
             limpia = " ".join(str(desc_derivada or "").split())
-            if limpia and not any(ch in limpia for ch in "[·]") and not re.search(r"\b\d{3}\b", limpia):
+            if limpia and not any(ch in limpia for ch in "[·]") and not re.search(r"\b\d{3,4}\b", limpia):
                 if not s.get("desc"):
                     campos["desc"] = limpia[:90]
             reglas.append("subject-derived-from-title")

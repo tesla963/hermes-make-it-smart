@@ -41,7 +41,7 @@ def limpio(titulo: str) -> str:
     """El título sin su andamiaje: ni número, ni corchetes, ni ordinal."""
     t = re.sub(r"^\d{3,4}\s*", "", titulo or "")
     t = re.sub(r"\[[^\]]*\]", " ", t)
-    t = re.sub(r"\b\d{3}\b", " ", t)
+    t = re.sub(r"\b\d{3,4}\b", " ", t)
     return re.sub(r"\s+", " ", t).strip()
 
 
