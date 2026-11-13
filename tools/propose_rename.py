@@ -183,71 +183,13 @@ def canon_title(s: dict) -> str:
     return head
 
 
-def run_teacher(teacher_path: Path) -> int:
-    """Evaluate 100% title reproduction using teacher fields."""
-    if not teacher_path.exists():
-        print(f"  error: no existe el archivo maestro: {teacher_path}", file=sys.stderr)
-        return 1
-
-    datos = json.loads(teacher_path.read_text(encoding="utf-8"))
-    good = datos.get("teacher_good", datos)
-    bad = datos.get("teacher_bad", {})
-
-    total = len(good)
-    exactos = 0
-    diferencias = []
-
-    for sid, t in good.items():
-        raw = t.get("raw") or ""
-        built = canon_title(t)
-        if built == raw:
-            exactos += 1
-        else:
-            motivo = []
-            if len(raw) > LIMIT:
-                motivo.append("raw supera LIMIT")
-            if t.get("sujeto") not in raw:
-                motivo.append("sujeto no coincide con raw")
-            diferencias.append({
-                "id": sid,
-                "n": t.get("n"),
-                "raw": raw,
-                "built": built,
-                "why": ", ".join(motivo) or "diferencia en ensamblado",
-            })
-
-    pct = (exactos / total * 100) if total else 0.0
-    print("=== Corrida con trampa (--teacher) ===")
-    print(f"  sesiones en teacher_good: {total} · reproducidas exactas: {exactos} ({pct:.1f}%) · "
-          f"diferencias: {len(diferencias)}")
-    if bad:
-        print(f"  sesiones en teacher_bad:  {len(bad)} (contraejemplos para contrastar mejoras)")
-
-    if diferencias:
-        print("\n  Diferencias encontradas:")
-        for d in diferencias[:10]:
-            print(f"    #{d['n']} ({d['id']}): {d['why']}")
-            print(f"      RAW:   {d['raw']}")
-            print(f"      BUILT: {d['built']}")
-        return 1
-
-    print("  reproducción perfecta: 100% de los títulos de teacher_good ensamblados exactamente")
-    return 0
-
-
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--path", default=str(DATA / "index.json"))
     ap.add_argument("--out", default=str(DATA / "proposed-index.json"))
-    ap.add_argument("--dry-run", action="store_true"), default=None,
-                    help="Run in teacher mode to verify title reconstruction")
-    ap.add_argument("--eval", action="store_true",
-                    help="Measure agreement of the proposal against tools/teacher.json")
+    ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
-
-    if args.teacher:
-        return run_teacher(Path(args.teacher).expanduser())
 
     ruta = Path(args.path).expanduser()
     datos = json.loads(ruta.read_text(encoding="utf-8"))
@@ -381,46 +323,6 @@ def main() -> int:
           f"idénticas: {iguales_count} · omitidas: {saltadas_count}")
     for c in cambios[:8]:
         print(f"    {c['before'][:46]:46s} → {c['after'][:46]}")
-
-    if args.eval:
-        teacher_path = REPO / "tools/teacher.json"
-        if teacher_path.exists():
-            teacher_raw = json.loads(teacher_path.read_text(encoding="utf-8"))
-            teacher_good = teacher_raw.get("teacher_good", teacher_raw)
-            teacher_bad = teacher_raw.get("teacher_bad", {})
-            cambios_by_id = {c["id"]: c for c in cambios}
-
-            # 1. Medir acuerdo SOLO contra teacher_good
-            good_exactos = 0
-            good_diffs = []
-            for sid, t in teacher_good.items():
-                if sid in cambios_by_id:
-                    c = cambios_by_id[sid]
-                    good_diffs.append((t["n"], t["raw"], c["after"], c["rules"]))
-                else:
-                    good_exactos += 1
-            pct_good = (good_exactos / len(teacher_good) * 100) if teacher_good else 0.0
-
-            # 2. Medir corrección de teacher_bad
-            bad_corregidas = 0
-            bad_sin_tocar = 0
-            for sid, t in teacher_bad.items():
-                if sid in cambios_by_id:
-                    bad_corregidas += 1
-                else:
-                    bad_sin_tocar += 1
-            pct_bad_corr = (bad_corregidas / len(teacher_bad) * 100) if teacher_bad else 0.0
-
-            print("\n=== Evaluación contra el Maestro (--eval) ===")
-            print("  AVISO: mide 'no propuso cambio' como acuerdo, y lee los campos del índice,")
-            print("  que es la misma fuente del maestro. Sirve para detectar regresiones, no como")
-            print("  medida de inteligencia. Para eso hace falta la corrida con modelo.")
-            print(f"  teacher_good ({len(teacher_good)} sesiones): acuerdo exacto: {good_exactos} ({pct_good:.2f}%) · diferencias: {len(good_diffs)}")
-            print(f"  teacher_bad  ({len(teacher_bad)} sesiones): corregidas por reglas: {bad_corregidas} ({pct_bad_corr:.1f}%) · sin tocar: {bad_sin_tocar}")
-            if good_diffs:
-                print("  Diferencias en teacher_good:")
-                for n, raw, after, r in good_diffs[:5]:
-                    print(f"    #{n} ({', '.join(r)}):\n      RAW:   {raw}\n      AFTER: {after}")
 
     if args.dry_run:
         print("  dry run — nada escrito")
