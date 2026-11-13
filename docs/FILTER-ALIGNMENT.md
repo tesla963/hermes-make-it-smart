@@ -12,7 +12,7 @@ Date: 2026-11-10 · base: 884 sessions · 50 rules · 13 intents
 | **iq2** | **Context** | where, or inside what frame? | `Amazon` · `Ebay` · `Panamá` |
 | **iq3** | **Intent** | what did the user want to do? | `Comparar` |
 | **iq4** | **Place** | country or store | `Panamá` · `Ebay` |
-| **iq5** | **Theme** | the work front | `IA Bot` · `VPS` |
+| **iq5** | **Theme** | the topic | `IA Bot` · `VPS` |
 | iq6 | Year | when | `2026` |
 | iq7 | Machine | on which machine | `Mac mini M4` |
 
@@ -62,7 +62,7 @@ on its own».
 
 ## 3 · The iq5 measurement
 
-With the names you gave, mapping the current work fronts (iq4):
+With the names you gave, mapping the current topics (iq4):
 
 | Subcategory | Sessions | % of the total |
 |---|---|---|
@@ -78,7 +78,7 @@ With the names you gave, mapping the current work fronts (iq4):
 
 ### The Network and OS problem
 
-Those two are not work fronts today: they are **cross-cutting slices**.
+Those two are not topics today: they are **cross-cutting slices**.
 
 ```
 Network = the 13 sessions with iq2 "Networking"
@@ -114,7 +114,7 @@ like one thing or like five.
 
 ## 4 · The 203 sessions left outside IT Manager
 
-| Current work front (iq4) | Sessions | What theme is it? |
+| Current topic (iq4) | Sessions | What theme is it? |
 |---|---|---|
 | Derecho | 61 | missing declaration |
 | Temas Varios | 43 | it is the waiting list |
@@ -138,7 +138,7 @@ These speak about the **subject**, and the subject has not moved:
 `subject-strips-action-prefix` · `subject-does-not-repeat-iq1` ·
 `subject-is-never-the-program` · `one-subject-only` ·
 `qualifier-is-not-identity` · `subject-is-the-nearest-item` ·
-`spelling-variants-are-one-subject` · `one-series-one-work-front` ·
+`spelling-variants-are-one-subject` · `one-series-one-topic` ·
 `verb-first-then-subject` · `subject-preposition-exception` ·
 `ventana-permisos-series` · `lisa-is-the-subject` ·
 `third-party-program-is-iq1-not-subject` · `brand-equals-subject-exception` ·
@@ -184,11 +184,11 @@ is the right one — but the field changes place.
 ### 5.4 · Rules that die — 2
 
 **`productos-vs-compras`** — the distinction disappears. `Productos` becomes the
-subcategory `Hardware`, and `Compras` stops being a work front: buying is an
+subcategory `Hardware`, and `Compras` stops being a topic: buying is an
 **intent** (`Cotizar`) plus a **place** (`Amazon`).
 
-**`one-series-one-work-front`** — it stays in substance, but is renamed to
-`one-series-one-theme`: the series shares **iq5**, not a work front.
+**`one-series-one-topic`** — it stays in substance, but is renamed to
+`one-series-one-theme`: the series shares **iq5**, not a topic.
 
 ### 5.5 · The result
 

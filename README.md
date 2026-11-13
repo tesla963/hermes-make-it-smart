@@ -17,7 +17,7 @@ Search helps only if you remember a word. It does not answer:
 
 - How many sessions did I spend on my VPS this quarter?
 - What did I actually do across the eleven sessions about the same subject?
-- Which of my work fronts got the most of my time?
+- Which of my topics got the most of my time?
 
 An agent that forgets the shape of your work is an agent you have to re-brief every day.
 
@@ -84,7 +84,7 @@ The full rules live in [`docs/ALGORITHM.md`](docs/ALGORITHM.md).
 ## Install
 
 [`docs/GUIA-DE-USO.md`](docs/GUIA-DE-USO.md) — the order that matters: back up,
-define the work fronts, feed the cheat sheet, run a dry run, correct,
+define the topics, feed the cheat sheet, run a dry run, correct,
 apply. The plugin is worth exactly what the names you have taught it are worth.
 
 ```bash
@@ -139,7 +139,7 @@ showing a white screen.
 
 ```
 core/           Python, zero imports from Hermes
-  taxonomy.py   work fronts (iq4), platforms, IT families
+  taxonomy.py   topics (iq4), platforms, IT families
   prompt.py     the classifier system prompt
   normalize.py  subject extraction, MMM ordinals, telegram mode
   classify.py   LLM + deterministic rules

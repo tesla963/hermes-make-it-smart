@@ -594,3 +594,52 @@
     one that lies is not.
   examples:
   control_question: "Is the value I am about to write in iq2 a store, a country or a machine — or is it something else wearing its clothes?"
+
+# --------------------------------------------------------------------------- #
+# SUBJECT SHAPE AND PROGRAM PLACEMENT (taught 2026-11-12)
+# --------------------------------------------------------------------------- #
+
+- id: subject-three-words-max
+  taught: 2026-11-12
+  rule: >
+    A subject of four words or more is not a subject, it is a description that
+    leaked into iq0. Measured over 873 sessions: 23 carry a four-word-or-longer
+    subject (2.6 %) and every one is a phrase. The subject is 1 to 3 words, no
+    verb, no greeting. If a verb appears ("abrir", "instalar", "consultar",
+    "esta funcionando"), the action goes to the description or to the
+    " · Verb" appendix and the subject keeps only the thing.
+  examples:
+    - { right: "Brave", wrong: "brave no esta abriendo" }
+    - { right: "DeepSeek", wrong: "Hola DeepSeek estás funcionando" }
+    - { right: "Antigravity", wrong: "Instalar y configurar Antigravity" }
+    - { right: "Migración", wrong: "Migración Android a iPhone" }
+  control_question: "Could this subject be a shelf label? If it needs a verb to make sense, it is a description."
+
+- id: intent-decides-where-the-program-sits
+  taught: 2026-11-12
+  rule: >
+    The same program can be the subject (iq0) or the axis (iq1). It is the
+    INTENTION (iq3) that decides, never taste. When the intention makes the
+    program the OBJECT of the work — Investigar, Comparar, Cotizar — the program
+    is iq0 and iq1 holds its maker or stays empty. When the intention works
+    INSIDE the program — Troubleshooting, Configurar, Instalar — the program is
+    the container and goes to iq1, and iq0 names the part that broke.
+  examples:
+    - { right: "Firefox · — · Investigar", wrong: "— · Firefox · Investigar" }
+    - { right: "Stuck Startup · Firefox · Troubleshooting", wrong: "Firefox · — · Troubleshooting" }
+    - { right: "Protocol · Hermes Gateway · Troubleshooting", wrong: "Hermes Gateway · — · Troubleshooting" }
+  control_question: "Am I looking AT the program, or at a part of it that is misbehaving?"
+
+- id: program-in-iq1-needs-a-part
+  taught: 2026-11-12
+  rule: >
+    A program belongs in iq1 only when the subject can be named as a part of it
+    ("Protocol" inside "Hermes Gateway", "Stuck Startup" inside "Firefox",
+    "Hermes Desktop" inside "Hermes Agent"). If no part can be named, the program
+    is not an axis: it is the subject, and the session has no iq1. A program in
+    iq1 with an empty or identical subject is a field answering the same
+    question twice.
+  examples:
+    - { right: "Hermes Desktop · Hermes Agent", wrong: "Hermes Agent · Hermes Agent" }
+    - { right: "Protocol · Hermes Gateway", wrong: "— · Hermes Gateway" }
+  control_question: "Name the part. If I cannot name it, why is the whole program in iq1?"

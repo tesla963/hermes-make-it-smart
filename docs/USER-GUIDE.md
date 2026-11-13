@@ -74,7 +74,7 @@ filters.
 | **iq1** | Which program, platform or brand does the work? | `Firefox` | yes |
 | **iq2** | What sits around it? (store, country, machine) | `Ebay` | yes |
 | iq3 | What was asked? (the intention, seven closed values) | `Troubleshooting` | no |
-| iq4 | Which work front does it belong to? | `VPS` | no |
+| iq4 | Which topic does it belong to? | `VPS` | no |
 | iq5 | Which year? | `2026` | no |
 | iq6 | Retired: the machine moved to iq2 | — | no |
 | iq7 | Reserved | — | no |
@@ -84,9 +84,9 @@ filters.
 Read in one breath: `Firefox` + `Stuck Startup` + `Troubleshooting` gives the program,
 the block inside it, and what you were doing there.
 
-### The work fronts (iq4)
+### The topics (iq4)
 
-A work front is the part of your world a session belongs to: Asistente IA, VPS, Data
+A topic is the part of your world a session belongs to: Asistente IA, VPS, Data
 Backup, Derecho, Productos, Compras, Youtuber, MindMap, Geopolítica, Masoterapia.
 
 It is the filter you will use most often, and **the one the plugin cannot guess for
@@ -96,7 +96,7 @@ that is *VPS* or *WebHosting* or *Infrastructure*.
 #### How they are defined
 
 In `core/taxonomy.py`, the `PILLARS` tuple — the list keeps its historical name, the
-concept is the work front. Each entry carries a hint:
+concept is the topic. Each entry carries a hint:
 
 ```python
 {"name": "VPS", "hint": "the server that is mine: CyberPanel, DNS, mail, certificates"}
@@ -106,7 +106,7 @@ The hint is not decoration: **it is what the classifier reads to decide**. A vag
 ("technical topics") attracts half the catalogue and ruins the filter. A clear boundary
 ("the server that is mine: …") keeps to its own.
 
-#### Three questions to tell whether a work front is right
+#### Three questions to tell whether a topic is right
 
 1. **Could you say in one sentence what it is NOT?** If not, it is a catch-all.
 2. **Does it have at least five sessions?** A front with a single session is a label.
@@ -217,7 +217,7 @@ teach it:
 
 | What you give it | What you gain |
 |---|---|
-| **work fronts** (iq4) | the filter you actually use |
+| **topics** (iq4) | the filter you actually use |
 | **cheat sheet** | sessions resolved without spending tokens |
 | **corrections** | the rules that prevent repeating the error |
 | **your names** | the catalog stops sounding like a machine and sounds like you |
@@ -246,7 +246,7 @@ If those four things hold, the plugin is already working on its own.
 ## The order, in one line
 
 ```
-backup → work fronts (iq4) → cheat sheet → dry run → corrections → apply → repeat
+backup → topics (iq4) → cheat sheet → dry run → corrections → apply → repeat
 ```
 
 And the step that is never skipped: **look before writing.**

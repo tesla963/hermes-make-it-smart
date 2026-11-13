@@ -72,8 +72,20 @@ It is the only one that opens the title, so it carries the weight of the search.
 - It is **never the program itself** — the program goes in iq1.
 - Two to four words. If it needs a verb, the verb belongs in the description.
 
+**The hard limit: three words.** A subject of four words or more is not a subject,
+it is a description that leaked into the field. Measured over 873 sessions: **23 carry a
+four-word-or-longer subject (2.6 %)**, and every one of them is a phrase —
+`brave no esta abriendo`, `consultar deepseek si esta`, `Hola DeepSeek estás funcionando`.
+A phrase in iq0 means the description was written twice.
+
+| Signal in iq0 | What it really is | Where it goes |
+|---|---|---|
+| a verb (`abrir`, `instalar`, `consultar`) | an action | the description, or ` · Verb` |
+| four or more words | a sentence | compress to the block, rest to the description |
+| a greeting or a question | chat, not a session about something | no subject |
+
 **The control question:** *if I had to find this session in six months, what would I
-type?* That word is iq0.
+type?* That word is iq0 — and it is never a sentence.
 
 ## 5b. iq1 — the program
 
@@ -90,6 +102,33 @@ type?* That word is iq0.
   therefore explains nothing.
 - Use the full product name, never an abbreviation: `Hermes Agent`, `Hermes Desktop`,
   `Hermes Terminal`, `Hermes Telegram` — never just "Hermes".
+
+### Where the program sits — iq3 decides
+
+The same program can be the subject or the axis. It is not a matter of taste: **the
+intention tells you which**.
+
+| iq3 (intention) | Program is… | iq0 | iq1 |
+|---|---|---|---|
+| `Troubleshooting`, `Configurar`, `Instalar` | the **container** of the work | the part that broke: `Protocol` | the whole: `Hermes Gateway` |
+| `Investigar`, `Comparar`, `Cotizar` | the **object** of the work | the program: `Firefox` | its maker, or empty: `—` |
+| `Testear`, `Compatibilidad` | the **object**, under test | the program: `Antigravity` | its maker: `Google` |
+
+**Read it as a test:** ask *"is the program the thing I am looking at, or the thing the
+problem lives in?"* Looking at it → iq0. A part of it → iq1, and the part goes to iq0.
+
+```
+Firefox · Stuck Startup · Troubleshooting      ← the problem lives inside Firefox
+Hermes Gateway · Protocol · Troubleshooting    ← Protocol is a part of Hermes Gateway
+Firefox · — · Investigar                       ← Firefox itself is the object
+```
+
+Two consequences worth writing down, because they resolve most doubtful cases:
+
+1. **A program in iq0 is not an error when the intention makes it the object.** It is
+   the correct answer, and iq1 stays empty (or holds the maker).
+2. **A program in iq1 requires that the subject be a part of it.** If no part can be
+   named, the program belongs in iq0 and the session has no iq1.
 
 ### The product-analysis pattern (marketplace)
 
@@ -138,9 +177,9 @@ Compatibilidad.
 - **Empty is a valid answer.** It says nobody read an intention here, which is true.
 - `Administrar` was retired; `Feature` and `Version` do not exist.
 
-## 6c. Iq4 — the theme
+## 6c. Iq4 — the topic
 
-The work front, with the subcategories of IT Manager: IA Bot, VPS, Data Backup,
+The topic, with the subcategories of IT Manager: IA Bot, VPS, Data Backup,
 Hardware, MindMap, Network, OS. `Data Mining` and `Data Security` are themes, not
 families.
 
@@ -152,7 +191,7 @@ families.
 | **iq1** | Program | which program, platform or brand does the work | **yes** |
 | **iq2** | Context | store, country or machine around it | **yes** |
 | iq3 | Intention | what was asked (seven, closed) | no |
-| iq4 | Theme | which work front | no |
+| iq4 | Theme | which topic | no |
 | iq5 | Year | which edition | no |
 | iq6 | — | retired: the machine moved to iq2 | no |
 | iq7 | — | reserved | no |

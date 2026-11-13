@@ -43,39 +43,52 @@ titles.
 Case 4 is what the density buys: *investigating a product on Amazon, possibly asking for an
 analysis of the reviews* becomes six words in the title plus three clickable filters underneath.
 
-## 3 · The nine axis slots
+## 3 · The ten fields, iq0 to iq9
 
-Nine slots, so a new axis never forces a migration. Six in use, three reserved.
+Ten slots, so a new field never forces a migration. Six carry data today.
+Counts measured over **879 sessions**.
 
-| Slot | Axis | What it holds | In the title |
-|---|---|---|---|
-| **iq1** | Protagonist | brand, **or program / platform / service** | yes |
-| **iq2** | Context | place, machine, country, store | yes |
-| **iq3** | Intention | closed vocabulary — see §4 | no |
-| **iq4** | Theme | work front, or a sub-theme under it | no |
-| **iq5** | **Date** | when it happened | no |
-| **iq6** | Machine | which computer | no |
-| **iq7** | *free* | reserved | no |
-| **iq8** | *free* | reserved | no |
-| **iq9** | *free* | reserved | no |
+| Slot | Field | What it holds | In the title | Filled |
+|---|---|---|---|---|
+| **iq0** | Subject | the block or part, 1–3 words, no verb | **yes** | 873 |
+| **iq1** | Program | the program, platform or brand the work happens in — or is the object of | **yes** | 478 |
+| **iq2** | Context | store, country or machine around it | **yes** | 212 |
+| iq3 | Intention | closed vocabulary of seven — see §4 | no | 570 |
+| iq4 | Topic | the topic, or a sub-topic under it | no | 854 |
+| iq5 | Year | which edition | no | 17 |
+| iq6 | — | retired: the machine moved to iq2 | no | 0 |
+| iq7 | — | reserved | no | 0 |
+| iq8 | — | reserved | no | 0 |
+| iq9 | — | reserved | no | 0 |
 
-**The date is `iq5`** — not part of `iq2`, and not part of the name. The name says *what*; the
-axes say *when, where and why*.
+What each one actually contains, from the live index:
 
-## 4 · The code is still on the old axis order
-
-Both vocabularies are closed in code — a free-form axis is a filter that cannot be clicked twice —
-but **the axes are mapped the old way**, and that is the real work item:
-
-| In the new nomenclature (§3) | What `core/taxonomy.py` actually implements |
+| Slot | Most frequent values |
 |---|---|
-| iq2 = **context** (place, machine, country, store) | **iq2 = work family**: `IT_FAMILIES` (IA, Data Mining, Automation, WebHosting, **Troubleshooting**, VPS, Data Security, Multimedia, Productivity, MCP/CLI, File System, **IT Manager**, Data Backup, Programming, Networking, Data Recovery, Repository), `NON_IT_FAMILIES` (Derecho Constitucional/Penal/Civil, Educación, **Medicina**, **Nutrición**, Compras, Geopolítica) and `MARKET_FAMILIES` (Ebay, Amazon, Comparación) |
-| iq3 = **intention** | **iq3 = pillar**: `PILLARS` (Asistente IA, VPS, Compras, Productos, Servicios, Data Backup, Derecho, Youtuber, MindMap, Geopolítica, Masoterapia, Temas Varios) |
-| iq4 = **theme** | exists only as `IT_SUBCATEGORIES` (IA Bot, VPS, Data Backup, Hardware, MindMap, Network, OS) + `OTHER_THEMES`, not as iq4 |
+| iq1 | `CyberPanel` 77 · `Apple` 62 · `AMD` 62 · `Mac mini M4` 38 · `Panamá` 25 |
+| iq2 | `Mac mini M4` 97 · `Panamá` 33 · `VPS` 25 · `Teléfono` 19 · `Amazon` 13 |
+| iq3 | `Investigar` 261 · `Troubleshooting` 146 · `Comparar` 50 · `Testear` 39 · `Compatibilidad` 34 |
+| iq4 | `IT Manager` 252 · `Hardware` 141 · `IA Bot` 83 · `Data Mining` 62 · `Derecho` 58 |
+| iq5 | `Panamá` 10 · `1972` 3 · then noise — **this axis is contaminated and must be cleaned** |
 
-Every value from your four example cases **does exist** — `Troubleshooting`, `IT Manager`,
-`Medicina`, `Nutrición`, `Ebay`, `Amazon` — but they sit on the wrong axis today. `Compra` is the
-only one missing: the code has `Compras` as a family and as a pillar, never as an intention.
+**The name carries iq0, iq1 and iq2 — never iq3 or iq4.** The name says *what, who and
+where*; the rest are filters.
+
+## 4 · Where the fields landed in the code
+
+The mapping the code implements matches the data:
+
+| Field | Implementation |
+|---|---|
+| iq0 | the `sujeto` column of the index; declared as `iq0` in `cellar_tools` |
+| iq1 | `PLATFORMS` + the brands of the cheat sheet |
+| iq2 | `CONTEXT`: store, country or machine — `normalize_*` rejects anything else |
+| iq3 | `INTENTIONS`, closed at seven |
+| iq4 | `IT_SUBCATEGORIES` + `OTHER_THEMES`, seeded from `PILLARS` (the list keeps its historical name) |
+
+`Troubleshooting`, `IT Manager`, `Medicina`, `Nutrición`, `Ebay`, `Amazon` all exist and sit
+on the axis they belong to. `Compra` is still missing as an intention: the vocabulary has
+`Compras` as a topic, never as a verb.
 
 **And there are two intention lists that disagree** — another thing to fix, not to document away:
 
