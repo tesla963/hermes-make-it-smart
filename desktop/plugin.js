@@ -1012,6 +1012,7 @@ position:relative;display:flex;flex-direction:column;width:100%;height:100%;min-
 .mmws .actbar{display:flex;align-items:center;gap:10px;padding:10px 18px;border-bottom:1px solid var(--line);background:#141018;flex-wrap:wrap}
 .mmws .actbar .procbtn{font-size:12px;padding:6px 12px}
 .mmws .actbar .footmsg{color:var(--tx3);font-size:11.8px}
+.mmws .footrow.actmode .footbtns{display:none}
 .mmws .iqpanel .iqhead{display:flex;gap:14px;align-items:center;font-size:12px;color:var(--tx3)}
 .mmws .iqpanel .iqstrip{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;padding:2px 0 6px}
 .mmws .iqpanel .iqstrip.main .iqbtn{font-size:12px;padding:5px 16px;border-bottom:2px solid transparent}
@@ -3870,6 +3871,56 @@ function App({ ctx }) {
 
 
     /* ---------- Body (Aside + Main + Slide-over Detail Panel) ---------- */
+    /* Action bar: outside the bodywrap, so it spans the top and is not a flex column */
+      /* Action bar: where the filters used to be, for the windows that act instead of filtering */
+      (activeTab === 'testing' || activeTab === 'newrules')
+        ? h(
+            'div',
+            { className: 'actbar' },
+            activeTab === 'testing'
+              ? [
+                  h(
+                    'button',
+                    {
+                      key: 'pall', className: 'procbtn', disabled: isCommitting || isReverting,
+                      onClick: () => setDialogo({ kind: 'processall', n: sessions.filter((d) => !esIntocable(d)).length }),
+                      title: t('procAllTitle'),
+                    },
+                    t('procAll', { n: sessions.filter((d) => !esIntocable(d)).length })
+                  ),
+                  h(
+                    'button',
+                    {
+                      key: 'pend', className: 'ghost', disabled: isCommitting || isReverting || !pendingRows.length,
+                      onClick: () => setDialogo({ kind: 'process', n: pendingRows.length }),
+                      title: t('procTitle'),
+                    },
+                    t('procCount', { n: pendingRows.length })
+                  ),
+                  canRevert
+                    ? h('button', { key: 'rev', className: 'revertbtn', disabled: isCommitting || isReverting, onClick: handleRevert }, t('revertir'))
+                    : null,
+                  machineryPending.length > 0
+                    ? h('span', { key: 'mach', className: 'footmsg' }, t('machineryNote', { n: machineryPending.length }))
+                    : null,
+                ]
+              : [
+                  h(
+                    'button',
+                    {
+                      key: 'apply', className: 'procbtn', id: 'btnApplyNewRules',
+                      disabled: isCommitting || isReverting || !(prop && prop.changes && prop.changes.length),
+                      onClick: aplicarPropuesta,
+                      title: t('newRulesApplyTitle'),
+                    },
+                    t('newRulesApply', { n: (prop && prop.changes && prop.changes.length) || 0 })
+                  ),
+                  h('button', { key: 'rel', className: 'ghost', onClick: leerPropuesta }, t('newRulesReload')),
+                  h('span', { key: 'msg', className: 'footmsg', id: 'propMsg' }, propMsg),
+                ]
+          )
+        : null,
+
     h(
       'div',
       { className: 'bodywrap' + (activeTab === 'testing' || activeTab === 'newrules' || activeTab === 'tabiq' ? ' nofilters' : '') },
@@ -4146,55 +4197,6 @@ function App({ ctx }) {
           )
         : null,
 
-      /* Action bar: where the filters used to be, for the windows that act instead of filtering */
-      (activeTab === 'testing' || activeTab === 'newrules')
-        ? h(
-            'div',
-            { className: 'actbar' },
-            activeTab === 'testing'
-              ? [
-                  h(
-                    'button',
-                    {
-                      key: 'pall', className: 'procbtn', disabled: isCommitting || isReverting,
-                      onClick: () => setDialogo({ kind: 'processall', n: sessions.filter((d) => !esIntocable(d)).length }),
-                      title: t('procAllTitle'),
-                    },
-                    t('procAll', { n: sessions.filter((d) => !esIntocable(d)).length })
-                  ),
-                  h(
-                    'button',
-                    {
-                      key: 'pend', className: 'ghost', disabled: isCommitting || isReverting || !pendingRows.length,
-                      onClick: () => setDialogo({ kind: 'process', n: pendingRows.length }),
-                      title: t('procTitle'),
-                    },
-                    t('procCount', { n: pendingRows.length })
-                  ),
-                  canRevert
-                    ? h('button', { key: 'rev', className: 'revertbtn', disabled: isCommitting || isReverting, onClick: handleRevert }, t('revertir'))
-                    : null,
-                  machineryPending.length > 0
-                    ? h('span', { key: 'mach', className: 'footmsg' }, t('machineryNote', { n: machineryPending.length }))
-                    : null,
-                ]
-              : [
-                  h(
-                    'button',
-                    {
-                      key: 'apply', className: 'procbtn', id: 'btnApplyNewRules',
-                      disabled: isCommitting || isReverting || !(prop && prop.changes && prop.changes.length),
-                      onClick: aplicarPropuesta,
-                      title: t('newRulesApplyTitle'),
-                    },
-                    t('newRulesApply', { n: (prop && prop.changes && prop.changes.length) || 0 })
-                  ),
-                  h('button', { key: 'rel', className: 'ghost', onClick: leerPropuesta }, t('newRulesReload')),
-                  h('span', { key: 'msg', className: 'footmsg', id: 'propMsg' }, propMsg),
-                ]
-          )
-        : null,
-
       /* Main Session List */
       h(
         'main',
@@ -4437,7 +4439,7 @@ function App({ ctx }) {
     /* ---------- Bottom Footer Row (Unified Actions + 5 KPIs) ---------- */
     h(
       'div',
-      { className: 'footrow' },
+      { className: 'footrow' + (activeTab === 'testing' || activeTab === 'newrules' ? ' actmode' : '') },
       activeTab === 'newrules'
         ? h(
             'div',
