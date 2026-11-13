@@ -279,8 +279,12 @@ def main() -> int:
                     if w.lower() in MARCAS_CONOCIDAS:
                         campos["iq1"] = w[:1].upper() + w[1:]
                         break
-            if desc_derivada and not s.get("desc"):
-                campos["desc"] = desc_derivada[:90]
+            # La cola va a la descripción solo si es texto limpio: si trae corchetes o el
+            # andamiaje del título viejo, se descarta. Duplicar es peor que no describir.
+            limpia = " ".join(str(desc_derivada or "").split())
+            if limpia and not any(ch in limpia for ch in "[·]") and not re.search(r"\b\d{3}\b", limpia):
+                if not s.get("desc"):
+                    campos["desc"] = limpia[:90]
             reglas.append("subject-derived-from-title")
         # 1 · un título que no sigue la forma canónica
         if not CANON.match(raw):

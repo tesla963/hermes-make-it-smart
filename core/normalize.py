@@ -280,7 +280,9 @@ def split_verb_subject(subject: str) -> tuple[str, str]:
     if m:
         verbo = palabras.pop(0)
     conectores = ("de", "del", "la", "el", "los", "las", "un", "una", "a", "en", "con",
-                  "por", "para", "al", "que")
+                  "por", "para", "al", "que", "si", "no", "ya", "aun", "aún", "esta",
+                  "está", "estan", "están", "puede", "puedo", "se", "me", "te", "le",
+                  "lo", "hay", "fue", "era", "son", "es")
     cuerpo = [w for w in palabras if w.lower() not in ADJ_ESTADO and w.lower() not in conectores]
     while cuerpo and cuerpo[-1].lower() in ("y", "o", "e", "u"):
         cuerpo.pop()
