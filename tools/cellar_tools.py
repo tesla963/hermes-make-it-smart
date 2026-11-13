@@ -2,7 +2,7 @@
 
 Implements the 10-tool surface specified in ``docs/AGENT-TOOLS.md``:
   Read (4):   cellar_search, cellar_session, cellar_stats, cellar_series
-  Write (5):  cellar_rename, cellar_tag, cellar_bateria, cellar_index, cellar_verify
+  Write (5):  cellar_rename, cellar_tag, cellar_cheatsheet, cellar_index, cellar_verify
   Export (1): cellar_export
 
 All persistent state lives in ``plugin_data_dir("make-it-smart")``.
@@ -35,7 +35,7 @@ try:
         read_sessions,
         sha256_of,
     )
-    from ..core.bateria import BATERIA_PATH, load_bateria
+    from ..core.cheat_sheet import CHEAT_SHEET_PATH, load_cheat_sheet
     from ..core.classify import ClassifyConfig, classify_one, fallback_facets
     from ..core.normalize import (
         MAX_TITLE_LENGTH,
@@ -70,7 +70,7 @@ except ImportError:
         read_sessions,
         sha256_of,
     )
-    from core.bateria import BATERIA_PATH, load_bateria
+    from core.cheat_sheet import CHEAT_SHEET_PATH, load_cheat_sheet
     from core.classify import ClassifyConfig, classify_one, fallback_facets
     from core.normalize import (
         MAX_TITLE_LENGTH,
@@ -149,8 +149,8 @@ def _corrections_path() -> Path:
     return _plugin_dir() / "corrections.yaml"
 
 
-def _personal_bateria_path() -> Path:
-    return _plugin_dir() / "bateria.personal.yaml"
+def _personal_cheat_sheet_path() -> Path:
+    return _plugin_dir() / "cheat_sheet.personal.yaml"
 
 
 def _backups_dir() -> Path:
@@ -540,8 +540,8 @@ def _create_write_backup(reason: str, profiles_touched: set[str] | None = None) 
     dest.mkdir(parents=True, exist_ok=True)
     manifest: dict[str, Any] = {"created_at": stamp, "reason": reason, "files": []}
 
-    # Always back up plugin state files (index.json, facets.json, bateria.personal.yaml, corrections.yaml)
-    for state_file in (_index_path(), _facets_path(), _personal_bateria_path(), _corrections_path()):
+    # Always back up plugin state files (index.json, facets.json, cheat_sheet.personal.yaml, corrections.yaml)
+    for state_file in (_index_path(), _facets_path(), _personal_cheat_sheet_path(), _corrections_path()):
         if state_file.exists():
             target = dest / state_file.name
             shutil.copy2(state_file, target)
@@ -1089,7 +1089,7 @@ def handle_cellar_index(args: dict[str, Any], **_kwargs: Any) -> str:
 def _known_iq1_set() -> set[str]:
     known = {p.lower() for p in PLATFORMS if p}
     known.update({"bot", "cron"})
-    for b in (load_bateria(), _load_personal_bateria()):
+    for b in (load_cheat_sheet(), _load_personal_cheat_sheet()):
         for key, spec in (b.get("marcas") or {}).items():
             known.add(str(key).lower())
             if isinstance(spec, dict) and spec.get("iq1"):
@@ -1148,9 +1148,9 @@ def handle_cellar_verify(args: dict[str, Any], **_kwargs: Any) -> str:
         if c["iq4"] and c["iq4"].lower() not in valid_iq4:
             flag(c, "iq4_vocabulary", f"iq4={c['iq4']!r} not in closed themes")
 
-        # 6. iq1 present in bateria or empty
+        # 6. iq1 present in cheat_sheet or empty
         if c["iq1"] and c["iq1"].lower() not in known_iq1:
-            flag(c, "iq1_bateria", f"iq1={c['iq1']!r} not in bateria")
+            flag(c, "iq1_cheat_sheet", f"iq1={c['iq1']!r} not in cheat_sheet")
 
         # 7. Subject not equal to iq1 (unless subject has a version suffix)
         if c["sujeto"] and c["iq1"]:
@@ -1605,10 +1605,10 @@ def handle_cellar_tag(args: dict[str, Any], **kwargs: Any) -> str:
 
 
 # --------------------------------------------------------------------------- #
-# 7. cellar_bateria
+# 7. cellar_cheatsheet
 # --------------------------------------------------------------------------- #
 
-_BATERIA_SECTIONS = (
+_CHEAT_SHEET_SECTIONS = (
     "marcas",
     "programas",
     "productos",
@@ -1623,11 +1623,11 @@ _BATERIA_SECTIONS = (
 )
 
 
-def _load_personal_bateria() -> dict[str, Any]:
-    p = _personal_bateria_path()
+def _load_personal_cheat_sheet() -> dict[str, Any]:
+    p = _personal_cheat_sheet_path()
     if not p.exists():
-        # First install: copy template from core/bateria.personal.yaml preserving header comment
-        repo_seed = BATERIA_PATH.with_name("bateria.personal.yaml")
+        # First install: copy template from core/cheat_sheet.personal.yaml preserving header comment
+        repo_seed = CHEAT_SHEET_PATH.with_name("cheat_sheet.personal.yaml")
         if repo_seed.exists():
             try:
                 p.parent.mkdir(parents=True, exist_ok=True)
@@ -1643,11 +1643,11 @@ def _load_personal_bateria() -> dict[str, Any]:
         return {}
 
 
-def _merged_bateria(include_removed: bool = False) -> dict[str, Any]:
-    base = load_bateria()
-    personal = _load_personal_bateria()
+def _merged_cheat_sheet(include_removed: bool = False) -> dict[str, Any]:
+    base = load_cheat_sheet()
+    personal = _load_personal_cheat_sheet()
     merged: dict[str, Any] = {}
-    for sec in _BATERIA_SECTIONS:
+    for sec in _CHEAT_SHEET_SECTIONS:
         b_sec = base.get(sec)
         p_sec = personal.get(sec)
         if isinstance(b_sec, dict) or isinstance(p_sec, dict):
@@ -1668,17 +1668,17 @@ def _merged_bateria(include_removed: bool = False) -> dict[str, Any]:
     return merged
 
 
-def handle_cellar_bateria(args: dict[str, Any], **kwargs: Any) -> str:
+def handle_cellar_cheatsheet(args: dict[str, Any], **kwargs: Any) -> str:
     op = str(args.get("op") or "spec").strip().lower()
     if op not in {"spec", "sections", "get", "upsert", "remove"}:
         return _json({"ok": False, "error": f"Invalid op {op!r}; expected spec|sections|get|upsert|remove."})
 
-    merged = _merged_bateria(include_removed=bool(args.get("include_removed", False)))
-    sec_counts = {sec: len(merged.get(sec) or {}) for sec in _BATERIA_SECTIONS}
+    merged = _merged_cheat_sheet(include_removed=bool(args.get("include_removed", False)))
+    sec_counts = {sec: len(merged.get(sec) or {}) for sec in _CHEAT_SHEET_SECTIONS}
 
     if op == "spec":
-        can_p = _personal_bateria_path()
-        ui_p = _ui_dir() / "bateria.personal.yaml"
+        can_p = _personal_cheat_sheet_path()
+        ui_p = _ui_dir() / "cheat_sheet.personal.yaml"
         can_exists = can_p.exists()
         ui_exists = ui_p.exists() and ui_p.resolve() != can_p.resolve()
         return _json(
@@ -1704,13 +1704,13 @@ def handle_cellar_bateria(args: dict[str, Any], **kwargs: Any) -> str:
                     "iq4_it_subcategories": list(IT_SUBCATEGORIES),
                     "verbs": list(VERBS),
                 },
-                "bateria_sections": sec_counts,
-                "personal_bateria_path": str(can_p),
+                "cheat_sheet_sections": sec_counts,
+                "personal_cheat_sheet_path": str(can_p),
                 "canonical_dir": str(_plugin_dir()),
                 "ui_dir": str(_ui_dir()),
-                "bateria_objetiva_exists": BATERIA_PATH.exists(),
-                "bateria_personal_exists": can_exists,
-                "ui_bateria_obsolete": ui_exists and can_exists,
+                "cheat_sheet_objective_exists": CHEAT_SHEET_PATH.exists(),
+                "cheat_sheet_personal_exists": can_exists,
+                "ui_cheat_sheet_obsolete": ui_exists and can_exists,
             }
         )
 
@@ -1733,7 +1733,7 @@ def handle_cellar_bateria(args: dict[str, Any], **kwargs: Any) -> str:
             entry = next((v for k, v in sec_data.items() if str(k).lower() == key.lower()), None)
         return _json({"ok": entry is not None, "section": section, "key": key, "value": entry})
 
-    # Write ops: upsert | remove -> plugin_data_dir()/bateria.personal.yaml ONLY
+    # Write ops: upsert | remove -> plugin_data_dir()/cheat_sheet.personal.yaml ONLY
     dry_run = bool(args.get("dry_run", True))
     confirm = bool(args.get("confirm", False))
     section = str(args.get("section") or "").strip()
@@ -1741,7 +1741,7 @@ def handle_cellar_bateria(args: dict[str, Any], **kwargs: Any) -> str:
     if not section or not key:
         return _json({"ok": False, "error": f"Both 'section' and 'key' are required for op={op!r}."})
 
-    personal = _load_personal_bateria()
+    personal = _load_personal_cheat_sheet()
     sec_dict = personal.get(section)
     if not isinstance(sec_dict, dict):
         sec_dict = {}
@@ -1788,12 +1788,12 @@ def handle_cellar_bateria(args: dict[str, Any], **kwargs: Any) -> str:
         )
 
     _, gen_before = _load_merged_rows()
-    backup_dir = _create_write_backup(f"cellar_bateria_{op}")
+    backup_dir = _create_write_backup(f"cellar_cheatsheet_{op}")
     sec_dict[key] = after_val
     personal[section] = sec_dict
     personal["updated"] = datetime.now().strftime("%Y-%m-%d")
 
-    p_path = _personal_bateria_path()
+    p_path = _personal_cheat_sheet_path()
     p_path.parent.mkdir(parents=True, exist_ok=True)
     p_path.write_text(
         yaml.safe_dump(personal, allow_unicode=True, sort_keys=False),
@@ -1802,7 +1802,7 @@ def handle_cellar_bateria(args: dict[str, Any], **kwargs: Any) -> str:
 
     _append_correction(
         session_id=_caller_session_id(kwargs),
-        tool="cellar_bateria",
+        tool="cellar_cheatsheet",
         before={"section": section, "key": key, "value": before_val},
         after={"section": section, "key": key, "value": after_val},
         rule=args.get("rule"),
@@ -1852,8 +1852,8 @@ _TITLE_EXPORT_COLS = [
 def handle_cellar_export(args: dict[str, Any], **_kwargs: Any) -> str:
     what = str(args.get("what") or "titles").strip().lower()
     fmt = str(args.get("format") or "csv").strip().lower()
-    if what not in {"titles", "corrections", "bateria", "facets"}:
-        return _json({"ok": False, "error": f"Invalid what={what!r}; expected titles|corrections|bateria|facets."})
+    if what not in {"titles", "corrections", "cheat_sheet", "facets"}:
+        return _json({"ok": False, "error": f"Invalid what={what!r}; expected titles|corrections|cheat_sheet|facets."})
     if fmt not in {"csv", "yaml", "json"}:
         return _json({"ok": False, "error": f"Invalid format={fmt!r}; expected csv|yaml|json."})
 
@@ -1892,14 +1892,14 @@ def handle_cellar_export(args: dict[str, Any], **_kwargs: Any) -> str:
                 loaded = yaml.safe_load(c_path.read_text(encoding="utf-8")) or []
             except Exception:
                 loaded = []
-        if not loaded and BATERIA_PATH.with_name("corrections.yaml").exists():
+        if not loaded and CHEAT_SHEET_PATH.with_name("corrections.yaml").exists():
             try:
-                loaded = yaml.safe_load(BATERIA_PATH.with_name("corrections.yaml").read_text(encoding="utf-8")) or []
+                loaded = yaml.safe_load(CHEAT_SHEET_PATH.with_name("corrections.yaml").read_text(encoding="utf-8")) or []
             except Exception:
                 loaded = []
         payload_rows = loaded if isinstance(loaded, list) else []
-    else:  # bateria
-        merged_bat = _merged_bateria()
+    else:  # cheat_sheet
+        merged_bat = _merged_cheat_sheet()
         payload_rows = [
             {"section": sec, "key": k, "value": json.dumps(v, ensure_ascii=False) if isinstance(v, (dict, list)) else str(v)}
             for sec, entries in merged_bat.items()
@@ -2077,16 +2077,16 @@ CELLAR_TAG_SCHEMA = _schema(
     required=["set"],
 )
 
-CELLAR_BATERIA_SCHEMA = _schema(
-    "cellar_bateria",
-    "Inspect or update the classifier cheatsheet (batería). Call op='spec' first in any session to read the nomenclature and closed vocabularies. Writes go to plugin_data_dir()/bateria.personal.yaml.",
+CELLAR_CHEATSHEET_SCHEMA = _schema(
+    "cellar_cheatsheet",
+    "Inspect or update the classifier cheatsheet (cheat_sheet). Call op='spec' first in any session to read the nomenclature and closed vocabularies. Writes go to plugin_data_dir()/cheat_sheet.personal.yaml.",
     {
         "op": {
             "type": "string",
             "enum": ["spec", "sections", "get", "upsert", "remove"],
             "description": "Operation to perform (default: 'spec').",
         },
-        "section": {"type": "string", "description": "Batería section name (e.g. 'marcas', 'programas', 'vocabulario', 'reglas')."},
+        "section": {"type": "string", "description": "Cheat sheet section name (e.g. 'marcas', 'programas', 'vocabulario', 'reglas')."},
         "key": {"type": "string", "description": "Entry key inside the section."},
         "value": {"type": ["object", "string", "array"], "description": "Value to store for op='upsert'."},
         "include_removed": {"type": "boolean", "description": "Include soft-removed entries in op='get'."},
@@ -2111,7 +2111,7 @@ CELLAR_INDEX_SCHEMA = _schema(
 
 CELLAR_VERIFY_SCHEMA = _schema(
     "cellar_verify",
-    "Lint the archive against all nomenclature invariants (<=100 chars, unique NNN, gapless MMM per subject, closed iq3/iq4 vocabularies, iq1 in batería, subject != iq1, non-empty description).",
+    "Lint the archive against all nomenclature invariants (<=100 chars, unique NNN, gapless MMM per subject, closed iq3/iq4 vocabularies, iq1 in cheat_sheet, subject != iq1, non-empty description).",
     {
         **_FILTER_PROPS,
     },
@@ -2119,11 +2119,11 @@ CELLAR_VERIFY_SCHEMA = _schema(
 
 CELLAR_EXPORT_SCHEMA = _schema(
     "cellar_export",
-    "Export titles, corrections, bateria, or facets to plugin_data_dir()/exports/<what>_[CCCC].<format> with the monotonic export counter.",
+    "Export titles, corrections, cheat_sheet, or facets to plugin_data_dir()/exports/<what>_[CCCC].<format> with the monotonic export counter.",
     {
         "what": {
             "type": "string",
-            "enum": ["titles", "corrections", "bateria", "facets"],
+            "enum": ["titles", "corrections", "cheat_sheet", "facets"],
             "description": "Dataset to export (default: 'titles').",
         },
         "format": {
@@ -2142,7 +2142,7 @@ CELLAR_TOOLS: tuple[tuple[str, dict[str, Any], Any, str], ...] = (
     ("cellar_series", CELLAR_SERIES_SCHEMA, handle_cellar_series, "🧵"),
     ("cellar_rename", CELLAR_RENAME_SCHEMA, handle_cellar_rename, "✏️"),
     ("cellar_tag", CELLAR_TAG_SCHEMA, handle_cellar_tag, "🏷️"),
-    ("cellar_bateria", CELLAR_BATERIA_SCHEMA, handle_cellar_bateria, "📚"),
+    ("cellar_cheatsheet", CELLAR_CHEATSHEET_SCHEMA, handle_cellar_cheatsheet, "📚"),
     ("cellar_index", CELLAR_INDEX_SCHEMA, handle_cellar_index, "🔄"),
     ("cellar_verify", CELLAR_VERIFY_SCHEMA, handle_cellar_verify, "✅"),
     ("cellar_export", CELLAR_EXPORT_SCHEMA, handle_cellar_export, "📤"),

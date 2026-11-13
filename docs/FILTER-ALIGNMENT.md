@@ -62,7 +62,7 @@ on its own».
 
 ## 3 · The iq5 measurement
 
-With the names you gave, mapping the current pillars:
+With the names you gave, mapping the current work fronts (iq4):
 
 | Subcategory | Sessions | % of the total |
 |---|---|---|
@@ -78,7 +78,7 @@ With the names you gave, mapping the current pillars:
 
 ### The Network and OS problem
 
-Those two are not pillars today: they are **cross-cutting slices**.
+Those two are not work fronts today: they are **cross-cutting slices**.
 
 ```
 Network = the 13 sessions with iq2 "Networking"
@@ -114,7 +114,7 @@ like one thing or like five.
 
 ## 4 · The 203 sessions left outside IT Manager
 
-| Current pillar | Sessions | What theme is it? |
+| Current work front (iq4) | Sessions | What theme is it? |
 |---|---|---|
 | Derecho | 61 | missing declaration |
 | Temas Varios | 43 | it is the waiting list |
@@ -138,7 +138,7 @@ These speak about the **subject**, and the subject has not moved:
 `subject-strips-action-prefix` · `subject-does-not-repeat-iq1` ·
 `subject-is-never-the-program` · `one-subject-only` ·
 `qualifier-is-not-identity` · `subject-is-the-nearest-item` ·
-`spelling-variants-are-one-subject` · `one-series-one-pillar` ·
+`spelling-variants-are-one-subject` · `one-series-one-work-front` ·
 `verb-first-then-subject` · `subject-preposition-exception` ·
 `ventana-permisos-series` · `lisa-is-the-subject` ·
 `third-party-program-is-iq1-not-subject` · `brand-equals-subject-exception` ·
@@ -184,11 +184,11 @@ is the right one — but the field changes place.
 ### 5.4 · Rules that die — 2
 
 **`productos-vs-compras`** — the distinction disappears. `Productos` becomes the
-subcategory `Hardware`, and `Compras` stops being a pillar: buying is an
+subcategory `Hardware`, and `Compras` stops being a work front: buying is an
 **intent** (`Cotizar`) plus a **place** (`Amazon`).
 
-**`one-series-one-pillar`** — it stays in substance, but is renamed to
-`one-series-one-theme`: the series shares **iq5**, not a pillar.
+**`one-series-one-work-front`** — it stays in substance, but is renamed to
+`one-series-one-theme`: the series shares **iq5**, not a work front.
 
 ### 5.5 · The result
 
@@ -222,11 +222,11 @@ subcategory `Hardware`, and `Compras` stops being a pillar: buying is an
 1. declare the missing iq5 (Derecho, Compras, Youtuber, Geopolítica, Medicina)
 2. move the intent from iq2 → iq3 in all 884
 3. retire Automation, add Monitorear, reclassify its 98
-4. fill iq4 (place) from the battery: Amazon, Ebay, Panamá
+4. fill iq4 (place) from the cheat sheet: Amazon, Ebay, Panamá
 5. clean the 303 sessions with iq1 = "Hermes Agent"
-6. measure in the simulator before writing
+6. measure with a dry run before writing
 7. apply with backup
 ```
 
 Each step can be measured dry before touching the database. **None is applied without
-having been seen in the simulator.**
+having been seen in a dry run.**

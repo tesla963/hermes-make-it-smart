@@ -98,9 +98,9 @@ anything else touches the classifier.**
 > old axis order is not a reference — it is work to be removed.
 
 
-## 5 · The batería — how the plugin gets smart
+## 5 · The cheat sheet — how the plugin gets smart
 
-The classifier does not rely on general knowledge: it consults a **batería**, a YAML cheatsheet
+The classifier does not rely on general knowledge: it consults a **cheat sheet**, a YAML cheatsheet
 that is *data, not code*. Editing the YAML teaches the system a new machine or program without
 touching a line of Python.
 
@@ -111,8 +111,8 @@ touching a line of Python.
 | `productos` | 7 | model numbers and aliases |
 | `companias` · `servicios` · `conceptos` · `logistica` · `sin_marca` | 5 · 3 · 7 · 5 · 3 | the rest of the world |
 
-The personal layer (`bateria.personal.yaml`) is the owner's own: **his computers, his programs,
-his drone, his camera** — every piece of equipment or program needs configuration, so the batería
+The personal layer (`cheat_sheet.personal.yaml`) is the owner's own: **his computers, his programs,
+his drone, his camera** — every piece of equipment or program needs configuration, so the cheat sheet
 also carries *how to use it*. Its `vocabulario`, `reglas` and `servicios` slots exist today but
 are **empty**: the mechanism is built, filling it is the next step.
 
@@ -133,7 +133,7 @@ The desktop plugin (`desktop/plugin.js`) is the full interactive workbench and t
   corrections as CSV.
 - **Side by side**: with the plugin open in the Desktop view next to a live session, the
   owner copies from the session, pastes into the search, and the plugin fixes the subject and
-  **updates the batería** — the plugin gets smarter with each pass.
+  **updates the cheat sheet** — the plugin gets smarter with each pass.
 - **Bidirectional bridge**: Hermes reports a sequence of session numbers (`45, 76, 450, 32`), the
   owner pastes them into the plugin's search, opens each one and issues the corrections. That
   loop — *reach a large archive, improve it, and never let it rot* — is the main feature.
@@ -165,7 +165,7 @@ answerable.
 ## 11 · Future star features
 
 1. **External bookmarks.** Managed from the plugin, imported into the
-   batería — the agent understands the owner better.
+   cheat sheet — the agent understands the owner better.
 2. **The same algorithm for YouTube titles** — the same language, a different archive.
 3. **Obsidian bridge.** A folder of `.md` files maintained externally, so the archive is
    searchable outside Hermes too.

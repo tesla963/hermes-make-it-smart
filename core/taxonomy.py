@@ -12,7 +12,7 @@ from __future__ import annotations
 from typing import Final
 
 # --------------------------------------------------------------------------- #
-# iq3 — pillars (work fronts). Order matters for display.
+# iq3 — work fronts (themes, iq4 in the title numbering). Order matters for display.
 # --------------------------------------------------------------------------- #
 
 PILLARS: Final[tuple[str, ...]] = (
@@ -33,7 +33,7 @@ PILLARS: Final[tuple[str, ...]] = (
 PILLAR_LAST: Final[str] = "Temas Varios"
 
 # --------------------------------------------------------------------------- #
-# iq1 — platforms. The protagonist of the session.
+# iq1 — the program or platform. The work is done inside it; the protagonist is iq0 (the subject).
 # --------------------------------------------------------------------------- #
 
 PLATFORMS: Final[tuple[str, ...]] = (

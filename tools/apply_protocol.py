@@ -7,7 +7,7 @@
 The protocol is conservative on purpose. It only proposes a change when the
 script can prove one:
 
-  subject   the current subject contains a name the batería knows, and a more
+  subject   the current subject contains a name the cheat_sheet knows, and a more
             specific actor sits inside it ("DJI Avata 360" → "Avata 360")
   iq1      the subject had a brand inside, or the actor list names the maker
   iq2      the intent keywords fire clearly and the current iq2 is generic
@@ -34,7 +34,7 @@ from adapters.hermes import (  # noqa: E402
     read_sessions,
 )
 from core.actors import brand_of_subject, describe, find_actors  # noqa: E402
-from core.bateria import load_bateria  # noqa: E402
+from core.cheat_sheet import load_cheat_sheet  # noqa: E402
 from core.intent import classify_intent  # noqa: E402
 from core.normalize import MAX_TITLE_LENGTH, Facets, render  # noqa: E402
 
@@ -71,7 +71,7 @@ def main() -> int:
                     help="touch only Iq2; leave subject and Iq1 for review")
     args = ap.parse_args()
 
-    bat = load_bateria()
+    bat = load_cheat_sheet()
     proposals: list[dict] = []
     seen_ids: set[str] = set()
     skipped = 0

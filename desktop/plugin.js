@@ -397,6 +397,34 @@ function contarEjes(data) {
 }
 
 /**
+ * Copia inicial del catálogo.
+ *
+ * La primera vez que el plugin ve estas sesiones guarda el título que tienen en
+ * ese momento, para todas, no solo para las que va a renombrar. Sin esta foto
+ * inicial, "Restore Original Titles" solo podría deshacer los renombrados hechos
+ * después de la v0.27.3 y nunca devolver la base a como estaba antes del plugin.
+ *
+ * Se escribe UNA sola vez y no se sobrescribe jamás: es la referencia contra la
+ * que se restaura. Si el archivo ya existe, no se toca.
+ */
+async function asegurarBaseline(filesApi, rows) {
+  if (!filesApi || typeof filesApi.readText !== 'function') return { creado: false, n: 0 }
+  const prev = await filesApi.readText('data', 'titles-origin.json').catch(() => null)
+  if (prev && prev.ok && prev.text && prev.text.trim() !== '') return { creado: false, n: 0 }
+  const lista = (Array.isArray(rows) ? rows : []).filter((d) => d && d.id && typeof d.raw === 'string')
+  if (!lista.length) return { creado: false, n: 0 }
+  const ts = new Date().toISOString()
+  const origen = {}
+  for (const d of lista) origen[d.id] = { title: d.raw, ts, baseline: true }
+  try {
+    await filesApi.writeText('data', 'titles-origin.json', JSON.stringify(origen))
+    return { creado: true, n: lista.length }
+  } catch (_) {
+    return { creado: false, n: 0 }
+  }
+}
+
+/**
  * Deja rastro de cada commit.
  *
  * `commit-backup-<stamp>.json` ya guarda el lote completo, pero el panel solo
@@ -678,7 +706,8 @@ const I18N = {
     vVer: 'ESTA VERSIÓN',
     vReg: 'REGLAS QUE APRENDIÓ',
     vCerrar: 'Cerrar',
-    v1: 'Catálogo de sesiones · NNN [Sujeto] MMM [Iq1] [Iq2] Descripción · Verbo',
+    sessionsWord: 'sesiones',
+    v1: 'Catálogo de sesiones',
     v2: 'Nueve ejes declarados; iq1 y iq2 en el nombre, el resto filtros',
     v3: 'El ordinal <b>MMM</b> fuera del corchete del sujeto',
     v4: 'Sin fecha en el título; la fecha es columna y filtro',
@@ -716,9 +745,18 @@ const I18N = {
     migDone: 'Actualizado: {n} claves migradas · backup: {f}',
     migFail: 'No se pudo actualizar: {e}',
     commitStale: 'El índice cambió en disco: recargado, revisá de nuevo antes de confirmar',
-    restTitle: 'Restaurar títulos originales',
+    restTitle: 'Restaurar Títulos Originales',
     restConfirm: '¿Devolver {n} sesiones a su título original?\n\nÚtil antes de desinstalar el plugin.',
-    restDone: 'Restauradas: {n} · respetadas por cambios externos: {s}',
+    restDone: 'Restauradas: {n} (el plugin: {p} · sin registro: {s}) · ya estaban igual: {i}',
+    procCount: 'Sesiones por Procesar ({n})',
+    procTitle: 'Procesar las sesiones pendientes de renombrar',
+    dlgProcTitle: 'Procesar sesiones',
+    dlgProcBody: 'Se van a procesar {n} sesión(es). Antes de escribir nada se guarda un backup completo del lote, para que puedas revertir cuando quieras.',
+    dlgRestTitle: 'Restaurar títulos originales',
+    dlgRestBody: 'Se devolverán {n} sesión(es) al primer título que el plugin registró para ellas. El registro empezó en la v0.27.3: los renombrados anteriores no tienen vuelta atrás, porque Hermes no guarda el título que la sesión tenía antes y marca como propio cualquier título escrito por el plugin. Al terminar, el panel se recarga.',
+    dlgRestNone: 'Todavía no hay títulos originales registrados. El registro se llena con cada procesamiento que hagas de aquí en adelante; los renombrados anteriores no se pueden deshacer.',
+    dlgOk: 'Continuar',
+    dlgCancel: 'Cancelar',
     restNone: 'Todavía no hay títulos originales guardados',
     subSesion: 'Sub-sesión de subagente: cuelga de la sesión de arriba',
   },
@@ -848,6 +886,8 @@ const I18N = {
     vVer: 'THIS VERSION',
     vReg: 'REGLAS QUE APRENDIÓ',
     vCerrar: 'Close',
+    sessionsWord: 'sessions',
+
     v1: 'Session catalogue · NNN [Subject] MMM [Iq1] [Iq2] Description · Verb',
     v2: 'Nine axes declared; iq1 and iq2 in the name, the rest are filters',
     v3: 'The <b>MMM</b> ordinal sits outside the subject bracket',
@@ -886,9 +926,18 @@ const I18N = {
     migDone: 'Updated: {n} keys migrated · backup: {f}',
     migFail: 'Could not update: {e}',
     commitStale: 'The index changed on disk: reloaded, review again before confirming',
-    restTitle: 'Restore original titles',
+    restTitle: 'Restore Original Titles',
     restConfirm: 'Return {n} sessions to their original title?\n\nUseful before uninstalling the plugin.',
-    restDone: 'Restored: {n} · left alone after external changes: {s}',
+    restDone: 'Restored: {n} (by the plugin: {p} · no record: {s}) · already equal: {i}',
+    procCount: 'Sessions to Process ({n})',
+    procTitle: 'Process the sessions waiting to be renamed',
+    dlgProcTitle: 'Process sessions',
+    dlgProcBody: 'This will process {n} session(s). A full backup of the batch is written before anything changes, so you can revert at any time.',
+    dlgRestTitle: 'Restore original titles',
+    dlgRestBody: 'This returns {n} session(s) to the first title the plugin recorded for them. Recording began in v0.27.3: renames older than that cannot be undone, because Hermes does not keep the title a session had before and marks every title the plugin wrote as its own. When it finishes the panel reloads.',
+    dlgRestNone: 'No original titles recorded yet. The record fills up with each processing run from now on; earlier renames cannot be undone.',
+    dlgOk: 'Continue',
+    dlgCancel: 'Cancel',
     restNone: 'No original titles saved yet',
     subSesion: 'Subagent sub-session: hangs from the session above',
   },
@@ -1105,6 +1154,15 @@ position:relative;display:flex;flex-direction:column;width:100%;height:100%;min-
 .mmws .footrow{flex:0 0 var(--kbar-h);height:var(--kbar-h);display:flex;align-items:stretch;justify-content:space-between;z-index:60;background:#0f0c13d9;backdrop-filter:blur(8px);border-top:1px solid var(--line2)}
 .mmws .footbtns{display:flex;align-items:center;gap:8px;padding:0 12px;flex:0 0 auto}
 .mmws .footbtns button{height:24px;padding:1px 10px;font-size:11px;font-weight:600;border-radius:5px;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;transition:filter .12s,background .12s}
+/* Restore queda al final de la fila de indicadores, no junto a Revert. */
+.mmws .kbar .restorebtn{margin-left:10px;align-self:center;height:22px;padding:0 9px;font-size:10.5px;font-weight:600;border-radius:5px;border:1px solid var(--line);background:#1a1520;color:var(--tx2,#c9c2cf);cursor:pointer;white-space:nowrap}
+.mmws .kbar .restorebtn:hover{border-color:var(--gold);color:var(--gold)}
+.mmws .kbar .restorebtn:disabled{opacity:.5;cursor:default}
+/* Sessions to Process: botón si hay trabajo, texto si no. */
+.mmws .footbtns .procbtn{height:24px;padding:1px 10px;font-size:11px;font-weight:700;border-radius:5px;border:1px solid #6b4a12;background:#2a1d0c;color:#ffcf70;cursor:pointer;white-space:nowrap}
+.mmws .footbtns .procbtn:hover{filter:brightness(1.2)}
+.mmws .footbtns .procbtn:disabled{opacity:.5;cursor:default}
+.mmws .footbtns .procnone{font-size:10.5px;color:var(--tx3);letter-spacing:.02em;white-space:nowrap}
 .mmws .commitbtn{background:var(--wine);border:1px solid var(--wine);color:#fff}
 .mmws .commitbtn:hover:not(:disabled){background:var(--wine2);border-color:var(--wine2)}
 .mmws .commitbtn:disabled{opacity:.5;cursor:default}
@@ -1621,6 +1679,7 @@ function App({ ctx }) {
   const [esqViejo, setEsqViejo] = useState(false)
   const [indiceGenerado, setIndiceGenerado] = useState('')
   const [migrando, setMigrando] = useState(false)
+  const [dialogo, setDialogo] = useState(null)
   const [btnMsg, setBtnMsg] = useState({
     copia: '',
     expc: '',
@@ -1674,6 +1733,8 @@ function App({ ctx }) {
     setPendAttr(res.pendAttr || null)
     setEsqViejo(Boolean(res.esquemaViejo))
     setIndiceGenerado(res.generado || '')
+    // Foto inicial de los títulos, la primera vez que se abre con estas sesiones.
+    await asegurarBaseline((ctx && ctx.files) || (host && host.files), res.sessions)
     setLoading(false)
     // Open the newest year node in Fecha tree automatically
     const years = [...new Set(res.sessions.map((d) => (d.mes || '').slice(0, 4)).filter(Boolean))].sort().reverse()
@@ -2716,7 +2777,6 @@ function App({ ctx }) {
       return
     }
     const ids = Object.keys(origen)
-    if (!window.confirm(t('restConfirm', { n: ids.length }))) return
 
     // El ledger guarda el título que NUESTRO commit escribió. Si el que hay ahora
     // no coincide, alguien lo cambió después (el usuario en Hermes, u otro agente):
@@ -2728,22 +2788,30 @@ function App({ ctx }) {
     const ahora = new Map(sessions.map((d) => [d.id, d]))
 
     setIsCommitting(true)
-    let ok = 0
-    let respetadas = 0
+    let porPlugin = 0
+    let sinRegistro = 0
+    let iguales = 0
     const restaurados = new Map()
     for (const id of ids) {
       const fila = ahora.get(id)
-      const esperado = escritoPorNosotros.get(id)
-      if (esperado && fila && fila.raw && fila.raw !== esperado) {
-        respetadas += 1
+      const destino = origen[id] && origen[id].title
+      if (typeof destino !== 'string') continue
+      const actual = fila && typeof fila.raw === 'string' ? fila.raw : ''
+      if (actual === destino) {
+        iguales += 1
         continue
       }
+      // ¿Este título lo escribió el plugin? Solo el ledger lo sabe. Si no está ahí,
+      // se restaura igual (es lo que pidió el usuario) pero se cuenta aparte, porque
+      // puede ser un cambio suyo o un renombrado anterior al registro.
+      const esperado = escritoPorNosotros.get(id)
       try {
         const r = await callRpc(ctx, 'session.resume', { session_id: id, lazy: true, omit_messages: true })
         const sid = (r && r.session_id) || id
-        await callRpc(ctx, 'session.title', { session_id: sid, title: origen[id].title })
-        restaurados.set(id, origen[id].title)
-        ok += 1
+        await callRpc(ctx, 'session.title', { session_id: sid, title: destino })
+        restaurados.set(id, destino)
+        if (esperado && actual === esperado) porPlugin += 1
+        else sinRegistro += 1
       } catch (_) {}
     }
 
@@ -2773,7 +2841,10 @@ function App({ ctx }) {
       )
     }
 
-    setBtnMsg((p2) => ({ ...p2, resto: t('restDone', { n: ok, s: respetadas }) }))
+    setBtnMsg((p2) => ({
+      ...p2,
+      resto: t('restDone', { n: restaurados.size, p: porPlugin, s: sinRegistro, i: iguales }),
+    }))
     setIsCommitting(false)
     await refreshData()
   }
@@ -2820,9 +2891,6 @@ function App({ ctx }) {
         }
       }
     } catch (_) {}
-
-    const ok = window.confirm(t('confirmCommit', { n: targets.length }))
-    if (!ok) return
 
     setIsCommitting(true)
     let updated = 0
@@ -3419,7 +3487,7 @@ function App({ ctx }) {
           'span',
           { className: 'sub' },
           h('b', null, loading ? '—' : sessions.length),
-          ' sesiones · NNN [Sujeto] MMM [Iq1] [Iq2] Descripción · Verbo'
+          ' ' + t('sessionsWord')
         ),
         h(
           'div',
@@ -4051,22 +4119,24 @@ function App({ ctx }) {
         ? h(
             'div',
             { className: 'footbtns' },
-            pendingRows.length === 0 && !btnMsg.commit
-              ? h('span', { className: 'footmsg nopending', id: 'noPending' }, t('noSessions'))
-              : null,
-            !canRevert
+            pendingRows.length > 0
               ? h(
                   'button',
                   {
-                    className: 'commitbtn',
-                    id: 'btnCommit',
-                    disabled: isCommitting || isReverting || pendingRows.length === 0,
-                    onClick: handleCommit,
-                    title: t('commitBtnTitle'),
+                    className: 'procbtn',
+                    id: 'btnProcess',
+                    disabled: isCommitting || isReverting,
+                    onClick: () => setDialogo({ kind: 'process', n: pendingRows.length }),
+                    title: t('procTitle'),
                   },
-                  btnMsg.commit || t('commitBtnCount', { n: pendingRows.length })
+                  t('procCount', { n: pendingRows.length })
                 )
-              : h(
+              : h('span', { className: 'procnone', id: 'btnProcess' }, t('procCount', { n: 0 })),
+            pendingRows.length === 0 && !btnMsg.commit
+              ? h('span', { className: 'footmsg nopending', id: 'noPending' }, t('noSessions'))
+              : null,
+            canRevert
+              ? h(
                   'button',
                   {
                     className: 'revertbtn',
@@ -4076,19 +4146,8 @@ function App({ ctx }) {
                     title: t('revertBtnTitle'),
                   },
                   btnMsg.revert || t('revertBtn')
-                ),
-            h(
-              'button',
-              {
-                className: 'ghost',
-                id: 'btnRestaurar',
-                disabled: isCommitting || isReverting,
-                onClick: restaurarOriginales,
-                title: t('restTitle'),
-                style: { marginLeft: '10px', fontSize: '11px', padding: '3px 8px' },
-              },
-              btnMsg.resto || t('restTitle')
-            ),
+                )
+              : null,
             btnMsg.foot ? h('span', { className: 'footmsg' }, btnMsg.foot) : null
           )
         : h('div', { className: 'footbtns' }),
@@ -4130,11 +4189,74 @@ function App({ ctx }) {
               h('b', null, (pendData.counts && pendData.counts.total) || 0),
               h('div', { className: 'lb' }, h('i', null, t('kPend1')), h('i', null, t('kPend2')))
             )
-          : null
+          : null,
+        // Último de la fila de indicadores y alineado a la izquierda: restaurar los
+        // títulos va junto al contador de autorizaciones, no junto a Revert.
+        h(
+          'button',
+          {
+            className: 'ghost restorebtn',
+            id: 'btnRestaurar',
+            disabled: isCommitting || isReverting,
+            onClick: async () => {
+              const filesApi = (ctx && ctx.files) || (host && host.files)
+              let n = 0
+              try {
+                const r = await filesApi.readText('data', 'titles-origin.json')
+                if (r && r.ok && r.text) n = Object.keys(JSON.parse(r.text) || {}).length
+              } catch (_) {}
+              setDialogo({ kind: 'restore', n })
+            },
+            title: t('restTitle'),
+          },
+          btnMsg.resto || t('restTitle')
+        )
       )
     ),
 
     /* ---------- Edit Title Modal ---------- */
+    dialogo
+      ? h(
+          'div',
+          {
+            className: 'modal',
+            onClick: (e) => {
+              if (e.target.classList && e.target.classList.contains('modal')) setDialogo(null)
+            },
+          },
+          h(
+            'div',
+            { className: 'box' },
+            h('h4', { style: { fontSize: '12px', marginBottom: '8px' } },
+              t(dialogo.kind === 'restore' ? 'dlgRestTitle' : 'dlgProcTitle')),
+            h('p', { className: 'hint' },
+              dialogo.kind === 'restore' && !dialogo.n
+                ? t('dlgRestNone')
+                : t(dialogo.kind === 'restore' ? 'dlgRestBody' : 'dlgProcBody', { n: dialogo.n })),
+            h(
+              'div',
+              { className: 'row' },
+              h('button', { id: 'dlgCancel', onClick: () => setDialogo(null) }, t('dlgCancel')),
+              h(
+                'button',
+                {
+                  className: 'openbtn',
+                  id: 'dlgOk',
+                  disabled: dialogo.kind === 'restore' && !dialogo.n,
+                  onClick: async () => {
+                    const d = dialogo
+                    setDialogo(null)
+                    if (d.kind === 'restore') await restaurarOriginales()
+                    else await handleCommit()
+                  },
+                },
+                t('dlgOk')
+              )
+            )
+          )
+        )
+      : null,
+
     editModal
       ? h(
           'div',

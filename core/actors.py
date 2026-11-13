@@ -1,6 +1,6 @@
 """Who is in this session? The script's half of the protocol.
 
-The model should never be asked *what this session is about* when the batería
+The model should never be asked *what this session is about* when the cheat_sheet
 already holds the names. Asking it to re-derive "DJI", "DEVONthink" or "RayNeo"
 from a transcript costs tokens to produce an answer a YAML key already had —
 and, worse, it lets the model invent a brand when it is unsure.
@@ -8,7 +8,7 @@ and, worse, it lets the model invent a brand when it is unsure.
 So the work is split in two layers:
 
     1. actors.py  (this file)  — deterministic: pull every name out of the text
-                                 using the batería, and say which one is the
+                                 using the cheat_sheet, and say which one is the
                                  subject, which is the brand, which is the
                                  product. No tokens. Same answer every time.
     2. intent.py              — the one judgement left: what did the user want
@@ -25,7 +25,7 @@ import re
 from dataclasses import dataclass, field
 from typing import Any, Iterable, Sequence
 
-from core.bateria import load_bateria
+from core.cheat_sheet import load_cheat_sheet
 
 # Kinds, ordered by how specific they are. When two actors overlap in the text,
 # the more specific one wins the subject.
@@ -52,7 +52,7 @@ class Actor:
 
     name: str
     kind: str
-    source: str = "bateria"  # bateria | text | model
+    source: str = "cheat_sheet"  # cheat_sheet | text | model
     hits: int = 0
     aliases: list[str] = field(default_factory=list)
 
@@ -64,11 +64,11 @@ class Actor:
         return f"{self.name} ({self.kind}, {self.hits})"
 
 
-def _candidates(bateria: dict[str, Any]) -> list[tuple[str, str, list[str]]]:
-    """Every name the batería knows, as (canonical, kind, aliases)."""
+def _candidates(cheat_sheet: dict[str, Any]) -> list[tuple[str, str, list[str]]]:
+    """Every name the cheat_sheet knows, as (canonical, kind, aliases)."""
     out: list[tuple[str, str, list[str]]] = []
 
-    for key, val in (bateria.get("marcas") or {}).items():
+    for key, val in (cheat_sheet.get("marcas") or {}).items():
         if not isinstance(val, dict):
             continue
         name = val.get("iq1") or key
@@ -81,29 +81,29 @@ def _candidates(bateria: dict[str, Any]) -> list[tuple[str, str, list[str]]]:
             # people drop the maker and the space when they type quickly.
             out.append((prod, PRODUCT, [f"{name} {prod}", prod, prod.replace(" ", "")]))
 
-    for key, val in (bateria.get("programas") or {}).items():
+    for key, val in (cheat_sheet.get("programas") or {}).items():
         if not isinstance(val, dict):
             continue
         name = val.get("marca") or key
         # People write "DEVONthink", "Devon Think" and "devonthink" for the same
-        # programme. The spellings are declared in the batería rather than
+        # programme. The spellings are declared in the cheat_sheet rather than
         # guessed from the capitalisation — a regex cannot know that DEVON is a
         # company and think is a verb.
         out.append((name, PROGRAM, [key, *(val.get("alias") or [])]))
 
-    for key, val in (bateria.get("companias") or {}).items():
+    for key, val in (cheat_sheet.get("companias") or {}).items():
         if not isinstance(val, dict):
             continue
         name = val.get("nombre") or key
         out.append((name, BRAND, [key]))
 
-    for key, val in (bateria.get("conceptos") or {}).items():
+    for key, val in (cheat_sheet.get("conceptos") or {}).items():
         if not isinstance(val, dict):
             continue
         name = val.get("nombre") or key.replace("_", " ")
         out.append((name, CONCEPT, [key.replace("_", " ")]))
 
-    for key, val in (bateria.get("logistica") or {}).items():
+    for key, val in (cheat_sheet.get("logistica") or {}).items():
         if not isinstance(val, dict) or "iq1" not in val:
             continue
         out.append((val["iq1"], BRAND, [key]))
@@ -121,12 +121,12 @@ def _word_re(name: str) -> re.Pattern[str]:
 
 def find_actors(
     text: str,
-    bateria: dict[str, Any] | None = None,
+    cheat_sheet: dict[str, Any] | None = None,
     *,
     extra: Sequence[str] = (),
 ) -> list[Actor]:
-    """Every name the batería can see in `text`, most specific first."""
-    bat = bateria if bateria is not None else load_bateria()
+    """Every name the cheat_sheet can see in `text`, most specific first."""
+    bat = cheat_sheet if cheat_sheet is not None else load_cheat_sheet()
     found: dict[str, Actor] = {}
 
     for canonical, kind, aliases in _candidates(bat):
@@ -140,7 +140,7 @@ def find_actors(
                 hits += n
                 matched.append(alias)
         if hits:
-            found[canonical] = Actor(canonical, kind, "bateria", hits, matched)
+            found[canonical] = Actor(canonical, kind, "cheat_sheet", hits, matched)
 
     for name in extra:
         if name and name not in found and _word_re(name).search(text):
@@ -166,10 +166,10 @@ def subject_candidate(actors: Iterable[Actor]) -> Actor | None:
 def brand_of_subject(
     subject: Actor | None,
     actors: Iterable[Actor],
-    bateria: dict[str, Any] | None = None,
+    cheat_sheet: dict[str, Any] | None = None,
 ) -> str:
     """Which actor is the maker of the subject."""
-    bat = bateria if bateria is not None else load_bateria()
+    bat = cheat_sheet if cheat_sheet is not None else load_cheat_sheet()
     if subject is None:
         return ""
     if subject.kind == BRAND:
@@ -197,9 +197,9 @@ def other_party(subject: Actor | None, actors: Iterable[Actor]) -> list[Actor]:
     return [a for a in actors if subject is None or a.name != subject.name]
 
 
-def describe(text: str, bateria: dict[str, Any] | None = None) -> dict[str, Any]:
+def describe(text: str, cheat_sheet: dict[str, Any] | None = None) -> dict[str, Any]:
     """One call the rest of the pipeline can use without knowing the rules."""
-    bat = bateria if bateria is not None else load_bateria()
+    bat = cheat_sheet if cheat_sheet is not None else load_cheat_sheet()
     actors = find_actors(text, bat)
     subject = subject_candidate(actors)
     return {

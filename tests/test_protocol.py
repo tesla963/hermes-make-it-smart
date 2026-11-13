@@ -2,7 +2,7 @@
 """The protocol, pinned to the sessions that taught it.
 
 Every case here is a real title that came out wrong. If a future change to the
-batería or to the intent vocabulary breaks one of them, this fails before the
+cheat_sheet or to the intent vocabulary breaks one of them, this fails before the
 database is touched — which is the whole reason the script exists.
 
     python3 tests/test_protocol.py
@@ -17,10 +17,10 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from core.actors import describe, find_actors  # noqa: E402
-from core.bateria import load_bateria  # noqa: E402
+from core.cheat_sheet import load_cheat_sheet  # noqa: E402
 from core.intent import INTENTS, classify_intent  # noqa: E402
 
-BAT = load_bateria()
+BAT = load_cheat_sheet()
 
 # nnn -> (user text, expected subject, expected brand)
 ACTORS = {
@@ -98,7 +98,7 @@ ok(all(v.get("signals") for v in INTENTS.values()), "todas traen señales léxic
 
 print("\n§ sin actor conocido, el script lo dice en vez de inventar")
 d = describe("Comprobar si ya salió la versión de iOS 27", BAT)
-ok(d["needs_model"] is True, "pide ayuda al modelo cuando la batería no conoce el nombre")
+ok(d["needs_model"] is True, "pide ayuda al modelo cuando la cheat_sheet no conoce el nombre")
 ok(d["subject"] == "", "no inventa un sujeto")
 
 print(f"\n{'' if failures else 'TODO OK'}" if failures else "\nTODO OK")

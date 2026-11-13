@@ -68,18 +68,18 @@ Set or clear individual axes without touching the rest of the title.
 - `selector` (`n`, `id`, or `filter`), `set`: `{iq1: "Cyberpanel", iq5: null}`, `dry_run`, `confirm`.
 - Returns: same envelope as `cellar_rename`. Useful for the "wrong axis" cleanups.
 
-### 7. `cellar_bateria`
+### 7. `cellar_cheatsheet`
 The vocabulary and the cheatsheet — the file the classifier consults.
 - `op`: `spec` | `sections` | `get` | `upsert` | `remove`.
   - `spec`: the nomenclature in force + the closed vocabularies (iq3's seven, iq4's themes) +
-    counts per batería section. **Call this first** in any session: it replaces reading the docs.
+    counts per cheat sheet section. **Call this first** in any session: it replaces reading the docs.
   - `sections`: names and entry counts.
   - `get`: one section, or one entry.
   - `upsert`: `{section, key, value}` — e.g. `{section:"programas", key:"DaVinci Studio",
     value:{config_path:"…", notes:"…"}}`; `vocabulario` and `reglas` are sections too.
   - `remove`: soft removal (kept with `removed: true`), never a hard delete.
 - `dry_run` (default `true`) and `confirm` for the two write ops.
-- Writes go to `plugin_data_dir()/bateria.personal.yaml`, **never** to the repo's `core/bateria.yaml`.
+- Writes go to `plugin_data_dir()/cheat_sheet.personal.yaml`, **never** to the repo's `core/cheat_sheet.yaml`.
 
 ### 8. `cellar_index`
 Maintain the derived index. Executes in the plugin host process, so it **does not need an RPC** —
@@ -95,7 +95,7 @@ this is what finally makes *Actualizar BD* work.
 ### 9. `cellar_verify`
 Lint the archive before and after any batch — the assistant's own quality gate.
 - Checks: title length ≤ 100; `NNN` unique; `MMM` without gaps per subject; `iq3` inside the seven;
-  `iq4` inside the themes; `iq1` present in the batería or explicitly allowed empty; subject not
+  `iq4` inside the themes; `iq1` present in the cheat sheet or explicitly allowed empty; subject not
   equal to `iq1`; description present when the fields cannot say it.
 - Returns: `{ok, offenders:[{n, id, rule, detail}], summary:{by_rule}}`.
 
@@ -103,7 +103,7 @@ Lint the archive before and after any batch — the assistant's own quality gate
 
 ### 10. `cellar_export`
 Leaves the machine or comes back into the loop.
-- `what`: `titles` | `corrections` | `bateria` | `facets`.
+- `what`: `titles` | `corrections` | `cheat_sheet` | `facets`.
 - `format`: `csv` | `yaml` | `json`.
 - Writes to `plugin_data_dir()/exports/<what>_<[CCCC]>.csv` with the counter, and returns
   `{path, rows, bytes}`.
@@ -113,7 +113,7 @@ Leaves the machine or comes back into the loop.
 
 - **A tool per axis.** `cellar_tag` covers all nine.
 - **A delete tool.** Nothing in this plugin deletes; the host refuses and the log remembers.
-- **A GUI editor for the batería.** The owner chats, the assistant calls `cellar_bateria`, and the
+- **A GUI editor for the cheat sheet.** The owner chats, the assistant calls `cellar_cheatsheet`, and the
   change lands in an append-only log. A form would duplicate a surface the agent covers better.
 - **A catch-up/transcript reader.** Session bodies are only read through
   `cellar_session(include_messages=true)`, on demand, for one session at a time.

@@ -35,83 +35,99 @@ alone**: your backup is the one you know where it is.
 
 ---
 
-## Step 1 · Look before writing: the simulator
+## Step 1 · Look before writing: the dry run
 
-The plugin generates an **HTML simulator** — a single file that opens in the
-browser, with no server and no connection.
+Nothing is written until you ask for it. The panel has a **Testing** tab that shows the
+seven axes, the rules and a preview of what a change would do, and the command line
+gives the same guarantee:
 
+```bash
+python3 tools/apply_protocol.py            # shows what would change, writes nothing
+python3 tools/apply_protocol.py --apply    # backs up, writes, re-reads
 ```
-~/Documents/Reportes - [Lisa]/<fecha>/<fecha>_simulador-plugin-bodega-de-sesiones.html
-```
 
-There you see **the 884 sessions as they would end up**, with their filters,
-their search box and their card. And the most important thing: **it writes
-nothing**.
+The dry run prints every proposed change with its reason:
 
-| In the simulator you can | Without risk because |
+| In the dry run you see | Without risk because |
 |---|---|
-| filter by pillar, platform, family | it's a read-only copy |
-| search by number (`126,305`, `50-75`) | it doesn't touch the database |
-| review the intent of each session | it doesn't rename |
-| export a CSV of corrections | the file is yours |
+| which sessions would change | it is a read-only pass |
+| the before and after of each field | it does not touch the database |
+| the rule that justified it | it does not rename |
 
-**This is the part that makes the plugin safe.** The simulator and the app read
-exactly the same index; if something looks wrong there, it will look wrong in
-the app. But fixing it is your decision, not a side effect.
+**This is the part that makes the plugin safe.** The dry run and the app read exactly
+the same index, so if something looks wrong in the dry run it will look wrong in the
+app — but fixing it stays your decision, never a side effect.
 
-Rule of thumb: **no correction goes into the database without having been seen
-first in the simulator.**
+Rule of thumb: **no correction goes into the database without having been seen in a
+dry run first.**
 
 ---
 
-## Step 2 · Pillars: the first thing to define
+## Step 2 · The ten fields: iq0 to iq9
 
-A pillar is **the work front a session belongs to**: Asistente IA, VPS, Data
-Backup, Derecho, Productos, Compras, Youtuber, MindMap, Geopolítica,
-Masoterapia.
+Every session is read through ten fields. Three of them appear in the name; the rest are
+filters.
 
-It's the filter you'll use most often, and **it's the one the plugin cannot
-guess for you**. A model can say "this is about servers"; only you know whether
-in your world that's *VPS* or *WebHosting* or *Infrastructure*.
+| Field | Question | Example | In the title |
+|---|---|---|---|
+| **iq0** | What is the session about? (the block or the part) | `Stuck Startup` | yes |
+| **iq1** | Which program, platform or brand does the work? | `Firefox` | yes |
+| **iq2** | What sits around it? (store, country, machine) | `Ebay` | yes |
+| iq3 | What was asked? (the intention, seven closed values) | `Troubleshooting` | no |
+| iq4 | Which work front does it belong to? | `VPS` | no |
+| iq5 | Which year? | `2026` | no |
+| iq6 | Retired: the machine moved to iq2 | — | no |
+| iq7 | Reserved | — | no |
+| iq8 | Reserved | — | no |
+| iq9 | Reserved | — | no |
 
-### How they are defined
+Read in one breath: `Firefox` + `Stuck Startup` + `Troubleshooting` gives the program,
+the block inside it, and what you were doing there.
 
-In `core/taxonomy.py`, the `PILLARS` list. Each one with:
+### The work fronts (iq4)
+
+A work front is the part of your world a session belongs to: Asistente IA, VPS, Data
+Backup, Derecho, Productos, Compras, Youtuber, MindMap, Geopolítica, Masoterapia.
+
+It is the filter you will use most often, and **the one the plugin cannot guess for
+you**. A model can say "this is about servers"; only you know whether in your world
+that is *VPS* or *WebHosting* or *Infrastructure*.
+
+#### How they are defined
+
+In `core/taxonomy.py`, the `PILLARS` tuple — the list keeps its historical name, the
+concept is the work front. Each entry carries a hint:
 
 ```python
-{"name": "VPS", "hint": "el servidor propio: CyberPanel, DNS, correo, certificados"}
+{"name": "VPS", "hint": "the server that is mine: CyberPanel, DNS, mail, certificates"}
 ```
 
-The `hint` is not decoration: **it's what the classifier reads to decide**. A
-pillar with a vague hint ("technical topics") attracts half the catalog and
-ruins the filter. A pillar with a clear boundary ("the server that's mine: …")
-keeps to its own.
+The hint is not decoration: **it is what the classifier reads to decide**. A vague hint
+("technical topics") attracts half the catalogue and ruins the filter. A clear boundary
+("the server that is mine: …") keeps to its own.
 
-### The three questions to tell whether a pillar is right
+#### Three questions to tell whether a work front is right
 
-1. **Could you say in one sentence what it is NOT?** If not, it's a
-   catch-all.
-2. **Does it have at least five sessions?** A pillar with a single session is
-   a label, not a front.
-3. **Does each session fall into one and only one?** If two pillars fight over
-   the same session, their boundaries aren't written.
+1. **Could you say in one sentence what it is NOT?** If not, it is a catch-all.
+2. **Does it have at least five sessions?** A front with a single session is a label.
+3. **Does each session fall into one and only one?** If two fronts fight over the same
+   session, their boundaries are not written.
 
-> The most common mistake is creating a pillar for every topic that shows up.
-> The result is twenty pillars with three sessions each, and none of them is
-> any good for navigating. **One pillar fewer and well delimited is better.**
+> The most common mistake is creating a front for every topic that shows up. The result
+> is twenty fronts with three sessions each, and none of them is good for navigating.
+> **One front fewer and well delimited is better.**
 
-### When in doubt, don't invent: use "Temas Varios"
+#### When in doubt, don't invent
 
-It's the honest drawer for what doesn't have a front of its own yet. **It is
-not a failure**: it's a waiting list that tells you which pillars you're
-missing. When "Temas Varios" reaches twenty sessions about the same thing,
-that's where the pillar is born.
+Use `Temas Varios` — the honest drawer for what has no front of its own yet. It is not a
+failure: it is the waiting list that tells you which fronts you are missing. When it
+reaches twenty sessions about the same thing, that is where the front is born.
 
 ---
 
-## Step 3 · The battery: the dictionary that makes the plugin yours
+## Step 3 · The cheat sheet: the dictionary that makes the plugin yours
 
-`core/bateria.yaml` is what the plugin knows about **your** world. It's not
+`core/cheat_sheet.yaml` is what the plugin knows about **your** world. It's not
 code: it's a list of names with their context.
 
 ```yaml
@@ -127,10 +143,10 @@ programas:
 ```
 
 **Why this is what pays off the most:** every name you add is a future session
-that the plugin resolves **without asking any model**. The battery is the
+that the plugin resolves **without asking any model**. The cheat sheet is the
 classifier's memory.
 
-| Without the battery | With the battery |
+| Without the cheat sheet | With the cheat sheet |
 |---|---|
 | the model guesses whether "Avata 360" is a brand or a product | it reads it from the list, free |
 | "Devon Technologies" comes out misspelled every time | it's written once, forever |
@@ -146,16 +162,16 @@ classifier's memory.
 - **One line per thing.** If you hesitate between two forms, write both in
   `alias`.
 - **No personal experience.** "Packages get lost with this courier" goes in
-  `bateria.personal.yaml`, which **is not published**.
+  `cheat_sheet.personal.yaml`, which **is not published**.
 
 ---
 
-## Step 4 · Correct in the simulator, not in the database
+## Step 4 · Correct in the panel, not in the database
 
 The flow is always the same:
 
 ```
-look in the simulator  →  export the CSV  →  correct  →  apply
+look in the panel  →  export the CSV  →  correct  →  apply
 ```
 
 The **Export** button generates a CSV with one row per session and empty
@@ -201,8 +217,8 @@ teach it:
 
 | What you give it | What you gain |
 |---|---|
-| **pillars** | the filter you actually use |
-| **battery** | sessions resolved without spending tokens |
+| **work fronts** (iq4) | the filter you actually use |
+| **cheat sheet** | sessions resolved without spending tokens |
 | **corrections** | the rules that prevent repeating the error |
 | **your names** | the catalog stops sounding like a machine and sounds like you |
 
@@ -212,7 +228,7 @@ not the brand; from there `subject-is-the-nearest-item` was born, and that rule
 fixes the next hundred before they exist.
 
 > **The fastest way to improve the plugin is not to ask it for more
-> intelligence. It's to give it more names.** A well-kept battery file does
+> intelligence. It's to give it more names.** A well-kept cheat sheet file does
 > more than a bigger model.
 
 ### The sign that it's trained
@@ -230,7 +246,7 @@ If those four things hold, the plugin is already working on its own.
 ## The order, in one line
 
 ```
-backup → pillars → battery → simulator → corrections → apply → repeat
+backup → work fronts (iq4) → cheat sheet → dry run → corrections → apply → repeat
 ```
 
 And the step that is never skipped: **look before writing.**

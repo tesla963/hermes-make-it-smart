@@ -23,7 +23,7 @@ from typing import Any, Callable, Iterable, Sequence
 
 from .normalize import Facets, core_subject, strip_spec
 from .prompt import build_messages
-from .bateria import load_bateria, strip_brand
+from .cheat_sheet import load_cheat_sheet, strip_brand
 from .taxonomy import (
     DEFAULT_PLATFORM,
     apply_abbreviation,
@@ -140,11 +140,11 @@ def parse_json_object(raw: str) -> dict[str, Any]:
 def to_facets(
     obj: dict[str, Any],
     ordinal: int = 1,
-    bateria: dict[str, Any] | None = None,
+    cheat_sheet: dict[str, Any] | None = None,
 ) -> Facets:
     """Fold the model's answer onto the closed vocabularies and the invariants.
 
-    ``bateria`` is the merged sheet (manual + the owner's own). Pass it in when
+    ``cheat_sheet`` is the merged sheet (manual + the owner's own). Pass it in when
     one is already loaded; otherwise the merged sheet is read here.
     """
     subject = core_subject(str(obj.get("subject") or "").strip())
@@ -193,7 +193,7 @@ def to_facets(
     # take it out of the subject in one step. The merged sheet wins over the
     # packaged one, so the owner's own brands are recognised here too.
     if subject:
-        stripped, brand_tag = strip_brand(subject, bateria)
+        stripped, brand_tag = strip_brand(subject, cheat_sheet)
         if brand_tag:
             subject = stripped
             if brand_tag.lower() != "hermes agent":
@@ -310,11 +310,11 @@ def classify_one(
     ordinal: int = 1,
     corrections: list[dict[str, Any]] | None = None,
     call_model: Callable[[ClassifyConfig, dict[str, Any]], str] | None = None,
-    bateria: dict[str, Any] | None = None,
+    cheat_sheet: dict[str, Any] | None = None,
 ) -> ClassifyResult:
     """Classify one session. Retries once, then falls back deterministically."""
     caller = call_model or _post
-    sheet = bateria if bateria is not None else load_bateria()
+    sheet = cheat_sheet if cheat_sheet is not None else load_cheat_sheet()
     payload_messages = build_messages(
         messages=messages,
         date=date,
@@ -341,7 +341,7 @@ def classify_one(
         try:
             raw = caller(config, base_payload)
             obj = parse_json_object(raw)
-            facets = to_facets(obj, ordinal, bateria=sheet)
+            facets = to_facets(obj, ordinal, cheat_sheet=sheet)
             bad = problems_with(facets)
             if bad:
                 last_error = "; ".join(bad)

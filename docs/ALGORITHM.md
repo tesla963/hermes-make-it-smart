@@ -40,10 +40,10 @@ The **object, problem or symptom**, in 2–4 words. Never the program.
 
 | Rule | Why | Example |
 |---|---|---|
-| Strip the action prefix, keep the core | The verb goes to the description | `Suplemento Vitamina C` → `Vitamina C` |
-| Drop state adjectives | "inusual", "trancado", "con error" describe, not name | `Dolor Interoseos` → `Interoseos` |
-| Name the failure point | It is what you will search for later | `Protocolo` for a broken gateway |
-| Never repeat Iq1 | Two fields, one answer = not navigable | If Iq1 is YouTube, the subject is `Transcripción` |
+| Strip the action prefix, keep the core | The verb goes to the description | `Vitamin C Supplement` → `Vitamin C` |
+| Drop state adjectives | "unusual", "stuck", "with error" describe, not name | `Interosseous Pain` → `Interosseous` |
+| Name the failure point | It is what you will search for later | `Protocol` for a broken gateway |
+| Never repeat Iq1 | Two fields, one answer = not navigable | If Iq1 is YouTube, the subject is `Transcription` |
 | Never repeat the platform in the subject | Same reason | `Video` was removed from a YouTube subject |
 
 **The control question:** *would this subject help me find this session in six months?*
@@ -62,12 +62,27 @@ This is what makes the catalog a *history* rather than a list.
 **The value:** it unifies historical sessions that predate the taxonomy. Nothing is
 merged or deleted; the ordinal simply says *these belong together, and in this order*.
 
-## 5. Iq1 — the protagonist
+## 5. iq0 — the protagonist (the subject)
 
-**Who or what is really doing the work.**
+**The subject is what the session is about, and it is the field that leads the name.**
+It is the only one that opens the title, so it carries the weight of the search.
 
-- A platform, a brand, a product, a real actor. `Hermes Agent`, `CyberPanel`, `DJI`,
-  `Brave`, `Logseq`.
+- It names the **block or part** of the thing: `Protocol` inside a gateway,
+  `Stuck Startup` inside Firefox, `Hermes Desktop` inside Hermes Agent.
+- It is **never the program itself** — the program goes in iq1.
+- Two to four words. If it needs a verb, the verb belongs in the description.
+
+**The control question:** *if I had to find this session in six months, what would I
+type?* That word is iq0.
+
+## 5b. iq1 — the program
+
+**The program, platform, brand or person that does the work.**
+
+- A program, a platform, a brand, a real actor. `Hermes Agent`, `Firefox`, `CyberPanel`,
+  `DJI`, `Brave`, `Logseq`.
+- Together with iq0 it reads as one idea: `Firefox` (program) + `Stuck Startup`
+  (block) + `Troubleshooting` (intent). Three fields, one sentence.
 - If nothing fits, **leave it empty**. `Hermes Agent` as a fallback is banned: the
   assistant does the work in every session, which makes it the author, never the maker.
   An empty Iq1 is honest — it says nobody knew, and it leaves the slot free.
@@ -129,13 +144,20 @@ The work front, with the subcategories of IT Manager: IA Bot, VPS, Data Backup,
 Hardware, MindMap, Network, OS. `Data Mining` and `Data Security` are themes, not
 families.
 
-## 7. The internal axes (filters only, never in the title)
+## 7. The ten fields, iq0 to iq9
 
-| Key | Question | Values |
-|---|---|---|
-| iq3 · Intention | what was asked | the seven above |
-| iq4 · Theme | which work front | IT Manager and its subcategories |
-| iq5 · Year | which edition | 2026, … |
+| Key | Field | Question | In the title |
+|---|---|---|---|
+| **iq0** | Subject | what the session is about (block or part) | **yes** |
+| **iq1** | Program | which program, platform or brand does the work | **yes** |
+| **iq2** | Context | store, country or machine around it | **yes** |
+| iq3 | Intention | what was asked (seven, closed) | no |
+| iq4 | Theme | which work front | no |
+| iq5 | Year | which edition | no |
+| iq6 | — | retired: the machine moved to iq2 | no |
+| iq7 | — | reserved | no |
+| iq8 | — | reserved | no |
+| iq9 | — | reserved | no |
 
 **iq6 no longer means the machine** — the machine belongs in Iq2, next to the
 store and the country. Slots 7 to 9 are reserved: present in the model, empty in

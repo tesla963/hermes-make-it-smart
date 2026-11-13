@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Generate the two living reports from the data, not from prose.
 
-    tools/make_reports.py            # árbol de filtros + batería
+    tools/make_reports.py            # árbol de filtros + cheat_sheet
 
 Both read the same sources the plugin does — the index and the YAML — so a
 report can never drift from the thing it describes.
@@ -188,12 +188,12 @@ Sin fecha, sin costo, sin pilar. Límite duro de 100 caracteres.</p>
 
 
 # --------------------------------------------------------------------------- #
-# Report 2 — the batería
+# Report 2 — the cheat_sheet
 # --------------------------------------------------------------------------- #
 
-def report_bateria() -> str:
-    bat = yaml.safe_load((ROOT / "core" / "bateria.yaml").read_text(encoding="utf-8")) or {}
-    personal = ROOT / "core" / "bateria.personal.yaml"
+def report_cheat_sheet() -> str:
+    bat = yaml.safe_load((ROOT / "core" / "cheat_sheet.yaml").read_text(encoding="utf-8")) or {}
+    personal = ROOT / "core" / "cheat_sheet.personal.yaml"
     has_personal = personal.exists()
 
     def render(node, depth=0):
@@ -225,35 +225,35 @@ def report_bateria() -> str:
         )
 
     body = f"""
-<h2>1 · Qué es la batería</h2>
+<h2>1 · Qué es la cheat_sheet</h2>
 <div class="card">Es el papelito que uno copiaba en la escuela. Aquí guarda lo que el clasificador
 debe saber de tu mundo para no volver a adivinarlo: qué es USPS Ground Advantage, quién hace
 ThinkPad, que «Descuentos a Jubilados» es un nombre y no una oración.<br><br>
 <b>Es data, no código.</b> Cada línea que agregues es una regla que se aplica sin corrección manual.</div>
 
-<h2>2 · Las dos baterías</h2>
+<h2>2 · Las dos cheat_sheets</h2>
 <table><thead><tr><th></th><th>Objetiva</th><th>Personal</th></tr></thead><tbody>
-<tr><td>Archivo</td><td class="mono">core/bateria.yaml</td><td class="mono">core/bateria.personal.yaml</td></tr>
+<tr><td>Archivo</td><td class="mono">core/cheat_sheet.yaml</td><td class="mono">core/cheat_sheet.personal.yaml</td></tr>
 <tr><td>Contiene</td><td>lo que sabe cualquier manual</td><td>lo que solo sabes tú</td></tr>
 <tr><td>Ejemplo</td><td>«Ground Advantage son 2–5 días»</td><td>«Con Miami Express los paquetes se pierden»</td></tr>
 <tr><td>Viaja con el plugin</td><td class="good">sí</td><td class="bad">nunca — está en .gitignore</td></tr>
 <tr><td>En conflicto</td><td>cede</td><td><b>manda</b></td></tr>
 </tbody></table>
-<p class="lead">Estado: la personal {"existe" if has_personal else "aún no existe"} en <code>core/bateria.personal.yaml</code>.</p>
+<p class="lead">Estado: la personal {"existe" if has_personal else "aún no existe"} en <code>core/cheat_sheet.personal.yaml</code>.</p>
 
-<h2>3 · Secciones de la batería objetiva</h2>
+<h2>3 · Secciones de la cheat_sheet objetiva</h2>
 <p class="lead">El clasificador las consulta en este orden: marcas → productos → programas → compañías → servicios → conceptos → logística → sin_marca.</p>
 {"".join(sections)}
 """
-    return page("La batería · chuleta del plugin", f"{len(bat)} secciones · {'personal separada' if has_personal else 'sin batería personal'}", body)
+    return page("La cheat_sheet · chuleta del plugin", f"{len(bat)} secciones · {'personal separada' if has_personal else 'sin cheat_sheet personal'}", body)
 
 
 def main() -> int:
     OUT.mkdir(parents=True, exist_ok=True)
     a = OUT / f"{datetime.now():%Y-%m-%d}_[reporte]_arbol-filtros-y-algoritmo.html"
-    b = OUT / f"{datetime.now():%Y-%m-%d}_[reporte]_bateria.html"
+    b = OUT / f"{datetime.now():%Y-%m-%d}_[reporte]_cheat_sheet.html"
     a.write_text(report_tree(), encoding="utf-8")
-    b.write_text(report_bateria(), encoding="utf-8")
+    b.write_text(report_cheat_sheet(), encoding="utf-8")
     print(a)
     print(b)
     print(f"{a.stat().st_size//1024} KB · {b.stat().st_size//1024} KB")

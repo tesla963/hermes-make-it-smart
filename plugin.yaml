@@ -15,7 +15,7 @@ provides_tools:
   - cellar_series
   - cellar_rename
   - cellar_tag
-  - cellar_bateria
+  - cellar_cheatsheet
   - cellar_index
   - cellar_verify
   - cellar_export
@@ -23,8 +23,8 @@ requires_env: []
 data:
   canonical_dir: "~/.hermes/plugin-data/make-it-smart"
   ui_dir: "~/Library/Application Support/Hermes/plugin-files/data/make-it-smart"
-  bateria_objetiva: "core/bateria.yaml"
-  bateria_personal: "bateria.personal.yaml"
+  cheat_sheet_objective: "core/cheat_sheet.yaml"
+  cheat_sheet_personal: "cheat_sheet.personal.yaml"
   index: "index.json"
   facets: "facets.json"
   pending: "pending_index.json"

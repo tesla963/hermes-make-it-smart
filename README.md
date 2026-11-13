@@ -84,7 +84,7 @@ The full rules live in [`docs/ALGORITHM.md`](docs/ALGORITHM.md).
 ## Install
 
 [`docs/GUIA-DE-USO.md`](docs/GUIA-DE-USO.md) — the order that matters: back up,
-define the pillars, feed the battery, look in the simulator, correct,
+define the work fronts, feed the cheat sheet, run a dry run, correct,
 apply. The plugin is worth exactly what the names you have taught it are worth.
 
 ```bash
@@ -139,7 +139,7 @@ showing a white screen.
 
 ```
 core/           Python, zero imports from Hermes
-  taxonomy.py   pillars, platforms, IT families
+  taxonomy.py   work fronts (iq4), platforms, IT families
   prompt.py     the classifier system prompt
   normalize.py  subject extraction, MMM ordinals, telegram mode
   classify.py   LLM + deterministic rules

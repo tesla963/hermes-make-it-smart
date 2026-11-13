@@ -462,7 +462,7 @@
     A brand never stays inside a subject when the product can stand alone.
   examples:
   control_question: "If I remove the brand from the name, does the product still name itself?"
-  bateria: core/bateria.yaml → logistica
+  cheat_sheet: core/cheat_sheet.yaml → logistica
 
 # ---------------------------------------------------------------------------
 # EL PROTOCOLO DE ANÁLISIS
@@ -495,7 +495,7 @@
     found at the programme's official site — not in the programme's own name.
     DEVONthink is the programme; devontechnologies.com says the company is
     Devon Technologies, so Iq1 is "Devon Technologies" and the subject stays
-    "DEVONthink". When the script cannot name the company from the batería, it
+    "DEVONthink". When the script cannot name the company from the cheat sheet, it
     asks the model to look up the official site before it names anything.
   examples:
   control_question: "Whose site is the download page on?"
@@ -523,24 +523,24 @@
   taught: 2026-11-10
   rule: >
     Analysis runs in two layers, and the cheap one goes first. The script reads
-    the title, the axes and the batería and resolves everything it can match —
+    the title, the axes and the cheat sheet and resolves everything it can match —
     a known brand, a known product, a known intent. Only what is still unknown
     is handed to the model, and it is handed a QUESTION ("which company owns
     devonthink.com? is RayNeo one word?") rather than the whole transcript.
-    The model's answer is written back to the batería, so the next session with
+    The model's answer is written back to the cheat sheet, so the next session with
     that name costs no tokens at all.
   why: >
     Sending 884 full transcripts to a model to re-derive what a YAML file
-    already knows is how a catalogue becomes expensive and slow. The batería is
+    already knows is how a catalogue becomes expensive and slow. The cheat sheet is
     the cache of what has already been learned.
-  control_question: "Does the batería already answer this? Then why is the model being asked?"
+  control_question: "Does the cheat sheet already answer this? Then why is the model being asked?"
 
 - id: two-layers-actors-then-intent
   taught: 2026-11-10
   rule: >
     The title is built in two passes, and they are not interchangeable.
     PASS ONE, the script: find the ACTORS. Who is named in the session — the
-    product, the programme, the maker — using the batería as a dictionary. This
+    product, the programme, the maker — using the cheat sheet as a dictionary. This
     is deterministic, free and repeatable; it never asks a model and never
     invents a brand. PASS TWO, the model: the INTENTION. Given the actors as
     settled facts, the one question left is what the user wanted done, answered
@@ -558,7 +558,7 @@
     intent: core/intent.py — classify_intent() by keywords, prompt_for_intent() for the rest
     tests:  tests/test_protocol.py — the five cases above, pinned
   control_question: >
-    Did the script have this name in the batería? Then the model must not be
+    Did the script have this name in the cheat sheet? Then the model must not be
     asked for it. Did the script have no signal for the verb? Then the model
     must be asked for exactly that, and nothing else.
 

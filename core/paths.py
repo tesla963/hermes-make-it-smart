@@ -72,25 +72,25 @@ def ui_data_dir(plugin: str = PLUGIN) -> Path:
     return p
 
 
-def bateria_dir(plugin: str = PLUGIN) -> Path:
-    """Canonical directory where personal battery and runtime data live."""
+def cheat_sheet_dir(plugin: str = PLUGIN) -> Path:
+    """Canonical directory where personal cheat_sheet and runtime data live."""
     return data_dir(plugin)
 
 
-def bateria_objetiva(plugin: str = PLUGIN) -> Path:
-    """Objective knowledge battery packaged with the plugin: core/bateria.yaml."""
-    return Path(__file__).resolve().parent / "bateria.yaml"
+def cheat_sheet_objective(plugin: str = PLUGIN) -> Path:
+    """Objective knowledge cheat_sheet packaged with the plugin: core/cheat_sheet.yaml."""
+    return Path(__file__).resolve().parent / "cheat_sheet.yaml"
 
 
-def bateria_personal(plugin: str = PLUGIN) -> Path:
-    """Personal battery path.
+def cheat_sheet_personal(plugin: str = PLUGIN) -> Path:
+    """Personal cheat_sheet path.
     Resolves HERMES_PLUGIN_DATA -> canonical data_dir() -> (fallback check UI mirror).
     Canonical always takes priority.
     """
-    canonical = data_dir(plugin) / "bateria.personal.yaml"
+    canonical = data_dir(plugin) / "cheat_sheet.personal.yaml"
     if canonical.exists():
         return canonical
-    ui_mirror = ui_data_dir(plugin) / "bateria.personal.yaml"
+    ui_mirror = ui_data_dir(plugin) / "cheat_sheet.personal.yaml"
     if ui_mirror.exists():
         return ui_mirror
     return canonical

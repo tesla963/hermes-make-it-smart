@@ -1,12 +1,12 @@
-"""La batería: the cheatsheet the classifier consults.
+"""La cheat_sheet: the cheatsheet the classifier consults.
 
-Pure Python, no host imports. Every user keeps their own `bateria.yaml`; this
+Pure Python, no host imports. Every user keeps their own `cheat_sheet.yaml`; this
 module only knows how to read it and answer two questions:
 
     brand_of(subject)  -> who makes this, and does the brand leave the subject?
     for_prompt()       -> the compact block the model carries
 
-The batería is data, not code. Editing the YAML is how the system learns a new
+The cheat_sheet is data, not code. Editing the YAML is how the system learns a new
 brand without touching a single line of Python.
 """
 
@@ -16,20 +16,20 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
-BATERIA_PATH = Path(__file__).with_name("bateria.yaml")
+CHEAT_SHEET_PATH = Path(__file__).with_name("cheat_sheet.yaml")
 
 
 def _deep_merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
     """Merge two batteries **by key**: the override wins only where it speaks.
 
-    A section present in both is merged entry by entry, so a personal battery that
+    A section present in both is merged entry by entry, so a personal cheat_sheet that
     defines one brand does not delete the other twenty-five. Scalars and lists
     replace whole.
     """
     out = dict(base)
     for key, value in (override or {}).items():
         if value is None:
-            # An empty section in the personal battery means "nothing said here",
+            # An empty section in the personal cheat_sheet means "nothing said here",
             # not "delete this section". Skipping None keeps the manual intact.
             continue
         current = out.get(key)
@@ -41,11 +41,11 @@ def _deep_merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any
 
 
 def _personal_path() -> Path | None:
-    """The owner's own battery, or None when it cannot be resolved."""
+    """The owner's own cheat_sheet, or None when it cannot be resolved."""
     try:
-        from .paths import bateria_personal  # noqa: PLC0415
+        from .paths import cheat_sheet_personal  # noqa: PLC0415
 
-        p = bateria_personal()
+        p = cheat_sheet_personal()
         return p if p.exists() else None
     except Exception:  # noqa: BLE001
         return None
@@ -54,11 +54,11 @@ def _personal_path() -> Path | None:
 @lru_cache(maxsize=1)
 def _load_packaged() -> dict[str, Any]:
     """The manual that travels with the plugin, cached for the process."""
-    return _read_yaml(BATERIA_PATH)
+    return _read_yaml(CHEAT_SHEET_PATH)
 
 
 def _read_yaml(path: Path) -> dict[str, Any]:
-    """Read one YAML battery. A missing PyYAML degrades to an empty sheet."""
+    """Read one YAML cheat_sheet. A missing PyYAML degrades to an empty sheet."""
     if not path.exists():
         return {}
     try:
@@ -72,12 +72,12 @@ def _read_yaml(path: Path) -> dict[str, Any]:
     return data if isinstance(data, dict) else {}
 
 
-def load_bateria(path: str | None = None, merge_personal: bool = True) -> dict[str, Any]:
+def load_cheat_sheet(path: str | None = None, merge_personal: bool = True) -> dict[str, Any]:
     """Read the cheatsheet: the packaged manual plus, by default, the owner's own.
 
-    The contract at the top of ``bateria.personal.yaml`` says the classifier reads
+    The contract at the top of ``cheat_sheet.personal.yaml`` says the classifier reads
     both and that the owner's experience wins over the manual. This is where that
-    promise is kept: the two are merged key by key, and the personal battery
+    promise is kept: the two are merged key by key, and the personal cheat_sheet
     overrides only the entries it actually defines.
 
     Pass ``merge_personal=False`` (or an explicit ``path``) for an objective-only
@@ -98,12 +98,12 @@ def load_bateria(path: str | None = None, merge_personal: bool = True) -> dict[s
     return _deep_merge(data, extra) if extra else data
 
 
-def brand_of(subject: str, bateria: dict[str, Any] | None = None) -> tuple[str, bool] | None:
+def brand_of(subject: str, cheat_sheet: dict[str, Any] | None = None) -> tuple[str, bool] | None:
     """(Iq1, strip_from_subject) for a subject, or None when unknown.
 
     Longest key wins, so "gorgon halo" beats "amd" and "mac mini" beats "apple".
     """
-    b = bateria if bateria is not None else load_bateria()
+    b = cheat_sheet if cheat_sheet is not None else load_cheat_sheet()
     low = (subject or "").strip().lower()
     if not low:
         return None
@@ -132,20 +132,20 @@ def brand_of(subject: str, bateria: dict[str, Any] | None = None) -> tuple[str, 
     return iq1, strip
 
 
-def strip_brand(subject: str, bateria: dict[str, Any] | None = None) -> tuple[str, str]:
-    """Remove the brand from the subject when the batería says it should leave.
+def strip_brand(subject: str, cheat_sheet: dict[str, Any] | None = None) -> tuple[str, str]:
+    """Remove the brand from the subject when the cheat_sheet says it should leave.
 
     Returns (new_subject, iq1). Unchanged subject when the rule does not apply
     or when stripping would leave something meaningless.
     """
-    found = brand_of(subject, bateria)
+    found = brand_of(subject, cheat_sheet)
     if not found:
         return subject, ""
     iq1, strip = found
     if not strip:
         return subject, iq1
     low = subject.lower()
-    b = bateria if bateria is not None else load_bateria()
+    b = cheat_sheet if cheat_sheet is not None else load_cheat_sheet()
 
     # Every name that maps to this Iq1: the brand key, its products and its lines.
     names: set[str] = set()
@@ -174,9 +174,9 @@ def strip_brand(subject: str, bateria: dict[str, Any] | None = None) -> tuple[st
     return rest, iq1
 
 
-def for_prompt(bateria: dict[str, Any] | None = None, limit: int = 42) -> str:
+def for_prompt(cheat_sheet: dict[str, Any] | None = None, limit: int = 42) -> str:
     """A compact block the model can carry without blowing the prompt budget."""
-    b = bateria if bateria is not None else load_bateria()
+    b = cheat_sheet if cheat_sheet is not None else load_cheat_sheet()
     lines: list[str] = []
 
     marcas = b.get("marcas") or {}
@@ -226,8 +226,8 @@ def for_prompt(bateria: dict[str, Any] | None = None, limit: int = 42) -> str:
     return "\n".join(lines)
 
 
-def stats(bateria: dict[str, Any] | None = None) -> dict[str, int]:
-    b = bateria if bateria is not None else load_bateria()
+def stats(cheat_sheet: dict[str, Any] | None = None) -> dict[str, int]:
+    b = cheat_sheet if cheat_sheet is not None else load_cheat_sheet()
     return {
         "marcas": len(b.get("marcas") or {}),
         "programas": len(b.get("programas") or {}),
@@ -238,4 +238,4 @@ def stats(bateria: dict[str, Any] | None = None) -> dict[str, int]:
     }
 
 
-__all__ = ["load_bateria", "brand_of", "strip_brand", "for_prompt", "stats", "BATERIA_PATH"]
+__all__ = ["load_cheat_sheet", "brand_of", "strip_brand", "for_prompt", "stats", "CHEAT_SHEET_PATH"]

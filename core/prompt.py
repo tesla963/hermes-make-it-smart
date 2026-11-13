@@ -12,7 +12,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from .bateria import for_prompt as bateria_for_prompt
+from .cheat_sheet import for_prompt as cheat_sheet_for_prompt
 from .taxonomy import (
     COUNTRIES,
     IT_FAMILIES,
@@ -219,9 +219,9 @@ Machines: {", ".join(MACHINES)}
 ## Reference machines
 {", ".join(MACHINES)}
 
-## The owner's cheatsheet (la batería)
+## The owner's cheatsheet (la cheat_sheet)
 
-{_bateria if (_bateria := bateria_for_prompt()) else "(empty)"}
+{_cheat_sheet if (_cheat_sheet := cheat_sheet_for_prompt()) else "(empty)"}
 
 ## Rules the owner taught (these override your intuition)
 

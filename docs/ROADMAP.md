@@ -42,7 +42,7 @@ core/                    pure Python, zero host imports
   prompt.py              the classifier prompt
   classify.py            LLM + rules
   normalize.py           rendering, the 100-char ceiling, telegraph mode
-  bateria.yaml           the owner's cheat sheet
+  cheat_sheet.yaml           the owner's cheat sheet
   corrections.yaml       41 learned rules
 adapters/
   hermes.py              one implementation: SessionDB, state.db, 12 profiles
