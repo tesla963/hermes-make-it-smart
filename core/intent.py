@@ -97,7 +97,7 @@ INTENTS: dict[str, dict[str, Any]] = {
 # how much the verb changes the object: installing is not the same as pricing.
 _PRIORITY = [
     "Configuration", "Compatibility", "Compare", "Quote", "Buy", "Troubleshooting",
-    "Search the Web",
+    "Web Search",
 ]
 
 _PRIORITY_INDEX = {k: i for i, k in enumerate(_PRIORITY)}
@@ -226,7 +226,7 @@ intenciones:
 
 Reglas:
 - Responde solo con JSON: {{"intent": "<una de la lista>", "why": "<máximo 12 palabras>"}}
-- Si ninguna encaja, usa "Search the Web" (nunca "Configuration" por defecto).
+- Si ninguna encaja, usa "Web Search" (nunca "Configuration" por defecto).
 - No expliques la sesión. No nombres actores. Solo el verbo."""
 
 

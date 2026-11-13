@@ -377,7 +377,7 @@ _INTENT_ALIASES: Final[dict[str, str]] = {
     "configurar": "Configuration", "configuracion": "Configuration",
     "configuración": "Configuration", "configuration": "Configuration",
     "configure": "Configuration", "setup": "Configuration",
-    # Search the Web
+    # Web Search
     "investigar": "Web Search", "investigacion": "Web Search",
     "investigación": "Web Search", "investigate": "Web Search",
     "consultar": "Web Search", "buscar": "Web Search",
