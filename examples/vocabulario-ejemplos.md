@@ -46,9 +46,25 @@ marcas:
     lineas: [XPS, Latitude, Inspiron, OptiPlex, UltraSharp, Alienware, PowerEdge]
 ```
 
-**When `strip` is true**, the line is dropped from the subject and only the model remains:
-`Cafetera Nespresso Vertuo` → subject `Vertuo`, brand `Nespresso`. **When it is false**, the
-line stays, because it *is* the identity: `ThinkPad P53` is not `P53`.
+### `strip` — whether the brand leaves the subject
+
+`strip` decides what the subject keeps once the brand has been moved to iq1.
+
+| `strip` | What happens | Real example | Subject | iq1 |
+|---|---|---|---|---|
+| `true` | the brand **leaves** the subject | `Dell XPS 13` | `XPS 13` | `Dell` |
+| `false` | the brand **stays** in the subject | `ThinkPad P53` | `ThinkPad P53` | `Lenovo` |
+
+Why the difference: `XPS 13` still identifies the machine without saying Dell, so the brand is
+redundant in the subject. `P53` alone does not identify anything — ThinkPad *is* the identity —
+so it stays.
+
+**The guard:** if removing the brand would leave something meaningless — fewer than four
+characters, no letters, or starting with a digit — the brand stays put. `DeepSeek 3.8 27B`
+keeps `DeepSeek`, because `3.8 27B` is a size, not a subject.
+
+> The `Nespresso Vertuo` example that used to be on this page was a made-up illustration, not an
+> entry in the cheat sheet. Both cases above are real entries and real behaviour.
 
 ---
 
