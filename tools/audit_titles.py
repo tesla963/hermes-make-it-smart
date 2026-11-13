@@ -39,6 +39,14 @@ sys.path.insert(0, str(REPO))
 
 from core.normalize import shrink_subject, split_verb_subject
 from core.taxonomy import INTENTIONS, PLATFORMS, MACHINES, COUNTRIES, normalize_intention
+# Ejecutado como `python3 tools/audit_titles.py`, sys.path[0] es tools/ y `tools.scope` no
+# existe. Se agrega la raíz del repo para que el script corra de las dos formas.
+import sys as _sys
+from pathlib import Path as _Path
+_REPO = _Path(__file__).resolve().parent.parent
+if str(_REPO) not in _sys.path:
+    _sys.path.insert(0, str(_REPO))
+
 from tools.scope import tiene_numero, es_maquinaria, es_auditable, ya_renombradas
 from core.session_reader import evidencia
 

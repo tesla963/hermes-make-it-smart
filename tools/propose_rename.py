@@ -240,8 +240,7 @@ def main() -> int:
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--path", default=str(DATA / "index.json"))
     ap.add_argument("--out", default=str(DATA / "proposed-index.json"))
-    ap.add_argument("--dry-run", action="store_true")
-    ap.add_argument("--teacher", nargs="?", const=str(REPO / "tools/teacher.json"), default=None,
+    ap.add_argument("--dry-run", action="store_true"), default=None,
                     help="Run in teacher mode to verify title reconstruction")
     ap.add_argument("--eval", action="store_true",
                     help="Measure agreement of the proposal against tools/teacher.json")
