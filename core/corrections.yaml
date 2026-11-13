@@ -589,9 +589,9 @@
     subject (iq0) and iq1 carries the company or the author. iq2 is CONTEXT and
     only context: a store ("Ebay", "Amazon"), a
     country ("Panamá") or a machine ("Mac mini M4"). iq3 is the INTENTION and
-    nothing else, one of exactly seven: Troubleshooting, Search the Web,
+    nothing else, one of exactly seven: Troubleshooting, Web Search,
     Compatibility, Buy, Quote, Compare, Configuration. "Investigar" no longer
-    exists: the verb is "Search the Web". "Install" is not a separate intention
+    exists: the verb is "Web Search". "Install" is not a separate intention
     either: Configuration implies installation. iq4 is the THEME, with the
     subcategories of IT Manager. iq5 is the year. The model carries nine slots and
     slots 6 to 9 are reserved; the machine belongs in iq2, not in iq6. An intention ("Comparar"), a family ("WebHosting") or a
@@ -667,12 +667,12 @@
 - id: search-the-web-not-investigar
   taught: 2026-11-12
   rule: >
-    The intention for looking something up is "Search the Web", in English. The
+    The intention for looking something up is "Web Search", in English. The
     old "Investigar" is retired. It covers consulting, researching and web
     searching; it does not cover reading a local document, which is Analysis.
   examples:
-    - { right: "Search the Web", wrong: "Investigar" }
-    - { right: "Search the Web", wrong: "Consultar" }
+    - { right: "Web Search", wrong: "Investigar" }
+    - { right: "Web Search", wrong: "Consultar" }
   control_question: "Am I going out to find something I do not know, or am I reading something I already have?"
 
 - id: reparar-folds-into-troubleshooting
@@ -705,8 +705,8 @@
     - { subject: "Brave", iq1: "Brave Software" }
     - { subject: "Logseq", iq1: "Logseq Inc" }
     - { subject: "Hermes Agent", iq1: "Nous Research" }
-    - { right: "Firefox · Mozilla · Search the Web", wrong: "Firefox · — · Search the Web" }
-    - { right: "Firefox · Mozilla · Search the Web", wrong: "Firefox · Firefox · Search the Web" }
+    - { right: "Firefox · Mozilla · Web Search", wrong: "Firefox · — · Web Search" }
+    - { right: "Firefox · Mozilla · Web Search", wrong: "Firefox · Firefox · Web Search" }
   control_question: "Who makes this program? That name goes in iq1 — never the program a second time."
 
 - id: product-in-iq0-puts-brand-in-iq1
@@ -744,5 +744,94 @@
     - { right: "Apple · Mac mini M4 · Compare", wrong: "Apple · Apple · Compare" }
     - { right: "DJI · Avata 360 · Quote", wrong: "DJI · — · Quote" }
     - { right: "Apple · — · Compare", note: "the whole brand, nothing to narrow it" }
-    - { right: "DJI · — · Search the Web", note: "brand strategy: no product yet" }
+    - { right: "DJI · — · Web Search", note: "brand strategy: no product yet" }
   control_question: "Am I talking about one thing this brand makes, or about the brand itself? If the brand is the subject, what narrows it goes in iq1."
+
+# --------------------------------------------------------------------------- #
+# WHAT COUNTS AS VOCABULARY (taught 2026-11-12)
+# --------------------------------------------------------------------------- #
+
+- id: a-model-is-never-alone
+  taught: 2026-11-12
+  rule: >
+    A model number is not vocabulary on its own: it means nothing without the
+    brand that makes it and the kind of object it is. A55 is not a term — it is
+    Samsung (iq1) + Celular Android (iq2) + A55 (iq0). T1000 is not a term — it
+    is Turing T1000, Nvidia (iq1) + Tarjeta Gráfica (iq2). Avata 360 is DJI
+    (iq1) + Drone (iq2). PRO 495 192GB is AMD (iq1) + Desktop (iq2) + Buy (iq3).
+    A bare model number or codename is a fragment, and a fragment in the
+    vocabulary is a filter nobody can use.
+  examples:
+    - { right: "A55 · Samsung · Celular Android", wrong: "A55" }
+    - { right: "Turing T1000 · Nvidia · Tarjeta Gráfica", wrong: "T1000" }
+    - { right: "Avata 360 · DJI · Drone", wrong: "avata360" }
+    - { right: "PRO 495 · AMD · Desktop", wrong: "PRO 495 192GB" }
+    - { right: "ThinkPad P53 · Lenovo · Laptop", wrong: "Thinkpad P53" }
+  control_question: "If I say the model alone, does it tell me what brand and what kind of thing? If not, it is a fragment."
+
+- id: one-idea-one-value
+  taught: 2026-11-12
+  rule: >
+    Synonyms are forced so one idea never becomes two filters: Portátil, notebook
+    and laptop are Laptop; Celular Android absorbs teléfono Android; Drone absorbs
+    dron; Tarjeta Gráfica absorbs GPU; Desktop absorbs escritorio. The vocabulary
+    forces the value at write time, not at read time — two spellings of one thing
+    are two filters nobody can see are the same.
+  examples:
+    - { right: "Laptop", wrong: "Portátil" }
+    - { right: "Tarjeta Gráfica", wrong: "GPU" }
+  control_question: "Would this value and an existing one answer the same filter twice?"
+
+- id: sizes-are-attributes-not-terms
+  taught: 2026-11-12
+  rule: >
+    A capacity or a size is not a vocabulary term by itself: 27B says nothing
+    about what the session is about, and 192GB belongs to the machine, not to the
+    subject. The exception is a capacity that DOES define the object when the
+    session is about buying it — "16GB RAM" is valid vocabulary because it names
+    what the computer comes with. The test is not the number: it is whether the
+    number is the thing being discussed or a property of the thing.
+  examples:
+    - { right: "16GB RAM", note: "the configuration being compared" }
+    - { right: "—", wrong: "27B", note: "a size of a model, not a subject" }
+    - { right: "PRO 495 · AMD", wrong: "192GB" }
+  control_question: "Is the number the subject, or a property of the subject?"
+
+- id: never-vocabulary
+  taught: 2026-11-12
+  rule: >
+    These are never vocabulary, whatever their frequency: greetings and courtesy
+    ("Hola DeepSeek"), dates and timestamps ("14-sep-2026"), numeric ranges from
+    compressing a list ("56-110"), scaffolding from the interface ("Skill X",
+    "Attached", "OUT-OF-BAND"), and the owner's own identifiers — usernames, phone
+    numbers, addresses. They are noise in a list that is meant to be a dictionary.
+  examples:
+    - { right: "—", wrong: "Hola DeepSeek" }
+    - { right: "—", wrong: "14-sep-2026" }
+    - { right: "—", wrong: "56-110" }
+    - { right: "—", wrong: "Skill CyberPanel" }
+  control_question: "Would this word appear in a dictionary of what the user works with?"
+
+- id: events-are-a-category
+  taught: 2026-11-12
+  rule: >
+    An event is a thing in the world with a date and a purpose — a hackathon, a
+    fair, a course, a conference. "Nous Hackaton 2026" is not a company and not a
+    topic: it is an event, and the catalogue needs that category so a session
+    about preparing a submission is not filed as if it were about a brand.
+  examples:
+    - { category: "Event", term: "Nous Hackaton 2026" }
+    - { category: "Event", term: "APEDE 2026" }
+  control_question: "Does it happen somewhere on a date, with people attending?"
+
+- id: companies-carry-their-trade
+  taught: 2026-11-12
+  rule: >
+    A company in the private vocabulary says what it does, not just its name.
+    "Miami Express" is a Freight Forwarder, and its context is the city it ships
+    from — Miami (iq2). A list of companies without their trade is a list of
+    words; with their trade it is knowledge the classifier can use.
+  examples:
+    - { company: "Miami Express", trade: "Freight Forwarder", context: "Miami" }
+    - { company: "ORICO", trade: "storage and enclosures", context: "" }
+  control_question: "What does this company do, and where does it operate?"

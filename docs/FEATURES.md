@@ -83,7 +83,7 @@ The mapping the code implements matches the data:
 | iq0 | the `sujeto` column of the index; declared as `iq0` in `cellar_tools` |
 | iq1 | `PLATFORMS` + the brands of the cheat sheet |
 | iq2 | `CONTEXT`: store, country or machine — `normalize_*` rejects anything else |
-| iq3 | `INTENTIONS`, closed at seven: Troubleshooting, Search the Web, Compatibility, Buy, Quote, Compare, Configuration |
+| iq3 | `INTENTIONS`, closed at seven: Troubleshooting, Web Search, Compatibility, Buy, Quote, Compare, Configuration |
 | iq4 | `IT_SUBCATEGORIES` + `OTHER_THEMES`, seeded from `PILLARS` (the list keeps its historical name) |
 
 `Troubleshooting`, `IT Manager`, `Medicina`, `Nutrición`, `Ebay`, `Amazon` all exist and sit
@@ -95,7 +95,7 @@ disagreed — 7 values in `taxonomy.py` and 13 in `intent.py`. They are now one:
 
 | Where | List |
 |---|---|
-| `taxonomy.py` → `INTENTIONS` | **Troubleshooting · Search the Web · Compatibility · Buy · Quote · Compare · Configuration** |
+| `taxonomy.py` → `INTENTIONS` | **Troubleshooting · Web Search · Compatibility · Buy · Quote · Compare · Configuration** |
 | `intent.py` → `INTENTS` | the same seven; the retired names (Update, Version, Feature, Costo, Administrar, Respaldar, Comparación, Diagnosticar, Testear, Instalar, Investigar) survive only as **signals** inside the intention they belong to |
 
 Two decisions carry the change:
@@ -103,7 +103,7 @@ Two decisions carry the change:
 > **`Install` is not an intention.** Configuration implies installation — you cannot
 > configure what you did not install — so `Install` and `Configuration` are one value.
 >
-> **`Investigar` was retired** for `Search the Web`. The intention is the act of going out
+> **`Investigar` was retired** for `Web Search`. The intention is the act of going out
 > to find something unknown, and the name now says what it is.
 
 **And this page is the authority.** `ALGORITHM.md`, `STATUS.md` and any contradicting comment

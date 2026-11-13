@@ -321,7 +321,7 @@ __all__ = [
 # is not an intention, and an empty iq3 is honest — it says nobody read one.
 INTENTIONS: Final[tuple[str, ...]] = (
     "Troubleshooting",
-    "Search the Web",
+    "Web Search",
     "Compatibility",
     "Buy",
     "Quote",
@@ -378,11 +378,12 @@ _INTENT_ALIASES: Final[dict[str, str]] = {
     "configuración": "Configuration", "configuration": "Configuration",
     "configure": "Configuration", "setup": "Configuration",
     # Search the Web
-    "investigar": "Search the Web", "investigacion": "Search the Web",
-    "investigación": "Search the Web", "investigate": "Search the Web",
-    "consultar": "Search the Web", "buscar": "Search the Web",
-    "search": "Search the Web", "search the web": "Search the Web",
-    "web": "Search the Web", "googlear": "Search the Web",
+    "investigar": "Web Search", "investigacion": "Web Search",
+    "investigación": "Web Search", "investigate": "Web Search",
+    "consultar": "Web Search", "buscar": "Web Search",
+    "search": "Web Search", "search the web": "Web Search",
+    "web search": "Web Search", "web": "Web Search", "googlear": "Web Search",
+    "consultar en la web": "Web Search",
     # Quote
     "cotizar": "Quote", "cotizacion": "Quote", "cotización": "Quote",
     "quote": "Quote", "precio": "Quote", "precios": "Quote", "price": "Quote",
@@ -420,6 +421,16 @@ def normalize_intention(raw: str) -> str:
             return name
     return ""
 
+
+_CONTEXT_SYNONYMS: Final[dict[str, str]] = {
+    # forced so one idea never yields two filters
+    "portátil": "Laptop", "portatil": "Laptop", "notebook": "Laptop",
+    "celular android": "Celular Android", "teléfono android": "Celular Android",
+    "freight forward": "Freight Forwarder", "freight forwarder": "Freight Forwarder",
+    "tarjeta gráfica": "Tarjeta Gráfica", "tarjeta grafica": "Tarjeta Gráfica",
+    "gpu": "Tarjeta Gráfica", "drone": "Drone", "dron": "Drone",
+    "desktop": "Desktop", "escritorio": "Desktop",
+}
 
 _THEME_ALIASES: Final[dict[str, str]] = {
     "it manager": "IT Manager", "it": "IT Manager", "sistemas": "IT Manager",

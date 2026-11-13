@@ -167,9 +167,9 @@ iq3        THE INTENTION: what the user wanted DONE with the subject.
             This is a verb, not a topic. "Electronica" is not an intention.
             MOST SESSIONS HAVE NO CLEAR VERB — leave it "" when the turn is a
             plain question, a greeting, a scheduled report or an open chat.
-            "Search the Web" is NOT a default: use it only when the user says
+            "Web Search" is NOT a default: use it only when the user says
             "averigua", "busca información" or "investiga" in so many words.
-            A field of 338 "Search the Web" is a field nobody can filter by.
+            A field of 338 "Web Search" is a field nobody can filter by.
 
 iq4        THE WORK FRONT — one of the themes below, and when the theme has
             subcategories, the SUBCATEGORY. "IT Manager" is the theme; "VPS",

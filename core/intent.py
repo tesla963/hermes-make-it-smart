@@ -84,7 +84,7 @@ INTENTS: dict[str, dict[str, Any]] = {
                     "carrito", "checkout", "pagar"],
         "means": "ya decidió: quiere adquirir el objeto",
     },
-    "Search the Web": {
+    "Web Search": {
         "signals": ["investiga", "investigar", "busca información", "buscar info",
                     "buscar en la web", "en la web", "googlear", "averiguar",
                     "qué se sabe", "que se sabe", "documentación", "search",

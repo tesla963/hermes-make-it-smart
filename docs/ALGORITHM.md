@@ -71,7 +71,7 @@ It is the only one that opens the title, so it carries the weight of the search.
 - It names the **block or part** of the thing: `Protocol` inside a gateway,
   `Stuck Startup` inside Firefox, `Hermes Desktop` inside Hermes Agent.
 - It is the program itself **only when the intention makes the program the object**
-  (`Search the Web`, `Compare`, `Quote`, `Buy`) — and then iq1 takes the company or the
+  (`Web Search`, `Compare`, `Quote`, `Buy`) — and then iq1 takes the company or the
   author, never the program twice. When the work happens *inside* the program
   (`Troubleshooting`, `Configuration`), the subject is the part that broke and the
   program goes to iq1.
@@ -116,7 +116,7 @@ intention tells you which**.
 | iq3 (intention) | Program is… | iq0 | iq1 |
 |---|---|---|---|
 | `Troubleshooting`, `Configurar`, `Instalar` | the **container** of the work | the part that broke: `Protocol` | the whole: `Hermes Gateway` |
-| `Search the Web`, `Compare`, `Quote`, `Buy` | the **object** of the work | the program: `Firefox` | **its company or author**: `Mozilla` |
+| `Web Search`, `Compare`, `Quote`, `Buy` | the **object** of the work | the program: `Firefox` | **its company or author**: `Mozilla` |
 | `Testear`, `Compatibilidad` | the **object**, under test | the program: `Antigravity` | its maker: `Google` |
 
 **Read it as a test:** ask *"is the program the thing I am looking at, or the thing the
@@ -125,7 +125,7 @@ problem lives in?"* Looking at it → iq0. A part of it → iq1, and the part go
 ```
 Firefox · Stuck Startup · Troubleshooting      ← the problem lives inside Firefox
 Hermes Gateway · Protocol · Troubleshooting    ← Protocol is a part of Hermes Gateway
-Firefox · Mozilla · Search the Web             ← Firefox itself is the object
+Firefox · Mozilla · Web Search             ← Firefox itself is the object
 ```
 
 Two consequences worth writing down, because they resolve most doubtful cases:
@@ -199,11 +199,11 @@ subject on a shelf label?*
 
 ## 6b. Iq3 — the intention (seven, closed)
 
-Troubleshooting · Search the Web · Compatibility · Buy · Quote · Compare ·
+Troubleshooting · Web Search · Compatibility · Buy · Quote · Compare ·
 Configuration.
 **Install is not one of them.** Configuration implies installation: you cannot configure
 what you did not install, so both verbs fold onto `Configuration`. **"Investigar" was
-retired** and replaced by `Search the Web` — the intention is the act of going out to find
+retired** and replaced by `Web Search` — the intention is the act of going out to find
 something, and the name says it.
 
 - Closed on purpose: a vocabulary that grows on every session stops being a filter.

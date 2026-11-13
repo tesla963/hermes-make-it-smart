@@ -84,7 +84,7 @@ filters.
 Read in one breath: `Firefox` + `Stuck Startup` + `Troubleshooting` gives the program,
 the block inside it, and what you were doing there.
 
-**The seven intentions:** `Troubleshooting`, `Search the Web`, `Compatibility`, `Buy`,
+**The seven intentions:** `Troubleshooting`, `Web Search`, `Compatibility`, `Buy`,
 `Quote`, `Compare`, `Configuration`. `Install` is not one of them — configuring implies
 installing, so both are `Configuration`.
 
