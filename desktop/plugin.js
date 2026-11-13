@@ -140,6 +140,19 @@ const esSubagent = (d) =>
         /^subagent/i.test(String(d.id || '')))
   )
 
+const tieneNumero = (raw) => /^\d{3,4}\b/.test(String(raw || '').trim())
+
+/** Machinery: bots, subagents, cron, and deleted sessions. Never renamed, excluded from Process. */
+const esMaquinaria = (d) =>
+  Boolean(
+    d &&
+      (esCron(d) ||
+        esBotChat(d) ||
+        esSubagent(d) ||
+        esBorrada(d) ||
+        /^(subagent|bot chat|cron|cronjob|hermes agent cron)\b/i.test(String(d.raw || '').trim()))
+  )
+
 /** Anything the renamer must never touch: cron, empty, deleted, Bot Chat, subagent. */
 const esIntocable = (d) => Boolean(d && (esCron(d) || d.vacia || esBorrada(d) || esBotChat(d) || esSubagent(d)))
 
@@ -765,6 +778,10 @@ const I18N = {
     restTitle: 'Restaurar Títulos Originales',
     restConfirm: '¿Devolver {n} sesiones a su título original?\n\nÚtil antes de desinstalar el plugin.',
     restDone: 'Restauradas: {n} (el plugin: {p} · sin registro: {s}) · ya estaban igual: {i}',
+    updbBtn: 'Actualizar BD',
+    updbTitle: 'Releer el catálogo del disco y mostrar qué falta',
+    updbDone: 'Catálogo recargado: {n} sesiones · {v} pendientes de renombrar',
+    updbHelp: 'Si falta una sesión recién creada, corre: python3 tools/sync_index.py --apply',
     procCount: 'Sesiones por Procesar ({n})',
     procTitle: 'Procesar las sesiones pendientes de renombrar',
     dlgProcTitle: 'Procesar sesiones',
@@ -1624,7 +1641,15 @@ async function loadCatalogue(ctx) {
       mc,
       claves,
       resumen,
-      vacia: Boolean(idx.vacia != null ? idx.vacia : mc <= 0 && (!claves || claves.length === 0)),
+      vacia: Boolean(
+        idx.vacia != null
+          ? idx.vacia
+          : idx.nueva || (!tieneNumero(rawTitle) && !esMaquinaria({ raw: rawTitle, id, prof, esCron: idx.esCron, esBot: idx.esBot }))
+            ? false
+            : !rawTitle || /^\s*(\[?sesi[oó]n vac[ií]a\]?|sin t[ií]tulo)\s*$/i.test(rawTitle)
+              ? mc <= 0 && (!claves || claves.length === 0)
+              : false
+      ),
       esCron: Boolean(idx.esCron || /^cron[_-]/i.test(id) || /^cron[_-]/i.test(prof)),
       esBot: Boolean(idx.esBot) || (live && String(live.source || '').toLowerCase() === 'subagent'),
       parent: idx.parent || '',
@@ -1995,6 +2020,15 @@ function App({ ctx }) {
   const qNorm = useMemo(() => norm(q), [q])
 
   const pass = (d, ...skips) => {
+    if (!d) return false
+    if (activeTab === 'testing') {
+      if (nums) {
+        if (!nums.has(+d.n)) return false
+      } else if (qs && !(d._s || '').includes(qs)) {
+        return false
+      }
+      return true
+    }
     const modo = showElim ? 'elim' : showVacio ? 'vacio' : showCron ? 'cron' : showBots ? 'bots' : null
     if (!skips.includes('estado')) {
       if (modo === 'elim') {
@@ -2041,24 +2075,28 @@ function App({ ctx }) {
   }
 
   // In the Process (testing) tab only unrenamed / virgin sessions are listed:
-  // sessions that never received a canonical title (^NNN [ ...).
+  // sessions that never received a canonical title (^NNN...).
   // Machinery (bots, cron, subagents) is excluded.
   const pendingRows = useMemo(
-    () => sessions.filter((d) => !esIntocable(d) && !/^\d{3,4} \[/.test(String(d.raw || ''))),
+    () => sessions.filter((d) => !esMaquinaria(d) && !tieneNumero(d.raw)),
     [sessions]
   )
 
   // Machinery (bots, subagents, cron) is never renamed, but the user sees those rows in the
   // left panel and wonders why the counter says 1. Count them separately and say so.
   const machineryPending = useMemo(
-    () => sessions.filter((d) => esIntocable(d) && d.raw && !/^\d{3,4} \[/.test(String(d.raw))),
+    () => sessions.filter((d) => esMaquinaria(d) && d.raw && !tieneNumero(d.raw)),
     [sessions]
   )
 
-  const visible = useMemo(
-    () => (activeTab === 'testing' ? pendingRows : sessions).filter((d) => pass(d)),
-    [sessions, pendingRows, activeTab, f, q, nums, qs, showElim, showVacio, showCron, showBots]
-  )
+  const visible = useMemo(() => {
+    if (activeTab === 'testing') {
+      if (nums) return pendingRows.filter((d) => nums.has(+d.n))
+      if (qs) return pendingRows.filter((d) => (d._s || '').includes(qs))
+      return pendingRows
+    }
+    return sessions.filter((d) => pass(d))
+  }, [sessions, pendingRows, activeTab, f, q, nums, qs, showElim, showVacio, showCron, showBots])
 
   const arbol = useMemo(() => {
     const arr = visible.slice()
@@ -2780,7 +2818,7 @@ function App({ ctx }) {
       const lista = (fresco && Array.isArray(fresco.sessions)) ? fresco.sessions : null
       if (lista) setSessions(lista)
       const base = lista || sessions
-      const pend = base.filter((d) => !esIntocable(d) && !/^\d{3,4} \[/.test(String(d.raw || ''))).length
+      const pend = base.filter((d) => !esMaquinaria(d) && !tieneNumero(d.raw)).length
       setBtnMsg({ updb: t('updbDone', { n: base.length, v: pend }) + ' · ' + t('updbHelp'),
                  mig: t('updbDone', { n: base.length, v: pend }) + ' · ' + t('updbHelp') })
     } catch (e) {
@@ -2893,9 +2931,12 @@ function App({ ctx }) {
   }
 
   const switchTab = async (tab) => {
-    // Tres ventanas distintas: el filtro de una no puede aparecer en otra.
-    setQ('')
-    setF({ dia: '', d1: '', d2: '', iq1: '', iq2: '', iq3: '', iq4: '', anio: '', machine: '', store: '', country: '' })
+    // Tres ventanas distintas: ningún filtro ni estado de una ventana puede afectar a otra.
+    limpiar()
+    setShowElim(false)
+    setShowVacio(false)
+    setShowCron(false)
+    setShowBots(false)
     setActiveTab(tab)
     if (tab === 'tabiq') {
       await leerPluginIQ()
@@ -4794,7 +4835,7 @@ function App({ ctx }) {
 
 // Named exports so tests/test_plugin.mjs can exercise the pure helpers without React.
 export { numSel, fmtC, fmtH, fmtN, loadCatalogue, canonicalTitle, jerarquia, isChildRow,
-  esEsquemaViejo, migrarEjes, contarEjes, ESQUEMA_ACTUAL
+  esEsquemaViejo, migrarEjes, contarEjes, ESQUEMA_ACTUAL, tieneNumero, esMaquinaria
 }
 
 export default {

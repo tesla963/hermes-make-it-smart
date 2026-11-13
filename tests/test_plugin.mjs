@@ -165,5 +165,82 @@ if (typeof esEsquemaViejo === 'function') {
   ok(segunda.renamed === 0 && JSON.stringify(segunda.data) === JSON.stringify(data), 'la segunda pasada no cambia nada')
 } else ok(false, 'esEsquemaViejo se exporta')
 
+console.log('\n§ sesiones vírgenes y maquinaria (bug #975)')
+const { tieneNumero, esMaquinaria, loadCatalogue } = mod
+if (typeof tieneNumero === 'function' && typeof esMaquinaria === 'function') {
+  ok(tieneNumero('973 [Layout teclado] 001 [Steren]'), 'tieneNumero reconoce prefijo canónico NNN')
+  ok(tieneNumero('024 [DeepSeek] 001'), 'tieneNumero reconoce prefijo con ceros')
+  ok(!tieneNumero('Compare Xfce vs LXQt on Fedora'), 'tieneNumero rechaza título virgen')
+  ok(!tieneNumero('Bot Chat'), 'tieneNumero rechaza Bot Chat')
+  ok(!tieneNumero('Subagent: Traducir al inglés'), 'tieneNumero rechaza Subagent')
+
+  ok(esMaquinaria({ raw: 'Bot Chat' }), 'esMaquinaria reconoce Bot Chat')
+  ok(esMaquinaria({ raw: 'Subagent: Traducir al inglés' }), 'esMaquinaria reconoce Subagent')
+  ok(esMaquinaria({ raw: 'Cron: Backup diario', esCron: true }), 'esMaquinaria reconoce Cron')
+  ok(esMaquinaria({ raw: '[Sesión Borrada]', sujeto: 'Sesión Borrada' }), 'esMaquinaria reconoce Sesión Borrada')
+  ok(!esMaquinaria({ raw: 'Compare Xfce vs LXQt on Fedora' }), 'esMaquinaria rechaza sesión virgen de usuario')
+
+  // Simulación de carga de catálogo con sesión virgen #975 (sin mc, sin claves, con nueva: true)
+  const mockSessions = [
+    { id: 'canon-1', n: 1, raw: '001 [Lisa] 001 Test', mc: 10, claves: ['test'] },
+    { id: 'bot-1', n: 958, raw: 'Bot Chat', mc: 0, claves: [] },
+    { id: 'sub-1', n: 962, raw: 'Subagent: Traducir al inglés', mc: 0, claves: [] },
+    {
+      id: 'local-83588de9b025bf2536d66532d116e5203ca8f8a5a33f57d976da54576304bf02',
+      n: 975, mmm: 1, prof: 'default',
+      raw: 'Compare Xfce vs LXQt on Fedora',
+      date: '', sujeto: '', iq0: '', iq1: '', iq2: '', iq3: '', desc: '', verb: '',
+      nueva: true,
+    },
+  ]
+  const mockCtx = {
+    files: {
+      readText: async (dir, file) => {
+        if (file === 'index.json') return { ok: true, text: JSON.stringify({ sessions: mockSessions }) }
+        return { ok: false }
+      },
+    },
+    host: {
+      listPersistedSessions: async () => [],
+      profiles: { list: async () => [{ name: 'default' }] },
+    },
+  }
+  const cat = await loadCatalogue(mockCtx)
+  const rows = cat.sessions || []
+  const s975 = rows.find((r) => r.n === 975)
+  ok(Boolean(s975), 'sesión 975 está presente en el catálogo cargado')
+  ok(s975 && s975.vacia === false, 'sesión 975 no se marca vacia (vacia === false)')
+
+  const pending = rows.filter((d) => !esMaquinaria(d) && !tieneNumero(d.raw))
+  const machinery = rows.filter((d) => esMaquinaria(d) && d.raw && !tieneNumero(d.raw))
+  ok(pending.length === 1 && pending[0].n === 975, 'pendingRows contiene exactamente la sesión 975')
+  ok(machinery.length === 2, 'machineryPending contiene exactamente los bots/subagents (2)')
+
+  // Verificación adicional: una sesión sin campos (sujeto/ejes vacíos) NO es vacía si tiene título real
+  const mockSinCampos = [
+    {
+      id: 'local-no-fields',
+      n: 976, mmm: 1, prof: 'default',
+      raw: 'Instalar servidor Nginx en Debian',
+      date: '', sujeto: '', iq0: '', iq1: '', iq2: '', iq3: '', desc: '', verb: '',
+    },
+  ]
+  const mockCtx2 = {
+    files: {
+      readText: async (dir, file) => {
+        if (file === 'index.json') return { ok: true, text: JSON.stringify({ sessions: mockSinCampos }) }
+        return { ok: false }
+      },
+    },
+    host: {
+      listPersistedSessions: async () => [],
+      profiles: { list: async () => [{ name: 'default' }] },
+    },
+  }
+  const cat2 = await loadCatalogue(mockCtx2)
+  const s976 = (cat2.sessions || [])[0]
+  ok(s976 && s976.vacia === false, 'sesión con campos en blanco pero título real no es vacia (vacia === false)')
+} else ok(false, 'tieneNumero y esMaquinaria se exportan')
+
 console.log(failures ? `\n${failures} fallo(s)` : '\nTODO OK')
 process.exit(failures ? 1 : 0)
