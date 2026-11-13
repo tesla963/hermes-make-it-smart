@@ -2811,6 +2811,21 @@ function App({ ctx }) {
   // "Update DB": relee el catálogo del disco y dice qué falta. El panel no puede leer state.db
   // (no tiene acceso al archivo), así que su trabajo honesto es recargar el índice y reportar;
   // si la base tiene sesiones que el índice no conoce, eso lo alinea tools/sync_index.py.
+  // Al entrar a Process o New Rules se relee el catálogo: si el índice cambió en disco
+  // (sesiones nuevas, sync_index), la tabla lo muestra sin reiniciar el panel y sin apretar nada.
+  const tabRefreshed = useRef('')
+  useEffect(() => {
+    if (activeTab !== 'testing' && activeTab !== 'newrules') return
+    if (tabRefreshed.current === activeTab) return
+    tabRefreshed.current = activeTab
+    ;(async () => {
+      try {
+        const fresco = await loadCatalogue(ctx)
+        if (fresco && Array.isArray(fresco.sessions)) setSessions(fresco.sessions)
+      } catch (_) {}
+    })()
+  }, [activeTab])
+
   const refrescarBase = async () => {
     setIsRefreshing(true)
     try {
