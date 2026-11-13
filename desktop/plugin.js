@@ -726,7 +726,7 @@ const I18N = {
     tabNewRules: 'New Rules',
     tabNewRulesTitle: 'Aplicar las reglas nuevas a los títulos, con respaldo y revert',
     newRulesIdle: 'Sin propuesta. Generala con: python3 tools/propose_rename.py',
-    newRulesApply: 'Respaldar y aplicar ({n})',
+    newRulesApply: 'Update New Rules on Session DB ({n})',
     newRulesApplyTitle: 'Escribe un respaldo de la base de títulos y después aplica los cambios',
     newRulesReload: 'Recargar propuesta',
     machineryNote: '+{n} de maquinaria (bots, subagentes), no se renombran',
@@ -915,7 +915,7 @@ const I18N = {
     tabNewRules: 'New Rules',
     tabNewRulesTitle: 'Apply the new rules to the titles, with backup and revert',
     newRulesIdle: 'No proposal. Generate it with: python3 tools/propose_rename.py',
-    newRulesApply: 'Back up and apply ({n})',
+    newRulesApply: 'Update New Rules on Session DB ({n})',
     newRulesApplyTitle: 'Writes a backup of the title database, then applies the changes',
     newRulesReload: 'Reload proposal',
     machineryNote: '+{n} machinery sessions (bots, subagents) are never renamed',
@@ -986,6 +986,11 @@ position:relative;display:flex;flex-direction:column;width:100%;height:100%;min-
 .mmws .headtab:first-child::before,.mmws .headtab:first-child::after{background:var(--ok)}
 .mmws .headtab:last-child::before,.mmws .headtab:last-child::after{background:var(--gold)}
 .mmws .headtab:hover{color:var(--tx)}
+/* New Rules acts on the catalogue, so it wears its own colour: violet, never the gold of Process. */
+.mmws .headtab.newruletab.on{color:#c9a8f0;background:#1d1428;border-bottom-color:#8b5cf6}
+.mmws .headtab.newruletab.on::before,.mmws .headtab.newruletab.on::after{background:#8b5cf6;opacity:.9}
+.mmws .headtab.newruletab:not(.on){color:#a98fd0}
+.mmws .headtab.newruletab:not(.on)::before,.mmws .headtab.newruletab:not(.on)::after{background:#5b3f86}
 .mmws .headtab:hover::before,.mmws .headtab:hover::after{opacity:.75}
 .mmws .headtab.on{color:#fff}
 .mmws .headtab.on::before,.mmws .headtab.on::after{opacity:1}
@@ -3607,7 +3612,7 @@ function App({ ctx }) {
             'button',
             {
               role: 'tab',
-              className: 'headtab' + (activeTab === 'newrules' ? ' on' : ''),
+              className: 'headtab newruletab' + (activeTab === 'newrules' ? ' on' : ''),
               onClick: () => switchTab('newrules'),
               title: t('tabNewRulesTitle'),
             },

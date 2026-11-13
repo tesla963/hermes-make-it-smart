@@ -19,6 +19,24 @@ import time
 from pathlib import Path
 
 DATA = Path.home() / ".hermes/plugin-data/make-it-smart"
+
+
+def espejo_del_panel() -> Path | None:
+    """The panel reads its own data directory (Electron userData), not the canonical one.
+    A proposal written only to the canonical folder is invisible to the panel."""
+    casa = Path.home()
+    candidatos = [
+        casa / "Library/Application Support/Hermes/plugin-files/data/make-it-smart",  # macOS
+        Path(str(casa).replace("/root", "/root")) / ".config/Hermes/plugin-files/data/make-it-smart",  # Linux
+    ]
+    import os
+    appdata = os.environ.get("APPDATA")
+    if appdata:
+        candidatos.insert(0, Path(appdata) / "Hermes/plugin-files/data/make-it-smart")  # Windows
+    for c in candidatos:
+        if c.is_dir():
+            return c
+    return None
 CANON = re.compile(r"^\d{3,4} \[")
 LIMIT = 100
 
@@ -128,10 +146,21 @@ def main() -> int:
         return 0
 
     out = Path(args.out).expanduser()
+    texto = json.dumps(propuesta, ensure_ascii=False, indent=1)
     tmp = out.with_suffix(".tmp")
-    tmp.write_text(json.dumps(propuesta, ensure_ascii=False, indent=1), encoding="utf-8")
+    tmp.write_text(texto, encoding="utf-8")
     tmp.replace(out)
     print(f"  escrito: {out.name} ({out.stat().st_size / 1024:.1f} KB)")
+
+    espejo = espejo_del_panel()
+    if espejo:
+        dest = espejo / out.name
+        tmp2 = dest.with_suffix(".tmp")
+        tmp2.write_text(texto, encoding="utf-8")
+        tmp2.replace(dest)
+        print(f"  copiado al espejo del panel: {dest}")
+    else:
+        print("  aviso: no encontré el espejo del panel; la pestaña New Rules no verá la propuesta")
     return 0
 
 
