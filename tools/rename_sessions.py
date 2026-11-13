@@ -170,6 +170,22 @@ def descripcion_llm(ident: str, sujeto: str, max_reintentos: int = 1) -> tuple[s
     return "", "fallo"
 
 
+def limitar_titulo(titulo: str, tope: int = 100) -> str:
+    """Hermes rechaza títulos de más de 100 caracteres. Se recorta la descripción, nunca el
+    encabezado (NNN [Sujeto] MMM [iq1] [iq2]) ni la intención: esos son la identidad del título."""
+    t = str(titulo).strip()
+    if len(t) <= tope:
+        return t
+    cabeza, sep, cola = t.partition(" · ")
+    if len(cabeza) <= tope - 3:
+        espacio = tope - len(cabeza) - 3 - (len(cola) + 3 if sep else 0)
+        corte = cabeza[: max(len(cabeza) - max(0, -espacio), 0)]
+    else:
+        corte = cabeza[: tope - 3]
+    corte = corte[: corte.rfind(" ")] if " " in corte else corte
+    return (corte.rstrip(" ,;:-·") + (f" · {cola}" if sep else "")).strip()
+
+
 def respaldar(plan: list[dict]) -> Path:
     BACKUPS.mkdir(parents=True, exist_ok=True)
     f = BACKUPS / f"commit-backup-{stamp()}.json"
@@ -289,6 +305,7 @@ def main() -> int:
                 if frase:
                     c["after"] = f"{cabeza} {frase}" + (f" · {cola}" if cola else "")
                     c["desc_source"] = fuente
+        c["after"] = limitar_titulo(c["after"])
         bien, err = renombrar(c)
         if bien:
             ok += 1

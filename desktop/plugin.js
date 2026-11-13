@@ -4887,10 +4887,14 @@ function App({ ctx }) {
               {
                 className: 'kpi pend clickable' + (f.iq9 === 'Pending' ? ' active' : ''),
                 onClick: () => setF((p) => ({ ...p, iq9: p.iq9 === 'Pending' ? null : 'Pending' })),
-                title: t('kPendTitle'),
+                title: `${t('kPendTitle')} — ${(pendData.counts && pendData.counts.sesiones_con_pendientes) || 0} sesiones · ${(pendData.counts && pendData.counts.total) || 0} solicitudes · dato: ${(pendData.generated || 'sin fecha')}`,
               },
-              h('b', null, (pendData.counts && pendData.counts.total) || 0),
-              h('div', { className: 'lb' }, h('i', null, t('kPend1')), h('i', null, t('kPend2')))
+              // El número grande son SESIONES, no solicitudes: una sesión puede tener 20
+              // autorizaciones pendientes. El total de solicitudes va en el detalle y en el title.
+              h('b', null, (pendData.counts && pendData.counts.sesiones_con_pendientes) || 0),
+              h('div', { className: 'lb' },
+                h('i', null, t('kPend1')),
+                h('i', null, `${t('kPend2')} · ${(pendData.counts && pendData.counts.total) || 0}`))
             )
           : null,
         // Último de la fila de indicadores y alineado a la izquierda: restaurar los
