@@ -20,7 +20,7 @@ from pathlib import Path
 DATA = Path.home() / ".hermes/plugin-data/make-it-smart/index.json"
 
 MAP = {
-    "investigar": "Search the Web",
+    "investigar": "Web Search",
     "comparar": "Compare",
     "comparacion": "Compare",
     "comparación": "Compare",
@@ -32,7 +32,7 @@ MAP = {
     "testear": "Troubleshooting",
     "diagnosticar": "Troubleshooting",
     "troubleshooting": "Troubleshooting",
-    "search the web": "Search the Web",
+    "web search": "Web Search",
     "compare": "Compare",
     "quote": "Quote",
     "buy": "Buy",
