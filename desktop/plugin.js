@@ -1056,6 +1056,8 @@ position:relative;display:flex;flex-direction:column;width:100%;height:100%;min-
 .mmws .bodywrap.nofilters aside{display:none}
 /* Process, New Rules y Plugin IQ no filtran: la barra de filtros sobra y el contador también. */
 .mmws .bodywrap.nofilters .toolbar{display:none}
+/* Plugin IQ no es una lista de sesiones: ahí la tabla no aplica, ni su cabecera. */
+.mmws .bodywrap.iqmode main{display:none}
 .mmws .abarra{flex:none;padding:9px 0 8px;background:var(--bg2);border-bottom:1px solid var(--line);z-index:2}
 .mmws .ascroll{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;padding:8px 0 14px;scrollbar-width:none;-ms-overflow-style:none;overscroll-behavior:contain}
 .mmws .ascroll::-webkit-scrollbar{display:none;width:0;height:0}
@@ -3941,7 +3943,7 @@ function App({ ctx }) {
 
     h(
       'div',
-      { className: 'bodywrap' + (activeTab === 'testing' || activeTab === 'newrules' || activeTab === 'tabiq' ? ' nofilters' : '') },
+      { className: 'bodywrap' + (activeTab === 'testing' || activeTab === 'newrules' || activeTab === 'tabiq' ? ' nofilters' : '') + (activeTab === 'tabiq' ? ' iqmode' : '') },
 
       /* Left Filters Aside */
       h(
