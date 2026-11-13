@@ -26,6 +26,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import shutil
 import sqlite3
 import subprocess
@@ -49,10 +50,20 @@ def cargar_propuestas(ruta: Path) -> list[dict]:
     d = json.loads(ruta.read_text(encoding="utf-8"))
     crudos = d.get("changes") or d.get("proposals") or d.get("items") or []
     fuera = []
+    rechazadas: list[dict] = []
     for c in crudos:
         ident = c.get("id") or c.get("session_id")
         despues = c.get("after") or c.get("title_after") or c.get("proposed")
         if not ident or not despues:
+            continue
+        # El archivo de otro agente puede traer el texto "None" en vez de un nulo. Escribir el
+        # título "None" sería peor que no hacer nada: se rechaza cualquier valor que no parezca
+        # un título de sesión (NNN [ ... ] MMM ...).
+        texto = str(despues).strip()
+        if texto.lower() in {"none", "null", "n/a", "undefined"} or not texto:
+            continue
+        if not re.match(r"^\d{3,4}\s+\[.+?\]\s+\d{3,4}", texto):
+            rechazadas.append({"id": str(ident), "n": c.get("n"), "after": texto[:60]})
             continue
         fuera.append({
             "id": str(ident),
@@ -62,7 +73,7 @@ def cargar_propuestas(ruta: Path) -> list[dict]:
             "prof": c.get("prof") or c.get("profile") or "default",
             "rules": c.get("rules") or c.get("rule") or [],
         })
-    return fuera
+    return fuera, rechazadas
 
 
 def cargar_journal() -> dict:
@@ -127,7 +138,9 @@ def main() -> int:
     if not ruta.exists():
         print(f"  no hay propuestas en {ruta}: primero corre el auditor")
         return 2
-    propuestas = cargar_propuestas(ruta)
+    propuestas, rechazadas = cargar_propuestas(ruta)
+    if rechazadas:
+        print(f"  RECHAZADAS por no parecer un título: {len(rechazadas)}")
     journal_path = Path(args.journal).expanduser()
     journal = {}
     if journal_path.exists():
