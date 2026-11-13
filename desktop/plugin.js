@@ -722,8 +722,16 @@ const I18N = {
     r4: 'Una serie, un pilar: si hay 40 hermanos, el que no encaja está mal',
     tabActual: 'Actual Session DB',
     tabActualTitle: 'Sesiones reales de la base de datos de Hermes (solo lectura)',
-    tabTesting: 'Testing',
-    tabTestingTitle: 'Simulación de nomenclatura canónica y herramientas de commit/revert',
+    tabTesting: 'Process',
+    tabNewRules: 'New Rules',
+    tabNewRulesTitle: 'Aplicar las reglas nuevas a los títulos, con respaldo y revert',
+    newRulesIdle: 'Sin propuesta. Generala con: python3 tools/propose_rename.py',
+    newRulesApply: 'Respaldar y aplicar ({n})',
+    newRulesApplyTitle: 'Escribe un respaldo de la base de títulos y después aplica los cambios',
+    newRulesReload: 'Recargar propuesta',
+    machineryNote: '+{n} de maquinaria (bots, subagentes), no se renombran',
+    machineryNoteTitle: 'Son sesiones de máquina: se excluyen del renombrado a propósito',
+    tabTestingTitle: 'Procesar los títulos que todavía no fueron renombrados (con backup y revert)',
     commitBtn: 'Commit Changes to Hermes DB',
     commitBtnCount: 'Commit Changes to Hermes DB ({n} sesiones por procesar)',
     noSessions: 'No hay sesiones para procesar',
@@ -903,8 +911,16 @@ const I18N = {
     r4: 'One series, one pillar: with 40 siblings, the one that does not fit is wrong',
     tabActual: 'Actual Session DB',
     tabActualTitle: 'Actual sessions from Hermes database (read-only)',
-    tabTesting: 'Testing',
-    tabTestingTitle: 'Canonical nomenclature simulation and commit/revert tools',
+    tabTesting: 'Process',
+    tabNewRules: 'New Rules',
+    tabNewRulesTitle: 'Apply the new rules to the titles, with backup and revert',
+    newRulesIdle: 'No proposal. Generate it with: python3 tools/propose_rename.py',
+    newRulesApply: 'Back up and apply ({n})',
+    newRulesApplyTitle: 'Writes a backup of the title database, then applies the changes',
+    newRulesReload: 'Reload proposal',
+    machineryNote: '+{n} machinery sessions (bots, subagents) are never renamed',
+    machineryNoteTitle: 'Machine sessions are excluded from renaming on purpose',
+    tabTestingTitle: 'Process the titles that have not been renamed yet (with backup and revert)',
     commitBtn: 'Commit Changes to Hermes DB',
     commitBtnCount: 'Commit Changes to Hermes DB ({n} Sessions to Process)',
     noSessions: 'No sessions to process',
@@ -999,6 +1015,8 @@ position:relative;display:flex;flex-direction:column;width:100%;height:100%;min-
 .mmws .headtabs .headtab.on.testing{border-bottom-color:var(--gold)!important}
 
 .mmws .bodywrap{flex:1 1 auto;min-height:0;display:flex;align-items:stretch;position:relative;overflow:hidden}
+/* Process and New Rules do not filter: they act. The left aside would be dead weight. */
+.mmws .bodywrap.nofilters aside{display:none}
 .mmws .abarra{flex:none;padding:9px 0 8px;background:var(--bg2);border-bottom:1px solid var(--line);z-index:2}
 .mmws .ascroll{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;padding:8px 0 14px;scrollbar-width:none;-ms-overflow-style:none;overscroll-behavior:contain}
 .mmws .ascroll::-webkit-scrollbar{display:none;width:0;height:0}
@@ -1631,6 +1649,9 @@ function App({ ctx }) {
   const [rpcErrors, setRpcErrors] = useState([])
   const [cronInfo, setCronInfo] = useState({ vacias: 0, jobs_activos: 0 })
   const [pendData, setPendData] = useState(null)
+  // New Rules: a rename proposal produced by the Python side, approved here by a human.
+  const [prop, setProp] = useState(null)
+  const [propMsg, setPropMsg] = useState('')
   const [pendMap, setPendMap] = useState(null)
   const [pendAttr, setPendAttr] = useState(null)
   const [expandSujetos, setExpandSujetos] = useState(false)
@@ -1966,6 +1987,13 @@ function App({ ctx }) {
   // cron, empty, deleted and subagent rows are never renamed.
   const pendingRows = useMemo(
     () => sessions.filter((d) => !esIntocable(d) && d.canonTitle && d.canonTitle !== d.raw),
+    [sessions]
+  )
+
+  // Machinery (bots, subagents, cron) is never renamed, but the user sees those rows in the
+  // left panel and wonders why the counter says 1. Count them separately and say so.
+  const machineryPending = useMemo(
+    () => sessions.filter((d) => esIntocable(d) && d.raw && !/^\d{3,4} \[/.test(String(d.raw))),
     [sessions]
   )
 
@@ -2664,8 +2692,80 @@ function App({ ctx }) {
     return payload
   }
 
+  /* ---------- New Rules: a proposal from the Python side, approved by a human ---------- */
+
+  const leerPropuesta = async () => {
+    const filesApi = (ctx && ctx.files) || (host && host.files)
+    if (!filesApi || typeof filesApi.readText !== 'function') {
+      setProp(null); setPropMsg('sin acceso a archivos'); return
+    }
+    try {
+      const res = await filesApi.readText('data', 'proposed-index.json')
+      if (!res || !res.ok || !res.text) { setProp(null); setPropMsg('sin propuesta'); return }
+      const data = JSON.parse(res.text)
+      setProp(data)
+      const n = Array.isArray(data.changes) ? data.changes.length : 0
+      setPropMsg(`${n} título(s) propuestos · generado ${data.generated || ''}`)
+    } catch (e) {
+      setProp(null); setPropMsg(String((e && e.message) || e))
+    }
+  }
+
+  const aplicarPropuesta = async () => {
+    const cambios = (prop && Array.isArray(prop.changes)) ? prop.changes : []
+    if (!cambios.length) return
+    const filesApi = (ctx && ctx.files) || (host && host.files)
+    if (!filesApi || typeof filesApi.writeText !== 'function') { setPropMsg('sin permiso de escritura'); return }
+    setIsCommitting(true)
+
+    // 1. El respaldo va primero, siempre. Sin respaldo no se escribe nada.
+    const fname = `commit-backup-${getBackupStamp()}.json`
+    const payload = {
+      filename: fname,
+      ts: Date.now(),
+      committed: false,
+      reverted: false,
+      origin: 'new-rules',
+      changedCount: cambios.length,
+      entries: cambios.map((c) => ({
+        id: c.id, title_before: c.before, title_after: c.after, prof: c.prof,
+        ts: new Date().toISOString(),
+      })),
+    }
+    try { await filesApi.writeText('data', fname, JSON.stringify(payload, null, 2)) } catch (_) {}
+    try { await filesApi.writeText('data', 'commit-last.json', JSON.stringify(payload, null, 2)) } catch (_) {}
+    setLastBackup(payload)
+
+    // 2. Aplicar sesión por sesión; lo que falla no se da por hecho.
+    const updates = new Map()
+    let ok = 0
+    for (const c of cambios) {
+      try {
+        const r = await callRpc(ctx, 'session.resume', {
+          session_id: c.id,
+          profile: c.prof === 'default' ? undefined : c.prof,
+          lazy: true,
+          omit_messages: true,
+        })
+        if (r && r.session_id) {
+          await callRpc(ctx, 'session.title', { session_id: r.session_id, title: c.after })
+          updates.set(c.id, c.after)
+          ok += 1
+        }
+      } catch (_) {}
+    }
+    await syncIndexRaw(updates)
+    setSessions((prev) => prev.map((d) => (updates.has(d.id) ? { ...d, raw: updates.get(d.id) } : d)))
+    setIsCommitting(false)
+    setPropMsg(`aplicados ${ok} de ${cambios.length} · respaldo ${fname}`)
+  }
+
   const switchTab = async (tab) => {
     setActiveTab(tab)
+    if (tab === 'newrules') {
+      await leerPropuesta()
+      return
+    }
     if (tab === 'testing') {
       // Entering Testing is the refresh moment. The index is a cache, so it is left
       // alone everywhere else; here the catalogue is re-read (and the gateway rows
@@ -3511,6 +3611,16 @@ function App({ ctx }) {
               title: t('tabTestingTitle'),
             },
             t('tabTesting')
+          ),
+          h(
+            'button',
+            {
+              role: 'tab',
+              className: 'headtab' + (activeTab === 'newrules' ? ' on' : ''),
+              onClick: () => switchTab('newrules'),
+              title: t('tabNewRulesTitle'),
+            },
+            t('tabNewRules')
           )
         ),
         h(
@@ -3649,7 +3759,7 @@ function App({ ctx }) {
     /* ---------- Body (Aside + Main + Slide-over Detail Panel) ---------- */
     h(
       'div',
-      { className: 'bodywrap' },
+      { className: 'bodywrap' + (activeTab === 'testing' || activeTab === 'newrules' ? ' nofilters' : '') },
 
       /* Left Filters Aside */
       h(
@@ -4115,7 +4225,27 @@ function App({ ctx }) {
     h(
       'div',
       { className: 'footrow' },
-      activeTab === 'testing'
+      activeTab === 'newrules'
+        ? h(
+            'div',
+            { className: 'footbtns' },
+            h('span', { className: 'footmsg', id: 'propMsg' }, propMsg || t('newRulesIdle')),
+            prop && Array.isArray(prop.changes) && prop.changes.length > 0
+              ? h(
+                  'button',
+                  {
+                    className: 'procbtn',
+                    id: 'btnApplyNewRules',
+                    disabled: isCommitting || isReverting,
+                    onClick: aplicarPropuesta,
+                    title: t('newRulesApplyTitle'),
+                  },
+                  t('newRulesApply', { n: prop.changes.length })
+                )
+              : null,
+            h('button', { id: 'btnReloadProposal', onClick: leerPropuesta }, t('newRulesReload'))
+          )
+        : activeTab === 'testing'
         ? h(
             'div',
             { className: 'footbtns' },
@@ -4134,6 +4264,13 @@ function App({ ctx }) {
               : h('span', { className: 'procnone', id: 'btnProcess' }, t('procCount', { n: 0 })),
             pendingRows.length === 0 && !btnMsg.commit
               ? h('span', { className: 'footmsg nopending', id: 'noPending' }, t('noSessions'))
+              : null,
+            machineryPending.length > 0
+              ? h(
+                  'span',
+                  { className: 'footmsg', id: 'machineryNote', title: t('machineryNoteTitle') },
+                  t('machineryNote', { n: machineryPending.length })
+                )
               : null,
             canRevert
               ? h(

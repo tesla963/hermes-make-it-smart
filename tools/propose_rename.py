@@ -1,0 +1,139 @@
+#!/usr/bin/env python3
+"""Write a rename proposal — never apply it.
+
+Reads the live index, rebuilds the canonical title from the fields, and writes
+`proposed-index.json` next to it with every change, its rule and its before/after.
+
+The panel's **New Rules** tab reads that file, shows the count and lets the owner apply it with
+a backup and a revert. This script only proposes: it never writes a title.
+
+    python3 tools/propose_rename.py            # writes proposed-index.json
+    python3 tools/propose_rename.py --dry-run  # prints a summary, writes nothing
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import time
+from pathlib import Path
+
+DATA = Path.home() / ".hermes/plugin-data/make-it-smart"
+CANON = re.compile(r"^\d{3,4} \[")
+LIMIT = 100
+
+
+def canon_title(s: dict) -> str:
+    """The same shape the panel builds, so a proposal is never prettier than reality."""
+    nnn = f"{int(s.get('n') or 0):03d}"
+    subj = str(s.get("sujeto") or s.get("iq0") or "").strip() or "Sin sujeto"
+    mmm = f"{int(s.get('mmm') or 1):03d}"
+    head = f"{nnn} [{subj}] {mmm}"
+    for campo in ("iq1", "iq2"):
+        v = str(s.get(campo) or "").strip()
+        if v:
+            head += f" [{v}]"
+    if len(head) >= LIMIT:
+        return head[:LIMIT].rstrip()
+    fecha = str(s.get("fecha") or "").strip()[:10]
+    desc = str(s.get("desc") or "").strip()
+    verb = str(s.get("verb") or "").strip()
+    out = head
+    if fecha:
+        out += f" {fecha}"
+    if desc:
+        out += f" {desc}"
+    if verb:
+        out += f" · {verb}"
+    return out[:LIMIT].rstrip()
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description=__doc__,
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--path", default=str(DATA / "index.json"))
+    ap.add_argument("--out", default=str(DATA / "proposed-index.json"))
+    ap.add_argument("--dry-run", action="store_true")
+    args = ap.parse_args()
+
+    ruta = Path(args.path).expanduser()
+    datos = json.loads(ruta.read_text(encoding="utf-8"))
+    sesiones = datos.get("sessions", [])
+
+    cambios, saltadas = [], []
+    for s in sesiones:
+        raw = str(s.get("raw") or "").strip()
+        sujeto = str(s.get("sujeto") or "").strip()
+        iq1 = str(s.get("iq1") or "").strip()
+        fuente = str(s.get("source") or "")
+
+        # Maquinaria: bots, subagentes y cron no se renombran nunca.
+        if (s.get("esBot") or s.get("esCron") or fuente == "subagent"
+                or raw.startswith("Bot Chat") or raw.startswith("Subagent:")):
+            saltadas.append({"id": s.get("id"), "title": raw[:60], "why": "machinery"})
+            continue
+
+        # Sin sujeto no hay propuesta: inventarlo sería peor que dejarlo como está.
+        if not sujeto or sujeto == "Sin sujeto":
+            saltadas.append({"id": s.get("id"), "title": raw[:60], "why": "no subject yet: needs classification"})
+            continue
+
+        reglas, campos = [], {}
+        # 1 · un título que no sigue la forma canónica
+        if not CANON.match(raw):
+            reglas.append("not-canonical-title")
+        # 2 · el sujeto repite el programa: una respuesta en dos campos
+        if iq1 and sujeto.lower() == iq1.lower():
+            reglas.append("subject-repeats-iq1")
+            campos["iq1"] = ""
+        # 3 · el sujeto es una frase, no un bloque: no se recorta, se pide un nombre.
+        # Recortar "Educación Estatal o Particular" a "Educación Estatal o" no es un sujeto.
+        if len(sujeto.split()) >= 4:
+            saltadas.append({"id": s.get("id"), "title": raw[:60],
+                             "why": "subject-too-long: needs a real name, not a trim"})
+            continue
+
+        if not reglas:
+            continue
+
+        propuesta_campos = dict(s)
+        propuesta_campos.update(campos)
+        after = canon_title(propuesta_campos)
+        if not after or after == raw:
+            continue
+        cambios.append({
+            "id": s.get("id"),
+            "prof": s.get("prof") or "default",
+            "n": s.get("n"),
+            "before": raw,
+            "after": after,
+            "rules": reglas,
+            "fields": campos,
+        })
+
+    propuesta = {
+        "generated": time.strftime("%Y-%m-%dT%H:%M:%S"),
+        "rules_version": "v0.28",
+        "sessions": len(sesiones),
+        "changes": cambios,
+        "skipped": saltadas,
+    }
+
+    print(f"  sesiones: {len(sesiones)} · cambios propuestos: {len(cambios)} · "
+          f"omitidas por maquinaria: {len(saltadas)}")
+    for c in cambios[:8]:
+        print(f"    {c['before'][:46]:46s} → {c['after'][:46]}")
+    if args.dry_run:
+        print("  dry run — nada escrito")
+        return 0
+
+    out = Path(args.out).expanduser()
+    tmp = out.with_suffix(".tmp")
+    tmp.write_text(json.dumps(propuesta, ensure_ascii=False, indent=1), encoding="utf-8")
+    tmp.replace(out)
+    print(f"  escrito: {out.name} ({out.stat().st_size / 1024:.1f} KB)")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
