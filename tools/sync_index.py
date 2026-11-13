@@ -19,11 +19,13 @@ from __future__ import annotations
 import argparse
 import json
 import shutil
+import subprocess
 import sqlite3
 import sys
 import time
 from pathlib import Path
 
+REPO = Path(__file__).resolve().parent.parent
 HOME = Path.home()
 DATA = HOME / ".hermes/plugin-data/make-it-smart"
 ESPEJO = HOME / "Library/Application Support/Hermes/plugin-files/data/make-it-smart"
@@ -119,6 +121,17 @@ def main() -> int:
         print("\n  ejemplos (índice → base):")
         for n, antes, ahora in informe:
             print(f"    #{n} «{antes}» → «{ahora}»")
+    # Los pendientes también son parte del índice: si no se regeneran, la columna PENDING
+    # muestra una foto vieja y el dueño cree que no tiene autorizaciones esperando.
+    if args.apply:
+        try:
+            r = subprocess.run([sys.executable, str(Path(__file__).with_name("build_pending.py"))],
+                               cwd=REPO, capture_output=True, text=True)
+            for linea in (r.stdout or "").strip().splitlines():
+                print("  " + linea.strip())
+        except Exception as e:  # noqa: BLE001
+            print(f"  aviso: no se pudieron regenerar los pendientes ({e})")
+
     if not args.apply:
         print("\n  seco — nada escrito. Con --apply alinea los dos índices.")
     return 0
