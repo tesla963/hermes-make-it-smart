@@ -130,11 +130,12 @@ def descripcion_llm(ident: str, sujeto: str, max_reintentos: int = 1) -> tuple[s
     primero = primero[:1200]
 
     instruccion = (
-        "Leé este pedido inicial de una sesión y escribí UNA sola frase que amplíe su título sin "
-        "repetirlo. Máximo 8 palabras, en el idioma del pedido, sin comillas, sin markdown, sin punto "
-        f"final. El sujeto del título es «{sujeto}», no lo repitas.\n\nPedido:\n{primero}\n\n"
+        "Leé este pedido inicial de una sesión y escribí UNA sola frase que amplíe el título: QUÉ se "
+        "quiso o QUÉ se hizo. Máximo 8 palabras, en el idioma del pedido, sin comillas, sin markdown, "
+        "sin punto final. Podés nombrar el programa y el contexto si son parte de lo que se hizo; lo "
+        "que no podés es copiar el título.\n\nPedido:\n{primero}\n\n"
         "Respondé solo la frase."
-    )
+    ).format(primero=primero)
     for _ in range(max_reintentos + 1):
         try:
             r = subprocess.run(["hermes", "-z", instruccion], capture_output=True, text=True, timeout=120)
@@ -143,10 +144,22 @@ def descripcion_llm(ident: str, sujeto: str, max_reintentos: int = 1) -> tuple[s
         frase = " ".join((r.stdout or "").strip().split())
         frase = frase.strip('"\'`*· ')
         palabras = frase.split()
-        if not frase or len(palabras) > 10:
+        if not frase:
             continue
-        if sujeto and sujeto.lower() in frase.lower():
-            continue
+        # El modelo se pasa de largo con frecuencia (11-12 palabras en español). En vez de tirar
+        # una frase buena, se recorta a diez palabras; sólo se rechaza si sigue siendo un ladrillo.
+        if len(palabras) > 10:
+            frase = " ".join(palabras[:10]).rstrip(',;:')
+            palabras = frase.split()
+            if len(palabras) > 10:
+                continue
+        # Los iq SÍ pueden aparecer en la descripción: amplifica usando el programa y el contexto.
+        # Lo único que no se acepta es una copia del título disfrazada de frase.
+        palabras_titulo = set(str(sujeto).lower().split())
+        if palabras_titulo:
+            coinciden = sum(1 for w in frase.lower().split() if w in palabras_titulo)
+            if coinciden / max(len(frase.split()), 1) >= 0.8:
+                continue
         if any(c in frase for c in "[]{}`*#"):
             continue
         frase = frase[:90]
