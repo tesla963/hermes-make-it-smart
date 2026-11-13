@@ -963,6 +963,10 @@ const I18N = {
     restTitle: 'Restore Original Titles',
     restConfirm: 'Return {n} sessions to their original title?\n\nUseful before uninstalling the plugin.',
     restDone: 'Restored: {n} (by the plugin: {p} · no record: {s}) · already equal: {i}',
+    updbBtn: 'Update DB',
+    updbTitle: 'Re-read the catalogue from disk and show what is pending',
+    updbDone: 'Catalogue reloaded: {n} sessions · {v} waiting to be renamed',
+    updbHelp: 'If a session you just created is missing, run: python3 tools/sync_index.py --apply',
     procCount: 'Sessions to Process ({n})',
     procTitle: 'Process the sessions waiting to be renamed',
     dlgProcTitle: 'Process sessions',
@@ -1748,6 +1752,7 @@ function App({ ctx }) {
   const [lastBackup, setLastBackup] = useState(null)
   const [canRevert, setCanRevert] = useState(false)
   const [isCommitting, setIsCommitting] = useState(false)
+  const [isRefreshing, setIsRefreshing] = useState(false)
   const [isReverting, setIsReverting] = useState(false)
   const [staleNotice, setStaleNotice] = useState('')
   const [esqViejo, setEsqViejo] = useState(false)
@@ -2763,6 +2768,25 @@ function App({ ctx }) {
     } catch (e) {
       setProp(null); setPropMsg(String((e && e.message) || e))
     }
+  }
+
+  // "Update DB": relee el catálogo del disco y dice qué falta. El panel no puede leer state.db
+  // (no tiene acceso al archivo), así que su trabajo honesto es recargar el índice y reportar;
+  // si la base tiene sesiones que el índice no conoce, eso lo alinea tools/sync_index.py.
+  const refrescarBase = async () => {
+    setIsRefreshing(true)
+    try {
+      const fresco = await loadCatalogue(ctx)
+      const lista = (fresco && Array.isArray(fresco.sessions)) ? fresco.sessions : null
+      if (lista) setSessions(lista)
+      const base = lista || sessions
+      const pend = base.filter((d) => !esIntocable(d) && !/^\d{3,4} \[/.test(String(d.raw || ''))).length
+      setBtnMsg({ updb: t('updbDone', { n: base.length, v: pend }) + ' · ' + t('updbHelp'),
+                 mig: t('updbDone', { n: base.length, v: pend }) + ' · ' + t('updbHelp') })
+    } catch (e) {
+      setBtnMsg({ mig: t('updbDone', { n: sessions.length, v: pendingRows.length }) })
+    }
+    setIsRefreshing(false)
   }
 
   const aplicarPropuesta = async () => {
@@ -3934,6 +3958,16 @@ function App({ ctx }) {
             { className: 'actbar' },
             activeTab === 'testing'
               ? [
+                  h(
+                    'button',
+                    {
+                      key: 'updb', className: 'ghost', id: 'btnUpdateDB',
+                      disabled: isCommitting || isReverting || isRefreshing,
+                      title: t('updbTitle'),
+                      onClick: refrescarBase,
+                    },
+                    isRefreshing ? '…' : t('updbBtn')
+                  ),
                   h(
                     'button',
                     {
