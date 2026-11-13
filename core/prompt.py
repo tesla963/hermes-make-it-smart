@@ -122,7 +122,7 @@ Decide the **verb** before the subject. The verb tells you which noun the subjec
 must be:
 
     Costo            → what was counted: "Pedido", "Claude API"
-    Cotizar          → what was priced: "Precios", "Teclado"
+    Quote            → what was priced: "Precios", "Teclado"
     Testing          → who or what was exercised: "{agent_name}"
     Falta de Espacio → what ran out: "Hard Drive"
     Indexación       → what was indexed: "Spotlight"
@@ -133,7 +133,7 @@ A subject chosen before the verb is usually the wrong noun.
 
 subject     What the session is ABOUT: the object, the problem, the symptom.
             2-4 words, written in {language}. NEVER the name of a program or platform.
-            Strip the action prefix ("Instalar X" -> "X") and the state
+            Strip the action prefix ("Configuration of X" -> "X") and the state
             adjectives ("trancado", "inusual", "con error").
             If it is a failure, name the POINT OF FAILURE ("Protocolo"),
             not the component.
@@ -167,9 +167,9 @@ iq3        THE INTENTION: what the user wanted DONE with the subject.
             This is a verb, not a topic. "Electronica" is not an intention.
             MOST SESSIONS HAVE NO CLEAR VERB — leave it "" when the turn is a
             plain question, a greeting, a scheduled report or an open chat.
-            "Investigar" is NOT a default: use it only when the user says
+            "Search the Web" is NOT a default: use it only when the user says
             "averigua", "busca información" or "investiga" in so many words.
-            A field of 338 "Investigar" is a field nobody can filter by.
+            A field of 338 "Search the Web" is a field nobody can filter by.
 
 iq4        THE WORK FRONT — one of the themes below, and when the theme has
             subcategories, the SUBCATEGORY. "IT Manager" is the theme; "VPS",

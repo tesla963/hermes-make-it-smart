@@ -111,7 +111,7 @@ intention tells you which**.
 | iq3 (intention) | Program is… | iq0 | iq1 |
 |---|---|---|---|
 | `Troubleshooting`, `Configurar`, `Instalar` | the **container** of the work | the part that broke: `Protocol` | the whole: `Hermes Gateway` |
-| `Investigar`, `Comparar`, `Cotizar` | the **object** of the work | the program: `Firefox` | its maker, or empty: `—` |
+| `Search the Web`, `Compare`, `Quote`, `Buy` | the **object** of the work | the program: `Firefox` | its maker, or empty: `—` |
 | `Testear`, `Compatibilidad` | the **object**, under test | the program: `Antigravity` | its maker: `Google` |
 
 **Read it as a test:** ask *"is the program the thing I am looking at, or the thing the
@@ -120,7 +120,7 @@ problem lives in?"* Looking at it → iq0. A part of it → iq1, and the part go
 ```
 Firefox · Stuck Startup · Troubleshooting      ← the problem lives inside Firefox
 Hermes Gateway · Protocol · Troubleshooting    ← Protocol is a part of Hermes Gateway
-Firefox · — · Investigar                       ← Firefox itself is the object
+Firefox · — · Search the Web                   ← Firefox itself is the object
 ```
 
 Two consequences worth writing down, because they resolve most doubtful cases:
@@ -170,12 +170,17 @@ subject on a shelf label?*
 
 ## 6b. Iq3 — the intention (seven, closed)
 
-Comparar · Instalar · Investigar · Testear · Cotizar · Troubleshooting ·
-Compatibilidad.
+Troubleshooting · Search the Web · Compatibility · Buy · Quote · Compare ·
+Configuration.
+**Install is not one of them.** Configuration implies installation: you cannot configure
+what you did not install, so both verbs fold onto `Configuration`. **"Investigar" was
+retired** and replaced by `Search the Web` — the intention is the act of going out to find
+something, and the name says it.
 
 - Closed on purpose: a vocabulary that grows on every session stops being a filter.
 - **Empty is a valid answer.** It says nobody read an intention here, which is true.
 - `Administrar` was retired; `Feature` and `Version` do not exist.
+- `Testear` folded into `Troubleshooting`: both confirm a state.
 
 ## 6c. Iq4 — the topic
 

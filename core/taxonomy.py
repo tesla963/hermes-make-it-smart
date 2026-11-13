@@ -320,14 +320,16 @@ __all__ = [
 # Closed vocabulary. Seven verbs the owner approved; a word outside this list
 # is not an intention, and an empty iq3 is honest — it says nobody read one.
 INTENTIONS: Final[tuple[str, ...]] = (
-    "Comparar",
-    "Instalar",
-    "Investigar",
-    "Testear",
-    "Cotizar",
     "Troubleshooting",
-    "Compatibilidad",
+    "Search the Web",
+    "Compatibility",
+    "Buy",
+    "Quote",
+    "Compare",
+    "Configuration",
 )
+# "Install" is not a separate intention: Configuration implies installation. You
+# cannot configure what you did not install, so both fold onto Configuration.
 
 # The theme IT Manager and its subcategories. A session that fits none of them
 # stays as "IT Manager" alone until somebody decides.
@@ -365,20 +367,36 @@ THEMES: Final[tuple[str, ...]] = ("IT Manager", *OTHER_THEMES)
 # --------------------------------------------------------------------------- #
 
 _INTENT_ALIASES: Final[dict[str, str]] = {
-    "comparacion": "Comparar", "comparación": "Comparar", "comparar": "Comparar",
-    "comparativo": "Comparar", "vs": "Comparar",
-    "instalar": "Instalar", "instalacion": "Instalar", "instalación": "Instalar",
-    "configurar": "Instalar", "setup": "Instalar",
-    "investigar": "Investigar", "investigacion": "Investigar",
-    "investigación": "Investigar", "consultar": "Investigar",
-    "buscar": "Investigar",
-    "testear": "Testear", "testing": "Testear", "test": "Testear",
-    "verificar": "Testear", "comprobar": "Testear", "probar": "Testear",
-    "cotizar": "Cotizar", "cotizacion": "Cotizar", "cotización": "Cotizar",
-    "precio": "Cotizar", "precios": "Cotizar",
+    # Compare
+    "comparar": "Compare", "comparacion": "Compare", "comparación": "Compare",
+    "comparativo": "Compare", "vs": "Compare", "compare": "Compare",
+    "comparison": "Compare",
+    # Configuration — installation is folded in, never a separate intention
+    "instalar": "Configuration", "instalacion": "Configuration",
+    "instalación": "Configuration", "install": "Configuration",
+    "configurar": "Configuration", "configuracion": "Configuration",
+    "configuración": "Configuration", "configuration": "Configuration",
+    "configure": "Configuration", "setup": "Configuration",
+    # Search the Web
+    "investigar": "Search the Web", "investigacion": "Search the Web",
+    "investigación": "Search the Web", "investigate": "Search the Web",
+    "consultar": "Search the Web", "buscar": "Search the Web",
+    "search": "Search the Web", "search the web": "Search the Web",
+    "web": "Search the Web", "googlear": "Search the Web",
+    # Quote
+    "cotizar": "Quote", "cotizacion": "Quote", "cotización": "Quote",
+    "quote": "Quote", "precio": "Quote", "precios": "Quote", "price": "Quote",
+    # Buy
+    "comprar": "Buy", "compra": "Buy", "buy": "Buy", "purchase": "Buy",
+    # Troubleshooting — 'testear' folded here: it verifies a state
     "troubleshooting": "Troubleshooting", "diagnosticar": "Troubleshooting",
     "diagnostico": "Troubleshooting", "diagnóstico": "Troubleshooting",
-    "compatibilidad": "Compatibilidad", "compatible": "Compatibilidad",
+    "testear": "Troubleshooting", "testing": "Troubleshooting",
+    "test": "Troubleshooting", "verificar": "Troubleshooting",
+    "comprobar": "Troubleshooting", "probar": "Troubleshooting",
+    # Compatibility
+    "compatibilidad": "Compatibility", "compatible": "Compatibility",
+    "compatibility": "Compatibility",
 }
 
 

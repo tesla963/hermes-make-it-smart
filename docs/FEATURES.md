@@ -83,32 +83,31 @@ The mapping the code implements matches the data:
 | iq0 | the `sujeto` column of the index; declared as `iq0` in `cellar_tools` |
 | iq1 | `PLATFORMS` + the brands of the cheat sheet |
 | iq2 | `CONTEXT`: store, country or machine — `normalize_*` rejects anything else |
-| iq3 | `INTENTIONS`, closed at seven |
+| iq3 | `INTENTIONS`, closed at seven: Troubleshooting, Search the Web, Compatibility, Buy, Quote, Compare, Configuration |
 | iq4 | `IT_SUBCATEGORIES` + `OTHER_THEMES`, seeded from `PILLARS` (the list keeps its historical name) |
 
 `Troubleshooting`, `IT Manager`, `Medicina`, `Nutrición`, `Ebay`, `Amazon` all exist and sit
-on the axis they belong to. `Compra` is still missing as an intention: the vocabulary has
-`Compras` as a topic, never as a verb.
+on the axis they belong to. `Buy` now exists as an intention, and `Install` folded onto
+`Configuration`: you cannot configure what you did not install.
 
-**And there are two intention lists that disagree** — another thing to fix, not to document away:
+**One intention list, and it is this one.** Until 12-Nov-2026 there were two lists that
+disagreed — 7 values in `taxonomy.py` and 13 in `intent.py`. They are now one:
 
-| Source | List |
+| Where | List |
 |---|---|
-| `taxonomy.py` → `INTENTIONS` (the one the rename path reads) | 7: `Comparar · Instalar · Investigar · Testear · Cotizar · Troubleshooting · Compatibilidad` |
-| `intent.py` → `INTENTS` (the signal dictionary) | 13: `Instalar · Update · Version · Feature · Compatibilidad · Comparación · Diagnosticar · Testear · Cotizar · Costo · Administrar · Respaldar · Investigar` |
+| `taxonomy.py` → `INTENTIONS` | **Troubleshooting · Search the Web · Compatibility · Buy · Quote · Compare · Configuration** |
+| `intent.py` → `INTENTS` | the same seven; the retired names (Update, Version, Feature, Costo, Administrar, Respaldar, Comparación, Diagnosticar, Testear, Instalar, Investigar) survive only as **signals** inside the intention they belong to |
 
-So the intention vocabulary is 7 in one file and 13 in another, with `Troubleshooting` vs
-`Diagnosticar` and `Comparar` vs `Comparación` naming the same idea twice. **One list wins before
-anything else touches the classifier.**
+Two decisions carry the change:
 
-> **Decided 2026-11-10 — this settles it.** The **7-value list** is the only intention vocabulary:
-> `Comparar · Instalar · Investigar · Testear · Cotizar · Troubleshooting · Compatibilidad`.
-> `intent.py`'s 13-value list adapts to it or is deleted; `Compra` is expressed as the existing
-> intention plus the `Compras` theme, not as a new intention.
+> **`Install` is not an intention.** Configuration implies installation — you cannot
+> configure what you did not install — so `Install` and `Configuration` are one value.
 >
-> **And this page is the authority.** `ALGORITHM.md`, `STATUS.md` and any contradicting comment in
-> the code are stale: they are corrected to match this document, never the other way round. The
-> old axis order is not a reference — it is work to be removed.
+> **`Investigar` was retired** for `Search the Web`. The intention is the act of going out
+> to find something unknown, and the name now says what it is.
+
+**And this page is the authority.** `ALGORITHM.md`, `STATUS.md` and any contradicting comment
+in the code are corrected to match it, never the other way round.
 
 
 ## 5 · The cheat sheet — how the plugin gets smart

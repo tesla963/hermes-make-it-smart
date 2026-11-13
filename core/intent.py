@@ -1,13 +1,13 @@
 """What did the user want done? The one judgement the script cannot make alone.
 
-iq3 is not a topic — it is an intention. "Electronica" says nothing; "Instalar"
+iq3 is not a topic — it is an intention. "Electronica" says nothing; "Configuration"
 says the user had a box in his hands. The difference is what makes iq3 worth
 filtering by.
 
 This module reads the intention in two passes:
 
     1. keywords — cheap, deterministic, and right most of the time. "me llegó",
-      "ayúdame a instalarlo" is Instalar without asking anyone.
+      "ayúdame a instalarlo" is Configuration without asking anyone.
     2. the model — only when the keywords are silent or tie. It receives the
       actors the script already found and one question: what did he want done?
       It never re-derives the names, so it cannot invent them.
@@ -30,72 +30,74 @@ from typing import Any
 # Respaldar, Comparación, Diagnosticar) survive as signals inside the canonical
 # intention they belong to, not as axes of their own.
 INTENTS: dict[str, dict[str, Any]] = {
-    "Instalar": {
-        # was: Instalar + Update + Version + Feature
+    "Configuration": {
+        # Install is folded in here: you cannot configure what you did not install.
+        # was: Instalar + Update + Version + Feature + Setup
         "signals": ["instalar", "instalarlo", "instalarla", "instalé", "instale",
                     "me llegó", "me llego", "recién llegó", "montar", "poner a andar",
-                    "install", "set up", "setup", "configurar", "dejar listo",
-                    "ya salió", "ya salio", "nueva versión", "nueva version",
+                    "install", "set up", "setup", "configurar", "configuración",
+                    "dejar listo", "nueva versión", "nueva version",
                     "actualizar", "actualización", "actualizacion", "update",
                     "salio la version", "salió la versión", "hay versión", "hay version",
                     "me conviene actualizar", "ya sacaron", "sacaron", "ya salido",
                     "ya está disponible", "ya esta disponible",
                     "qué versión", "que version", "cuál versión", "cual version",
                     "version instalada", "versión instalada", "número de versión",
-                    # "puede", "hace", "permite" appear in half the sentences ever
-                    # written; only phrases asking what the object IS CAPABLE OF count.
                     "sirve para", "maneja", "soporta", "capacidad de",
                     "qué funciones", "que funciones", "es capaz de",
                     "tiene la función", "tiene la funcion", "qué puede hacer",
-                    "que puede hacer", "maneja pdf", "soporta pdf"],
-        "means": "quiere instalar, actualizar o identificar la versión de algo que ya tiene",
+                    "que puede hacer"],
+        "means": "quiere instalar, configurar o actualizar algo que ya tiene",
     },
-    "Compatibilidad": {
+    "Compatibility": {
         "signals": ["compatible", "compatibilidad", "funciona con", "sirve con",
                     "se puede usar con", "anda con", "trabaja con", "soporta el"],
         "means": "dos cosas que ya existen: pregunta si se hablan",
     },
-    "Comparar": {
-        # was: Comparación
+    "Compare": {
         "signals": ["compara", "comparar", "comparación", "comparacion", " vs ",
                     "cuál es mejor", "cual es mejor", "diferencia entre", "mejor que"],
         "means": "dos o más candidatos y hay que elegir",
     },
     "Troubleshooting": {
-        # was: Diagnosticar + Administrar + Respaldar
+        # was: Diagnosticar + Administrar + Respaldar + Testear
         "signals": ["no funciona", "falla", "error", "no abre", "no arranca",
                     "se cae", "problema", "roto", "no responde", "por qué no",
                     "administrar", "gestionar", "configurar el servidor", "panel",
                     "usuario", "permisos", "crear cuenta", "alta de",
                     "respaldo", "backup", "copiar a", "copia de seguridad",
-                    "guardar en el disco", "exportar a disco"],
-        "means": "algo está roto, desconfigurado o sin respaldo y hay que intervenir",
-    },
-    "Testear": {
-        "signals": ["verificar", "comprobar", "probar", "test", "confirmar",
+                    "guardar en el disco", "exportar a disco",
+                    "verificar", "comprobar", "probar", "test", "confirmar",
                     "revisar si", "asegurar", "validar"],
-        "means": "hay que confirmar que algo cumple lo que promete",
+        "means": "algo está roto, desconfigurado o sin respaldo, y hay que confirmarlo e intervenir",
     },
-    "Cotizar": {
-        # was: Cotizar + Costo
+    "Quote": {
         "signals": ["precio", "cuánto cuesta", "cuanto cuesta", "cotizar",
                     "cotización", "cotizacion", "barato", "oferta", "descuento",
                     "cuánto gasté", "cuanto gaste", "cuánto he gastado", "gasto",
-                    "factura", "costo total", "cuánto llevo", "cuanto llevo"],
+                    "factura", "costo total", "cuánto llevo", "cuanto llevo", "quote"],
         "means": "el dinero está en juego: un precio por pagar o un gasto ya hecho",
     },
-    "Investigar": {
+    "Buy": {
+        "signals": ["comprar", "compré", "compre", "compra", "lo quiero",
+                    "quiero pedir", "pedir el", "ordenar el", "buy", "purchase",
+                    "carrito", "checkout", "pagar"],
+        "means": "ya decidió: quiere adquirir el objeto",
+    },
+    "Search the Web": {
         "signals": ["investiga", "investigar", "busca información", "buscar info",
-                    "averiguar", "qué se sabe", "que se sabe", "documentación"],
-        "means": "todavía no hay objeto, hay una pregunta abierta",
+                    "buscar en la web", "en la web", "googlear", "averiguar",
+                    "qué se sabe", "que se sabe", "documentación", "search",
+                    "look up", "buscar"],
+        "means": "todavía no hay objeto, hay una pregunta abierta que se responde afuera",
     },
 }
 
 # When two intents tie, the one closer to the top of this list wins. Order is by
 # how much the verb changes the object: installing is not the same as pricing.
 _PRIORITY = [
-    "Instalar", "Compatibilidad", "Comparar", "Troubleshooting", "Testear",
-    "Cotizar", "Investigar",
+    "Configuration", "Compatibility", "Compare", "Quote", "Buy", "Troubleshooting",
+    "Search the Web",
 ]
 
 _PRIORITY_INDEX = {k: i for i, k in enumerate(_PRIORITY)}
@@ -224,7 +226,7 @@ intenciones:
 
 Reglas:
 - Responde solo con JSON: {{"intent": "<una de la lista>", "why": "<máximo 12 palabras>"}}
-- Si ninguna encaja, usa "Investigar".
+- Si ninguna encaja, usa "Search the Web" (nunca "Configuration" por defecto).
 - No expliques la sesión. No nombres actores. Solo el verbo."""
 
 

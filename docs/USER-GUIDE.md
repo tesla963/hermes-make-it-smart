@@ -73,7 +73,7 @@ filters.
 | **iq0** | What is the session about? (the block or the part) | `Stuck Startup` | yes |
 | **iq1** | Which program, platform or brand does the work? | `Firefox` | yes |
 | **iq2** | What sits around it? (store, country, machine) | `Ebay` | yes |
-| iq3 | What was asked? (the intention, seven closed values) | `Troubleshooting` | no |
+| iq3 | What was asked? (seven closed values — see below) | `Troubleshooting` | no |
 | iq4 | Which topic does it belong to? | `VPS` | no |
 | iq5 | Which year? | `2026` | no |
 | iq6 | Retired: the machine moved to iq2 | — | no |
@@ -83,6 +83,10 @@ filters.
 
 Read in one breath: `Firefox` + `Stuck Startup` + `Troubleshooting` gives the program,
 the block inside it, and what you were doing there.
+
+**The seven intentions:** `Troubleshooting`, `Search the Web`, `Compatibility`, `Buy`,
+`Quote`, `Compare`, `Configuration`. `Install` is not one of them — configuring implies
+installing, so both are `Configuration`.
 
 ### The topics (iq4)
 

@@ -585,8 +585,10 @@
     is superseded. iq1 is the maker of the subject, an adjective, never the
     assistant. iq2 is CONTEXT and only context: a store ("Ebay", "Amazon"), a
     country ("Panamá") or a machine ("Mac mini M4"). iq3 is the INTENTION and
-    nothing else, one of exactly seven: Comparar, Instalar, Investigar, Testear,
-    Cotizar, Troubleshooting, Compatibilidad. iq4 is the THEME, with the
+    nothing else, one of exactly seven: Troubleshooting, Search the Web,
+    Compatibility, Buy, Quote, Compare, Configuration. "Investigar" no longer
+    exists: the verb is "Search the Web". "Install" is not a separate intention
+    either: Configuration implies installation. iq4 is the THEME, with the
     subcategories of IT Manager. iq5 is the year. The model carries nine slots and
     slots 6 to 9 are reserved; the machine belongs in iq2, not in iq6. An intention ("Comparar"), a family ("WebHosting") or a
     theme ("Hardware") in iq2 is an error, not a judgement call. When a field
@@ -643,3 +645,26 @@
     - { right: "Hermes Desktop · Hermes Agent", wrong: "Hermes Agent · Hermes Agent" }
     - { right: "Protocol · Hermes Gateway", wrong: "— · Hermes Gateway" }
   control_question: "Name the part. If I cannot name it, why is the whole program in iq1?"
+
+- id: install-folds-into-configuration
+  taught: 2026-11-12
+  rule: >
+    "Install" is not an intention of its own. Configuration implies installation:
+    you cannot configure what you did not install. When a session is about
+    putting something in place, the intention is Configuration, whether the work
+    ended at the install or went on to the settings.
+  examples:
+    - { right: "Configuration", wrong: "Install" }
+    - { right: "Configuration", wrong: "Instalar" }
+  control_question: "Could I configure it without installing it? If not, the intention is Configuration."
+
+- id: search-the-web-not-investigar
+  taught: 2026-11-12
+  rule: >
+    The intention for looking something up is "Search the Web", in English. The
+    old "Investigar" is retired. It covers consulting, researching and web
+    searching; it does not cover reading a local document, which is Analysis.
+  examples:
+    - { right: "Search the Web", wrong: "Investigar" }
+    - { right: "Search the Web", wrong: "Consultar" }
+  control_question: "Am I going out to find something I do not know, or am I reading something I already have?"
