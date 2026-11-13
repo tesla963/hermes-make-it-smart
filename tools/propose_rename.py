@@ -18,6 +18,10 @@ import re
 import time
 from pathlib import Path
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from core.normalize import shrink_subject
+
 DATA = Path.home() / ".hermes/plugin-data/make-it-smart"
 
 
@@ -53,12 +57,12 @@ def derivar_sujeto(raw: str) -> str:
     t = re.sub(r"^\d{3,4}\s*\[[^\]]*\]\s*\d{0,3}\s*", "", raw or "")
     t = re.sub(r"\[[^\]]*\]", " ", t)
     t = RELLENO.sub(" ", t)
+    corto, _cola = shrink_subject(t)
+    if corto:
+        return corto
     palabras = [w.strip(".,;:¡!¿?()") for w in t.split()]
     palabras = [w for w in palabras if len(w) > 2 and not w.isdigit()]
-    if not palabras:
-        return ""
-    eleccion = palabras[:3]
-    return " ".join(eleccion).strip()
+    return " ".join(palabras[:3]).strip() if palabras else ""
 
 
 def canon_title(s: dict) -> str:
@@ -132,9 +136,16 @@ def main() -> int:
         # 3 · el sujeto es una frase, no un bloque: no se recorta, se pide un nombre.
         # Recortar "Educación Estatal o Particular" a "Educación Estatal o" no es un sujeto.
         if len(sujeto.split()) >= 4 and "sujeto" not in campos:
-            saltadas.append({"id": s.get("id"), "title": raw[:60],
-                             "why": "subject-too-long: needs a real name, not a trim"})
-            continue
+            corto, cola = shrink_subject(sujeto)
+            if corto and corto != sujeto and len(corto.split()) <= 3:
+                campos["sujeto"] = corto
+                if cola:
+                    campos["desc"] = (cola + " " + str(s.get("desc") or "")).strip()[:90]
+                reglas.append("subject-shrunk-to-its-head")
+            else:
+                saltadas.append({"id": s.get("id"), "title": raw[:60],
+                                 "why": "subject-too-long and no safe head to cut"})
+                continue
 
         if not reglas:
             continue

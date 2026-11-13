@@ -168,6 +168,71 @@ def strip_spec(subject: str) -> tuple[str, str]:
     return rest, m.group(0).strip()
 
 
+ESTADO = ("inusual", "trancado", "trabado", "colgado", "roto", "rota", "lento",
+          "lenta", "raro", "rara", "extraño", "fallando", "inestable", "con error",
+          "sin respuesta", "no abre", "no arranca", "no responde", "se cuelga")
+CONECTOR = ("de", "del", "la", "el", "los", "las", "un", "una", "y", "o", "a", "en",
+            "con", "por", "para", "al", "que", "este", "esta", "estos", "estas")
+# Verbos y arranques de frase: en un sujeto no hay acciones, hay cosas.
+ACCION = re.compile(r"\b\w*(?:ar|er|ir|ando|iendo|ado|ido|aba|aste|iste)\b", re.I)
+SALUDO = {"hola", "buenas", "hey", "consultar", "consulta", "explicar", "explica",
+          "explicame", "decir", "dime", "mostrar", "mostrame", "navegador"}
+CONJUGADO = {"esta", "estan", "estaba", "puede", "puedo", "puedes", "tiene", "tengo",
+             "hace", "hacer", "investiga", "abriendo", "funcionando", "se", "no", "si"}
+
+
+def shrink_subject(subject: str, limit: int = 3) -> tuple[str, str]:
+    """Cut a long subject down to its head, and return what was taken out.
+
+    El sujeto es el bloque, no la frase. En este orden: fuera saludos y arranques de frase,
+    fuera verbos y conjugaciones, fuera adjetivos de estado y conectores. Si quedan nombres
+    propios, esos son el sujeto; si no, las primeras palabras con sustancia. Nunca se deja
+    un conector colgando y nunca se devuelve algo sin letras.
+
+    («brave no esta abriendo»)          → («Brave», «no abre»)
+    («Hola DeepSeek estás funcionando») → («DeepSeek», «funcionando»)
+    («Educación Estatal o Particular»)  → («Educación Estatal Particular», «»)
+    """
+    texto = (subject or "").strip()
+    if not texto:
+        return "", ""
+    palabras = [w.strip(".,;:¡!¿?()") for w in texto.split()]
+    palabras = [w for w in palabras if w]
+    if not palabras:
+        return "", ""
+
+    resto: list[str] = []
+    nucleo: list[str] = []
+    for i, w in enumerate(palabras):
+        bajo = w.lower()
+        primera = i == 0
+        if (primera and bajo in SALUDO) or bajo in CONJUGADO or bajo in ESTADO or bajo in CONECTOR:
+            resto.append(w)
+            continue
+        # un infinitivo abre la frase, no la nombra: "Recuperar", "Configurar" se van
+        if ACCION.search(w) and (not w[:1].isupper() or (primera and w.lower().endswith(("ar", "er", "ir")))):
+            resto.append(w)
+            continue
+        nucleo.append(w)
+
+    if not nucleo:
+        nucleo, resto = palabras[:limit], palabras[limit:]
+
+    # los nombres propios manda: si hay, el sujeto sale de ahí
+    propios = [w for w in nucleo if w[:1].isupper()]
+    fuente = propios if len(propios) >= 1 else nucleo
+    cabeza = fuente[:limit]
+    sobra = [w for w in nucleo if w not in cabeza] + resto
+
+    nuevo = " ".join(cabeza).strip(" ,.;:-")
+    cola = " ".join(dict.fromkeys(sobra)).strip(" ,.;:-")
+    if len(nuevo) < 3 or not any(c.isalpha() for c in nuevo):
+        return texto, ""
+    if nuevo[:1].islower():
+        nuevo = nuevo[0].upper() + nuevo[1:]
+    return nuevo, cola
+
+
 def slug_key(subject: str) -> str:
     """Case- and accent-insensitive key used for the MMM counter."""
     s = unicodedata.normalize("NFKD", (subject or "").strip().lower())
