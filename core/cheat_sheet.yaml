@@ -7,6 +7,11 @@
 #
 # Every user keeps their own. Edit it freely — it is data, not code.
 #
+# The brands and programs below are EXAMPLES, not the plugin's opinions: they show the
+# shape of an entry so you can replace them with your own. The walkthrough is in
+# examples/vocabulario-ejemplos.md, and your own world goes in
+# ~/.hermes/plugin-data/make-it-smart/vocab.personal.yaml (never in this file).
+#
 # How the classifier uses it, in order:
 #   1. `marcas`     — a name found in a subject decides iq1 and whether the
 #                     brand leaves the subject.
@@ -55,21 +60,6 @@ marcas:
     iq1: NVIDIA
     strip: false
     productos: [RTX 5090, RTX 4090, Quadro, A5000, A3000, Spark]
-  primatelabs:
-    iq1: Primate Labs
-    sitio: https://www.geekbench.com/
-    productos: [Geekbench]
-    nota: Geekbench es el producto; la compania es Primate Labs (Toronto).
-  gardengnome:
-    iq1: Garden Gnome
-    sitio: https://ggnome.com/
-    productos: [Pano2VR, Object2VR]
-    nota: Pano2VR es de Garden Gnome GmbH (Viena).
-  rtools:
-    iq1: R-Tools
-    sitio: https://www.r-studio.com/
-    productos: [R-Studio]
-    nota: R-Studio es de R-Tools Technology, Inc.
   nous:
     iq1: Nous Research
     sitio: https://nousresearch.com/
@@ -82,28 +72,6 @@ marcas:
     iq1: Samsung
     sitio: https://www.samsung.com/
     productos: [Galaxy A55, Galaxy S, A55]
-  iterm2:
-    iq1: ""
-    nota: >
-      iTerm2 es software libre de George Nachman, sin compania detras. La
-      regla del dueno: cuando el software libre no tiene empresa, el nombre ES
-      la marca y no se repite en iq1. Se deja vacio.
-  goveelife:
-    iq1: GoveeLife
-    sitio: https://www.govee.com/
-    productos: [Hygrometer, Thermometer, H5151, H5101]
-    nota: >
-      La marca es "GoveeLife", la linea domestica de Govee. Sus sensores llevan
-      un gateway propio y se instalan por la app Govee Home.
-  rayneo:
-    iq1: RayNeo
-    sitio: https://www.rayneo.com/
-    productos: [Air 2, Air 4 Pro, GT Max, X2]
-    nota: >
-      La marca se escribe "RayNeo", en una sola palabra y con la N mayuscula.
-      No es "Ray Neo" ni "RayNEO". Son gafas AR: se conectan por USB-C con
-      DP Alt Mode, asi que funcionan con cualquier salida de video compatible,
-      incluido el DJI RC 2.
   dji:
     iq1: DJI
     strip: false
@@ -273,51 +241,11 @@ servicios:
 # A concept is a permanent noun, not a description.
 # ---------------------------------------------------------------------------
 conceptos:
-  hack_history:
-    nombre: Hack History
-    que_es: >
-      Archivo de amenazas, incidentes y exposición del agente: qué ataques se
-      han documentado, qué vectores se han visto, qué se aprendió. Más propio
-      del mundo OpenClaude, que tiene más historia en ese terreno.
-    iq2: Data Security
-    ejemplos: [872]
-  ventana_permisos:
-    nombre: Ventana Permisos
-    que_es: "El diálogo de permisos del sistema. Tema recurrente a lo largo de meses."
-    iq1: Hermes Agent
-    iq2: Data Security
-    ejemplos: [10, 13, 90, 533, 720, 821, 877]
   protocolo:
     nombre: Protocolo
     que_es: "El gateway roto: se nombra el punto de falla, no el componente."
     iq2: Troubleshooting
     ejemplos: [20, 81]
-  flight_paths:
-    nombre: Flight Paths
-    que_es: >
-      Trayectorias de vuelo programables que el dron ejecuta solo: waypoints con
-      coordenadas, altura, velocidad, orientación de cámara y acciones.
-      DJI las llama Waypoints y las habilitó en el Avata 360; Antigravity A1 las
-      llama Flight Paths. En este catálogo el sujeto es siempre "Flight Path",
-      en singular — "Flight Paths", "Waypoints", "paths programables" y "rutas"
-      son la misma cosa y no dividen el filtro.
-    iq1: [DJI, Antigravity A1]
-    iq2: [Multimedia, Automation]
-    ejemplos: [157, 430, 585, 730, 773, 844]
-    sinonimos: [waypoints, path programable, flight paths, rutas de vuelo]
-    no_confundir: >
-      "Avata 360" es el DRON y es otro sujeto. Una sesión sobre el dron —sus
-      especificaciones, su registro, sus goggles— lleva sujeto "Avata 360";
-      una sesión sobre trayectorias programables lleva sujeto "Flight Path".
-      Ejemplos: 654 y 802 son Avata 360; 157, 430, 585, 730, 844 son Flight Path.
-  descuentos_jubilados:
-    nombre: Descuentos a Jubilados
-    que_es: >
-      Beneficio comercial y legal que rebaja el precio a personas jubiladas.
-      La preposición "a" forma parte del nombre del concepto: no es una oración
-      y no viola la regla de sujeto puntual.
-    iq1: Hermes Agent
-    ejemplos: [267]
   harness_agent:
     nombre: Harness Agent
     que_es: >
