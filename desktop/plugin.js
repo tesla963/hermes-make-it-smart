@@ -980,11 +980,11 @@ const I18N = {
     restTitle: 'Restore Original Titles',
     restConfirm: 'Return {n} sessions to their original title?\n\nUseful before uninstalling the plugin.',
     restDone: 'Restored: {n} (by the plugin: {p} · no record: {s}) · already equal: {i}',
-    updbBtn: 'Update DB',
+    updbBtn: 'Reload Index',
     updbTitle: 'Re-read the catalogue from disk and show what is pending',
     updbDone: 'Catalogue reloaded: {n} sessions · {v} waiting to be renamed',
     updbHelp: 'If a session you just created is missing, run: python3 tools/sync_index.py --apply',
-    procCount: 'Sessions to Process ({n})',
+    procCount: 'Process Sessions ({n})',
     procTitle: 'Process the sessions waiting to be renamed',
     dlgProcTitle: 'Process sessions',
     dlgProcBody: 'This will process {n} session(s). A full backup of the batch is written before anything changes, so you can revert at any time.',
@@ -4760,6 +4760,7 @@ function App({ ctx }) {
                     setDialogo(null)
                     if (d.kind === 'restore') await restaurarOriginales()
                     else if (d.kind === 'processall') await procesarTodo()
+                    else if (d.kind === 'process') await procesarTodo()
                     else if (d.kind === 'applynewrules') await aplicarPropuesta()
                     else await handleCommit()
                   },
