@@ -258,3 +258,35 @@ backup → topics (iq4) → cheat sheet → dry run → corrections → apply �
 ```
 
 And the step that is never skipped: **look before writing.**
+
+## Running the pipeline by hand
+
+Three steps, in this order. Each one does one thing and refuses to do the next one's job.
+
+```bash
+# 1 · RENAME — only titles that are still virgin (no NNN prefix)
+python3 tools/rename_sessions.py              # shows what it would do
+python3 tools/rename_sessions.py --apply      # writes: backup first, then the journal
+
+# 2 · AUDIT — only sessions that already carry a number (renamed at least once)
+python3 tools/audit_titles.py                 # writes proposals.json, touches no titles
+
+# 3 · PUBLISH — validate and hand the proposals to the panel
+python3 tools/publish_proposals.py            # writes proposed-index.json for "New Rules"
+```
+
+Then reload the panel and use the **New Rules** tab, which asks for confirmation before
+auditing, backs up the titles it will touch, applies one by one and reports what happened.
+
+**Order is not negotiable.** An auditor cannot audit a title that was never renamed: there is
+no subject, no program and no context to check. `tools/scope.py` holds that rule, and both
+scripts import it so they cannot disagree.
+
+**A session is never renamed twice.** `tools/rename_sessions.py` keeps a journal of what it
+processed; a journaled id is skipped forever. To reprocess one on purpose, remove its id from
+`rename-journal.json` by hand — the script will not do it on its own.
+
+**A proposal that does not validate is not published.** `publish_proposals.py` rejects titles
+that do not parse, subjects longer than three words or starting with a verb, subjects repeated
+in another field, descriptions that repeat the name, and anything containing a blocked term.
+Rejected proposals are reported with their reason instead of being applied.

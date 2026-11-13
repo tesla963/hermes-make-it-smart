@@ -114,3 +114,16 @@ python3 tools/build_index.py
 - **The model's reasoning is not backed up**: it is not data, it is reproducible.
 - **The proposals are not backed up**: `proposed-index.json` can be regenerated with
   `python3 tools/propose_rename.py` at any time.
+
+### Where each writer leaves its backup
+
+The panel and the Python scripts write their backups to different directories, and that is not
+a bug — it is where each one has write access:
+
+| Writer | Backup directory |
+|---|---|
+| The panel (`New Rules`, `Restore`) | the **mirror**: `~/Library/Application Support/Hermes/plugin-files/data/make-it-smart/backups/` |
+| `tools/rename_sessions.py` | the **canonical**: `~/.hermes/plugin-data/make-it-smart/backups/` |
+
+`Revert` reads `commit-last.json` from the mirror, which is where the panel writes it. A backup
+made by the Python script is a file on disk: it is restored by hand, not by the Revert button.
