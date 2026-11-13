@@ -427,6 +427,14 @@ def main() -> int:
         print("  dry run — nada escrito")
         return 0
 
+    # El resumen es lo que el panel informa como auditoría: sale de la corrida, no de una resta.
+    propuesta["summary"] = {
+        "evaluadas": int(propuesta.get("total") or 0),
+        "cambios": len(propuesta.get("changes", [])),
+        "identicas": int(propuesta.get("unchanged") or 0),
+        "omitidas": len(propuesta.get("skipped", [])),
+    }
+
     out = Path(args.out).expanduser()
     texto = json.dumps(propuesta, ensure_ascii=False, indent=1)
     tmp = out.with_suffix(".tmp")

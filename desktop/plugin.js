@@ -733,7 +733,7 @@ const I18N = {
     iqNoData: 'Generá el inventario con: python3 tools/plugin_iq.py',
     iqRuleOf: 'regla', iqOf: 'de',
     dlgApplyTitle: 'Procesar todas las sesiones',
-    dlgApplyBody: 'Se van a auditar las {n} sesiones, una por una, aplicando las reglas actuales.\n\nTodavía no se sabe cuántas necesitan cambio: eso lo decide la auditoría, sesión por sesión.\n\nAl terminar te informa qué hizo: cuántas se renombraron, cuántas ya estaban bien y cuántas no se tocaron.\n\nAntes de escribir nada se guarda un respaldo de los títulos actuales. Si algo sale mal, Revert lo devuelve exacto.\n\n¿Audito?',
+    dlgApplyBody: 'La auditoría de las {n} sesiones ya está hecha con las reglas actuales.\n\nAl confirmar, el panel hace tres cosas de verdad: verifica cada cambio contra el título que hay hoy (si ya está aplicado, no lo repite), guarda un respaldo de los títulos que va a tocar ANTES de tocarlos, y aplica uno por uno contando los fallos.\n\nAl terminar te informa qué pasó: cuántas renombró, cuántas ya estaban bien, cuántas son maquinaria y si alguna falló.\n\nSi algo sale mal, Revert devuelve los títulos exactos.\n\n¿Aplico la auditoría?',
     newRulesIdle: 'Sin propuesta. Generala con: python3 tools/propose_rename.py',
     newRulesApply: 'Procesar todas las sesiones ({n})',
     newRulesApplyTitle: 'Escribe un respaldo de la base de títulos y después aplica los cambios',
@@ -931,7 +931,7 @@ const I18N = {
     iqNoData: 'Build the inventory with: python3 tools/plugin_iq.py',
     iqRuleOf: 'rule', iqOf: 'of',
     dlgApplyTitle: 'Process every session',
-    dlgApplyBody: 'All {n} sessions will be audited, one by one, applying the current rules.\n\nHow many actually need a change is not known yet: the audit decides that, session by session.\n\nWhen it finishes it reports what it did: how many were renamed, how many were already fine, and how many were left alone.\n\nA backup of the current titles is written before anything changes. If something goes wrong, Revert puts it back exactly.\n\nRun the audit?',
+    dlgApplyBody: 'All {n} sessions have already been audited with the current rules.\n\nOn confirm, the panel really does three things: verifies every change against the title that exists today (an already-applied change is not repeated), writes a backup of the titles it will touch BEFORE touching them, and applies one by one, counting failures instead of assuming success.\n\nWhen it finishes it reports what happened: renamed, already fine, machinery, and whether anything failed.\n\nIf something goes wrong, Revert puts the exact titles back.\n\nApply the audit?',
     newRulesIdle: 'No proposal. Generate it with: python3 tools/propose_rename.py',
     newRulesApply: 'Procesar todas las sesiones ({n})',
     newRulesApplyTitle: 'Writes a backup of the title database, then applies the changes',
@@ -2766,52 +2766,57 @@ function App({ ctx }) {
   }
 
   const aplicarPropuesta = async () => {
-    const cambios = (prop && Array.isArray(prop.changes)) ? prop.changes : []
+    /* Qué hace esto, sin adornos:
+     * la auditoría la hace el motor de reglas (tools/propose_rename.py) y queda escrita en
+     * proposed-index.json, que ya trae las 887 sesiones evaluadas: cuántas cambian, cuántas
+     * están bien y cuántas son maquinaria.
+     * El panel NO puede re-auditar: sus campos son un resumen con pérdida del título, y
+     * comparar campo contra título marcaría como malo casi todo. Lo que sí hace, de verdad:
+     *   · verifica cada cambio contra el título actual (si ya está aplicado, no lo repite),
+     *   · respalda los títulos que va a tocar, antes de tocar,
+     *   · aplica una por una y cuenta los fallos en vez de darlos por hechos,
+     *   · informa con lo que pasó.
+     */
     const filesApi = (ctx && ctx.files) || (host && host.files)
     if (!filesApi || typeof filesApi.writeText !== 'function') { setPropMsg('sin permiso de escritura'); return }
+    const cambios = (prop && Array.isArray(prop.changes)) ? prop.changes : []
+    const resumen = (prop && prop.summary) || {}
     setIsCommitting(true)
 
-    const todas = sessions.length
-    const maquinaria = sessions.filter(esIntocable).length
-    const evaluadas = todas - maquinaria
-
-    // Si la propuesta está vacía (0 cambios), corre el barrido completo igual y reporta.
-    if (!cambios.length) {
-      const reporte = {
-        ts: new Date().toISOString(), origen: 'new-rules',
-        total: todas, evaluadas, cambiadas: 0, iguales: evaluadas, maquinaria,
-      }
-      try { await filesApi.writeText('data', 'apply-report.json', JSON.stringify(reporte, null, 2)) } catch (_) {}
-      setIsCommitting(false)
-      setPropMsg(
-        `${todas} sesiones revisadas · 0 renombradas · ${evaluadas} ya estaban bien · ` +
-        `${maquinaria} de maquinaria sin tocar`
-      )
-      return
-    }
-
-    // 1. El respaldo va primero, siempre. Sin respaldo no se escribe nada.
-    const fname = `commit-backup-${getBackupStamp()}.json`
-    const payload = {
-      filename: fname,
-      ts: Date.now(),
-      committed: false,
-      reverted: false,
-      origin: 'new-rules',
-      changedCount: cambios.length,
-      entries: cambios.map((c) => ({
-        id: c.id, title_before: c.before, title_after: c.after, prof: c.prof,
-        ts: new Date().toISOString(),
-      })),
-    }
-    try { await filesApi.writeText('data', fname, JSON.stringify(payload, null, 2)) } catch (_) {}
-    try { await filesApi.writeText('data', 'commit-last.json', JSON.stringify(payload, null, 2)) } catch (_) {}
-    setLastBackup(payload)
-
-    // 2. Aplicar sesión por sesión; lo que falla no se da por hecho.
-    const updates = new Map()
-    let ok = 0
+    const total = sessions.length
+    const porId = new Map(sessions.map((d) => [d.id, d]))
+    const plan = []
+    let yaBien = Number(resumen.identicas || resumen.identical || 0)
+    let omitidas = Number(resumen.omitidas || resumen.skipped || 0)
+    let previos = 0
     for (const c of cambios) {
+      const d = porId.get(c.id)
+      const actual = d ? String(d.raw || '').trim() : String(c.before || '').trim()
+      if (actual === String(c.after || '').trim()) { previos += 1; yaBien += 1; continue }
+      plan.push({ id: c.id, prof: c.prof, before: actual, after: c.after })
+    }
+
+    // 1. Respaldo antes de escribir. Solo de lo que se va a tocar.
+    let fname = ''
+    if (plan.length) {
+      fname = `commit-backup-${getBackupStamp()}.json`
+      const payload = {
+        filename: fname, ts: Date.now(), committed: false, reverted: false,
+        origin: 'new-rules', changedCount: plan.length,
+        entries: plan.map((c) => ({
+          id: c.id, title_before: c.before, title_after: c.after, prof: c.prof,
+          ts: new Date().toISOString(),
+        })),
+      }
+      try { await filesApi.writeText('data', fname, JSON.stringify(payload, null, 2)) } catch (_) {}
+      try { await filesApi.writeText('data', 'commit-last.json', JSON.stringify(payload, null, 2)) } catch (_) {}
+      setLastBackup(payload)
+    }
+
+    // 2. Una por una. Lo que falla se cuenta como fallo.
+    const updates = new Map()
+    let ok = 0, fallos = 0
+    for (const c of plan) {
       try {
         const r = await callRpc(ctx, 'session.resume', {
           session_id: c.id,
@@ -2823,30 +2828,34 @@ function App({ ctx }) {
           await callRpc(ctx, 'session.title', { session_id: r.session_id, title: c.after })
           updates.set(c.id, c.after)
           ok += 1
-        }
+        } else { fallos += 1 }
+      } catch (_) { fallos += 1 }
+    }
+    if (updates.size) {
+      await syncIndexRaw(updates)
+      setSessions((prevS) => prevS.map((d) => (updates.has(d.id) ? { ...d, raw: updates.get(d.id) } : d)))
+      try {
+        const fresco = await loadCatalogue(ctx)
+        if (fresco && Array.isArray(fresco.sessions)) setSessions(fresco.sessions)
       } catch (_) {}
     }
-    await syncIndexRaw(updates)
-    setSessions((prev) => prev.map((d) => (updates.has(d.id) ? { ...d, raw: updates.get(d.id) } : d)))
 
-    // El título cambió en la base: hay que releer el catálogo o la tabla sigue mostrando el viejo
-    // y el usuario cree que el botón no hizo nada.
-    try {
-      const fresco = await loadCatalogue(ctx)
-      if (fresco && Array.isArray(fresco.sessions)) setSessions(fresco.sessions)
-    } catch (_) {}
-
-    // Barrido completo, una por una: las iguales no se tocaron, las de maquinaria no se tocan nunca.
-    const iguales = Math.max(evaluadas - ok, 0)
+    // 3. Informe armado con lo que pasó.
     const reporte = {
-      ts: new Date().toISOString(), origen: 'new-rules',
-      total: todas, evaluadas, cambiadas: ok, iguales, maquinaria, respaldo: fname,
+      ts: new Date().toISOString(), origen: 'new-rules', backup: fname || null,
+      total, auditadas: Number(resumen.evaluadas || resumen.evaluated || total),
+      renombradas: ok, ya_estaban_bien: yaBien, maquinaria: omitidas,
+      ya_aplicadas_antes: previos, fallos,
+      cambios: plan.map((c) => ({ id: c.id, before: c.before, after: c.after })),
     }
     try { await filesApi.writeText('data', 'apply-report.json', JSON.stringify(reporte, null, 2)) } catch (_) {}
     setIsCommitting(false)
     setPropMsg(
-      `${todas} sesiones revisadas · ${ok} renombradas · ${iguales} ya estaban bien · ` +
-      `${maquinaria} de maquinaria sin tocar · respaldo ${fname}`
+      `${reporte.auditadas} sesiones auditadas · ${ok} renombradas · ${yaBien} ya estaban bien · ` +
+      `${omitidas} de maquinaria sin tocar` +
+      (fallos ? ` · ${fallos} fallaron` : '') +
+      (previos ? ` · ${previos} ya venían aplicadas` : '') +
+      (fname ? ` · respaldo ${fname}` : ' · sin cambios que aplicar')
     )
   }
 
