@@ -955,3 +955,34 @@
     - { right: "972 [Firefox] 001 tarda mucho en arrancar", wrong: "972 [Firefox] 001" }
     - { right: "973 [Steren COM-6900] 001 Configurar layout del teclado", wrong: "973 [Steren COM-6900] 001" }
   control_question: "Did extracting the subject leave the session description empty when there was a descriptive predicate in the original title?"
+
+- id: intention-is-required-not-optional
+  rule: "Every session carries an intention (iq3) from the seven canonical values. A session with an empty iq3 was never classified, only renamed."
+  why: "297 of 887 sessions had no intention because the old rules left it blank. An empty intention means the title does not say what was done, only what it was about."
+  examples:
+    - "967 [Brave] 001 [Brave] Recuperar ventanas -> iq3 Troubleshooting, not blank"
+    - "972 [Firefox] 001 tarda mucho -> iq3 Troubleshooting (tarda = something is wrong)"
+  control_question: "Does this title say WHAT was done, or only WHAT it was about?"
+
+- id: verb-in-subject-is-always-wrong
+  rule: "A verb never lives in the subject, on any session, not only on virgin titles. When a subject opens with a verb, the verb becomes the intention and the subject keeps the object."
+  why: "The verb test only ran while deriving a virgin title, so 29 renamed sessions kept a verb in the subject and nobody flagged them."
+  examples:
+    - "[Recuperar ventas y pestañas] -> subject Ventas y pestañas, iq3 Troubleshooting"
+    - "[Eliminar línea gris en tabs] -> subject Línea gris, iq3 Troubleshooting"
+  control_question: "Does the first word of the subject pass the 'what happened to it?' test, or is it an action?"
+
+- id: fields-must-come-from-the-prompt
+  rule: "If fewer than two of the assigned fields appear in the user's first prompt, the title was not read from the session. That is a rebuild, not a review."
+  why: "223 sessions had fields that barely appear in the prompt and 129 shared nothing with it: the title was written from the previous title, not from the session."
+  examples:
+    - "fields say [Firefox] but the prompt never mentions Firefox -> rebuild from the prompt"
+  control_question: "Can I point to the sentence in the first prompt that justifies each field?"
+
+- id: description-amplifies-the-name
+  rule: "The description never repeats the name; it amplifies it. If most of its words already live in the subject or in the title, it adds nothing and must be rewritten to say the goal, the problem or the result."
+  why: "Repeating the title inside the description doubles the length and teaches nothing. The owner's criterion: the description must amplify the meaning of the session name."
+  examples:
+    - "967 [Ventas y pestañas] 001 [Brave] Recuperar ventas y pestañas -> redundant: the description repeats the subject"
+    - "967 [Ventas y pestañas] 001 [Brave] Cerrar Brave lo dejó sin sesión y se perdieron las pestañas -> amplifies"
+  control_question: "Does the description tell me something the title did not?"
