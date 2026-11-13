@@ -4457,7 +4457,7 @@ function App({ ctx }) {
     /* ---------- Bottom Footer Row (Unified Actions + 5 KPIs) ---------- */
     h(
       'div',
-      { className: 'footrow' + (activeTab === 'testing' || activeTab === 'newrules' ? ' actmode' : '') },
+      { className: 'footrow' + (activeTab === 'testing' || activeTab === 'newrules' || activeTab === 'tabiq' ? ' actmode' : '') },
       activeTab === 'newrules'
         ? h(
             'div',
