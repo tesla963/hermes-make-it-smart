@@ -1009,8 +1009,13 @@ position:relative;display:flex;flex-direction:column;width:100%;height:100%;min-
 .mmws .headtab.on{opacity:1;color:var(--accent);background:#1b1720;border-bottom-color:var(--accent)}
 .mmws .headtab.on::before,.mmws .headtab.on::after{opacity:1}
 .iqpanel{position:absolute;inset:0;background:var(--bg);z-index:6;display:flex;flex-direction:column;gap:10px;padding:14px 18px;overflow:hidden}
+.mmws .actbar{display:flex;align-items:center;gap:10px;padding:10px 18px;border-bottom:1px solid var(--line);background:#141018;flex-wrap:wrap}
+.mmws .actbar .procbtn{font-size:12px;padding:6px 12px}
+.mmws .actbar .footmsg{color:var(--tx3);font-size:11.8px}
 .mmws .iqpanel .iqhead{display:flex;gap:14px;align-items:center;font-size:12px;color:var(--tx3)}
-.mmws .iqpanel .iqstrip{display:flex;gap:6px;flex-wrap:wrap}
+.mmws .iqpanel .iqstrip{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;padding:2px 0 6px}
+.mmws .iqpanel .iqstrip.main .iqbtn{font-size:12px;padding:5px 16px;border-bottom:2px solid transparent}
+.mmws .iqpanel .iqstrip.main .iqbtn.on{border-bottom-color:#3fa8a0}
 .mmws .iqpanel .iqbtn{border:1px solid var(--line);background:#17141b;color:var(--tx2);font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer}
 .mmws .iqpanel .iqbtn.on{background:#13302e;color:#7fd6ce;border-color:#3fa8a0}
 .mmws .iqpanel pre{flex:1 1 auto;overflow:auto;background:#100d13;border:1px solid var(--line);border-radius:8px;padding:12px 14px;font-size:11.8px;line-height:1.5;color:var(--tx2);white-space:pre-wrap}
@@ -1048,6 +1053,8 @@ position:relative;display:flex;flex-direction:column;width:100%;height:100%;min-
 .mmws .bodywrap{flex:1 1 auto;min-height:0;display:flex;align-items:stretch;position:relative;overflow:hidden}
 /* Process and New Rules do not filter: they act. The left aside would be dead weight. */
 .mmws .bodywrap.nofilters aside{display:none}
+/* Process, New Rules y Plugin IQ no filtran: la barra de filtros sobra y el contador también. */
+.mmws .bodywrap.nofilters .toolbar{display:none}
 .mmws .abarra{flex:none;padding:9px 0 8px;background:var(--bg2);border-bottom:1px solid var(--line);z-index:2}
 .mmws .ascroll{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;padding:8px 0 14px;scrollbar-width:none;-ms-overflow-style:none;overscroll-behavior:contain}
 .mmws .ascroll::-webkit-scrollbar{display:none;width:0;height:0}
@@ -2806,6 +2813,9 @@ function App({ ctx }) {
   }
 
   const switchTab = async (tab) => {
+    // Tres ventanas distintas: el filtro de una no puede aparecer en otra.
+    setQ('')
+    setF({ dia: '', d1: '', d2: '', iq1: '', iq2: '', iq3: '', iq4: '', anio: '', machine: '', store: '', country: '' })
     setActiveTab(tab)
     if (tab === 'tabiq') {
       await leerPluginIQ()
@@ -3862,7 +3872,7 @@ function App({ ctx }) {
     /* ---------- Body (Aside + Main + Slide-over Detail Panel) ---------- */
     h(
       'div',
-      { className: 'bodywrap' + (activeTab === 'testing' || activeTab === 'newrules' ? ' nofilters' : '') },
+      { className: 'bodywrap' + (activeTab === 'testing' || activeTab === 'newrules' || activeTab === 'tabiq' ? ' nofilters' : '') },
 
       /* Left Filters Aside */
       h(
@@ -4100,7 +4110,7 @@ function App({ ctx }) {
             ),
             h(
               'div',
-              { className: 'iqstrip' },
+              { className: 'iqstrip main' },
               ['rules', 'scripts', 'docs'].map((v) =>
                 h(
                   'button',
@@ -4133,6 +4143,55 @@ function App({ ctx }) {
                 ? iqData.scripts.map((s) => `${s.name.padEnd(26)} ${String(s.lines).padStart(4)} líneas   ${s.what}`).join('\n')
                 : (iqData.docs.find((d) => d.name === iqDoc) || iqData.docs[0] || {}).body || ''
             )
+          )
+        : null,
+
+      /* Action bar: where the filters used to be, for the windows that act instead of filtering */
+      (activeTab === 'testing' || activeTab === 'newrules')
+        ? h(
+            'div',
+            { className: 'actbar' },
+            activeTab === 'testing'
+              ? [
+                  h(
+                    'button',
+                    {
+                      key: 'pall', className: 'procbtn', disabled: isCommitting || isReverting,
+                      onClick: () => setDialogo({ kind: 'processall', n: sessions.filter((d) => !esIntocable(d)).length }),
+                      title: t('procAllTitle'),
+                    },
+                    t('procAll', { n: sessions.filter((d) => !esIntocable(d)).length })
+                  ),
+                  h(
+                    'button',
+                    {
+                      key: 'pend', className: 'ghost', disabled: isCommitting || isReverting || !pendingRows.length,
+                      onClick: () => setDialogo({ kind: 'process', n: pendingRows.length }),
+                      title: t('procTitle'),
+                    },
+                    t('procCount', { n: pendingRows.length })
+                  ),
+                  canRevert
+                    ? h('button', { key: 'rev', className: 'revertbtn', disabled: isCommitting || isReverting, onClick: handleRevert }, t('revertir'))
+                    : null,
+                  machineryPending.length > 0
+                    ? h('span', { key: 'mach', className: 'footmsg' }, t('machineryNote', { n: machineryPending.length }))
+                    : null,
+                ]
+              : [
+                  h(
+                    'button',
+                    {
+                      key: 'apply', className: 'procbtn', id: 'btnApplyNewRules',
+                      disabled: isCommitting || isReverting || !(prop && prop.changes && prop.changes.length),
+                      onClick: aplicarPropuesta,
+                      title: t('newRulesApplyTitle'),
+                    },
+                    t('newRulesApply', { n: (prop && prop.changes && prop.changes.length) || 0 })
+                  ),
+                  h('button', { key: 'rel', className: 'ghost', onClick: leerPropuesta }, t('newRulesReload')),
+                  h('span', { key: 'msg', className: 'footmsg', id: 'propMsg' }, propMsg),
+                ]
           )
         : null,
 
