@@ -3,20 +3,26 @@
 
 Never writes to session titles or state.db.
 Audits field by field: iq0 (sujeto), iq1 (programa), iq2 (contexto), iq3 (intención), desc.
-Applies the elemental principle: when a field (like intention iq3) is missing from the title,
-it reads the session dialogue via `core.session_reader` to find it with evidence.
+Synchronizes with the live state.db (mode=ro) so that `before` is always 100% current.
+
+Separates proposals into two clean categories:
+  1. CORRECCIONES: structural errors (verbs in subject, brand in subject, subject >= 4 words, redundant description).
+  2. FORMATO: massive intention suffix styling (· Intención).
 
 Outputs `proposals.json` with field-by-field verdicts, evidence, and rule breakdown.
 Guarantees 100% convergence: running a second audit on proposed titles yields 0 changes.
 
     python3 tools/audit_titles.py                 # writes proposals.json
-    python3 tools/audit_titles.py --dry-run       # writes proposals.json for inspection, touches no DB
+    python3 tools/audit_titles.py --dry-run       # writes proposals.json, touches no DB
+    python3 tools/audit_titles.py --only-corrections # populates after ONLY for structural corrections
 """
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
+import sqlite3
 import sys
 import time
 from pathlib import Path
@@ -34,9 +40,20 @@ HOME = Path.home()
 DATA = HOME / ".hermes/plugin-data/make-it-smart"
 JOURNAL = DATA / "rename-journal.json"
 CANONICAL_INDEX = DATA / "index.json"
+STATE_DB = HOME / ".hermes/state.db"
 LIMIT = 100
 
 VERBO = re.compile(r"\b\w+(?:ar|er|ir|ando|iendo|ado|ido)\b", re.I)
+
+
+def file_sha256(p: Path) -> str:
+    if not p.exists():
+        return ""
+    h = hashlib.sha256()
+    with p.open("rb") as f:
+        while chunk := f.read(65536):
+            h.update(chunk)
+    return h.hexdigest()
 
 
 def cargar_journal(ruta: Path) -> set[str]:
@@ -47,6 +64,20 @@ def cargar_journal(ruta: Path) -> set[str]:
         return set(data.keys()) if isinstance(data, dict) else set()
     except Exception:
         return set()
+
+
+def cargar_titulos_vivos() -> dict[str, str]:
+    """Carga los títulos vivos directamente de state.db para no arrastrar snapshots viejos."""
+    if not STATE_DB.exists():
+        return {}
+    try:
+        con = sqlite3.connect(f"file:{STATE_DB}?mode=ro", uri=True)
+        cur = con.cursor()
+        rows = cur.execute("select id, title from sessions where title is not null").fetchall()
+        con.close()
+        return {str(r[0]): str(r[1]).strip() for r in rows}
+    except Exception:
+        return {}
 
 
 def canon_title(s: dict) -> str:
@@ -79,13 +110,14 @@ def canon_title(s: dict) -> str:
     return head
 
 
-def auditar_sesion(s: dict, ren: set[str], journal_ids: set[str]) -> dict[str, Any]:
+def auditar_sesion(s: dict, ren: set[str], journal_ids: set[str], live_title: str | None = None) -> dict[str, Any]:
     sid = str(s.get("id") or "")
     n_val = s.get("n")
-    raw = str(s.get("raw") or "").strip()
+    # El título vivo manda sobre el índice desactualizado
+    raw = live_title if live_title is not None else str(s.get("raw") or "").strip()
     prof = str(s.get("prof") or "default")
 
-    auditable, reason = es_auditable(s, ren)
+    auditable, reason = es_auditable({"id": sid, "raw": raw}, ren)
     if not auditable:
         return {
             "id": sid,
@@ -93,6 +125,7 @@ def auditar_sesion(s: dict, ren: set[str], journal_ids: set[str]) -> dict[str, A
             "prof": prof,
             "before": raw,
             "after": None,
+            "categoria": "ninguna",
             "in_scope": False,
             "out_of_scope_reason": reason,
             "already_processed": False,
@@ -106,27 +139,33 @@ def auditar_sesion(s: dict, ren: set[str], journal_ids: set[str]) -> dict[str, A
         }
 
     already_processed = sid in journal_ids
+
+    # Extraer campos canónicos de la base viva o del registro
     sujeto = str(s.get("sujeto") or s.get("iq0") or "").strip()
     iq1 = str(s.get("iq1") or "").strip()
     iq2 = str(s.get("iq2") or "").strip()
     iq3 = str(s.get("iq3") or "").strip()
     desc = str(s.get("desc") or "").strip()
 
+    # Si el título vivo cambió respecto a index.json, extraer sujeto y brackets vivos
+    pat = re.match(r"^\d{3,4}\s*\[([^\]]+)\](?:\s*\d{3})?(.*)$", raw)
+    if pat:
+        suj_vivo = pat.group(1).strip()
+        resto = pat.group(2)
+        brackets = re.findall(r"\[([^\]]+)\]", resto)
+        if suj_vivo:
+            sujeto = suj_vivo
+        if len(brackets) >= 1 and not iq1:
+            iq1 = brackets[0].strip()
+        if len(brackets) >= 2 and not iq2:
+            iq2 = brackets[1].strip()
+
     cambios: dict[str, str] = {}
     reglas: list[str] = []
     audit_fields: dict[str, dict[str, Any]] = {}
+    es_correccion = False
 
-    # --- 1. IQ1 PRE-CHECK (para co-resolución con sujeto) ---
-    iq1_inferred = False
-    if not iq1:
-        ev = evidencia(sid)
-        if ev.get("iq1"):
-            iq1_cand = str(ev["iq1"])
-            cambios["iq1"] = iq1_cand
-            iq1 = iq1_cand
-            iq1_inferred = True
-
-    # --- 2. SUJETO ---
+    # --- 1. SUJETO ---
     suj_verd = "ok"
     suj_regla = "none"
     suj_evid = "Sujeto limpio y conciso."
@@ -137,21 +176,23 @@ def auditar_sesion(s: dict, ren: set[str], journal_ids: set[str]) -> dict[str, A
         suj_regla = "no-subject"
         suj_evid = "Sesión sin sujeto asignado."
         reglas.append(suj_regla)
+        es_correccion = True
     else:
         verbo, cuerpo = split_verb_subject(sujeto)
         if verbo and cuerpo and cuerpo != sujeto:
             cambios["sujeto"] = cuerpo
             suj_verd = "ajustar"
             suj_regla = "verb-moved-from-subject-to-intention"
-            suj_evid = f"Se removió verbo inicial '{verbo}' del sujeto."
+            suj_evid = f"Se removió verbo inicial '{verbo}' del sujeto para dejar la entidad limpia."
             reglas.append(suj_regla)
+            es_correccion = True
             if not iq3:
                 norm_int = normalize_intention(verbo)
                 if norm_int:
                     cambios["iq3"] = norm_int
             sujeto = cuerpo
 
-        # Desacoplar marca del sujeto si pertenece a iq1 (existente o inferido)
+        # Desacoplar marca del sujeto si pertenece a iq1 o repite iq1
         if iq1 and iq1.lower() in sujeto.lower().split():
             restante = " ".join(w for w in sujeto.split() if w.lower() != iq1.lower()).strip()
             if len(restante.split()) >= 2:
@@ -159,8 +200,9 @@ def auditar_sesion(s: dict, ren: set[str], journal_ids: set[str]) -> dict[str, A
                 sujeto = restante
                 suj_verd = "ajustar"
                 suj_regla = "brand-moved-to-iq1"
-                suj_evid = f"La marca '{iq1}' se desacopló del sujeto."
+                suj_evid = f"La marca '{iq1}' estaba repetida en el sujeto y se desacopló a iq1."
                 reglas.append(suj_regla)
+                es_correccion = True
 
         if len(sujeto.split()) >= 4 and "sujeto" not in cambios:
             corto, cola = shrink_subject(sujeto)
@@ -171,6 +213,7 @@ def auditar_sesion(s: dict, ren: set[str], journal_ids: set[str]) -> dict[str, A
                 suj_regla = "subject-shrunk-to-its-head"
                 suj_evid = f"Sujeto recortado a su cabeza limpia de {len(corto.split())} palabras."
                 reglas.append(suj_regla)
+                es_correccion = True
 
     audit_fields["sujeto"] = {
         "valor": cambios.get("sujeto", sujeto),
@@ -180,17 +223,11 @@ def auditar_sesion(s: dict, ren: set[str], journal_ids: set[str]) -> dict[str, A
         "documented": suj_doc,
     }
 
-    # --- 3. IQ1 AUDIT ---
+    # --- 2. IQ1 (PROGRAMA) ---
     iq1_verd = "ok"
     iq1_regla = "none"
-    iq1_evid = "Programa documentado." if iq1 else "Sin programa opcional."
+    iq1_evid = "Programa documentado o no requerido."
     iq1_doc = True
-
-    if iq1_inferred:
-        iq1_verd = "ajustar"
-        iq1_regla = "program-inferred-from-session"
-        iq1_evid = f"Detectado en la sesión: «{iq1}»"
-        reglas.append(iq1_regla)
 
     audit_fields["iq1"] = {
         "valor": cambios.get("iq1", iq1),
@@ -200,7 +237,7 @@ def auditar_sesion(s: dict, ren: set[str], journal_ids: set[str]) -> dict[str, A
         "documented": iq1_doc,
     }
 
-    # --- 4. IQ2 (CONTEXTO) ---
+    # --- 3. IQ2 (CONTEXTO) ---
     audit_fields["iq2"] = {
         "valor": iq2,
         "veredicto": "ok",
@@ -209,7 +246,7 @@ def auditar_sesion(s: dict, ren: set[str], journal_ids: set[str]) -> dict[str, A
         "documented": True,
     }
 
-    # --- 5. IQ3 (INTENCIÓN) ---
+    # --- 4. IQ3 (INTENCIÓN) ---
     iq3_verd = "ok"
     iq3_regla = "none"
     iq3_evid = "Intención canónica verificada."
@@ -254,7 +291,7 @@ def auditar_sesion(s: dict, ren: set[str], journal_ids: set[str]) -> dict[str, A
         "documented": iq3_doc,
     }
 
-    # --- 6. DESCRIPCIÓN ---
+    # --- 5. DESCRIPCIÓN ---
     desc_verd = "ok"
     desc_regla = "none"
     desc_evid = "Amplifica el objetivo correctamente."
@@ -269,6 +306,7 @@ def auditar_sesion(s: dict, ren: set[str], journal_ids: set[str]) -> dict[str, A
             desc_regla = "redundant-description"
             desc_evid = f"La descripción repite el {int(overlap*100)}% de los términos del sujeto."
             reglas.append(desc_regla)
+            es_correccion = True
 
     audit_fields["descripcion"] = {
         "valor": desc,
@@ -278,7 +316,7 @@ def auditar_sesion(s: dict, ren: set[str], journal_ids: set[str]) -> dict[str, A
         "documented": desc_doc,
     }
 
-    # --- 7. ENSAMBLADO Y CONVERGENCIA ---
+    # --- 6. ENSAMBLADO Y CATEGORIZACIÓN ---
     campos_finales = {
         "n": n_val,
         "sujeto": cambios.get("sujeto", sujeto),
@@ -289,21 +327,29 @@ def auditar_sesion(s: dict, ren: set[str], journal_ids: set[str]) -> dict[str, A
     }
     nuevo_titulo = canon_title(campos_finales)
 
-    # Identificar regla si el cambio es únicamente el sufijo de intención
+    # Si solo se agregó el sufijo de intención, marcar la regla explícita
     if act_iq3 and f"· {act_iq3}" not in raw and "·" not in raw and "intention-suffix-added" not in reglas:
         reglas.append("intention-suffix-added")
 
     if already_processed:
         veredicto = "skip"
         after_title = None
+        categoria = "ninguna"
     elif suj_verd == "reconstruir":
         veredicto = "reconstruir"
         after_title = None
+        categoria = "correccion"
     elif nuevo_titulo != raw:
         veredicto = "ajustar"
         after_title = nuevo_titulo
+        categoria = "correccion" if es_correccion else "formato"
     else:
         veredicto = "ok"
+        after_title = None
+        categoria = "ninguna"
+
+    # Garantía absoluta: after es None o un string canónico, NUNCA el string "None"
+    if after_title is None or str(after_title).strip() in ("", "None"):
         after_title = None
 
     return {
@@ -312,6 +358,7 @@ def auditar_sesion(s: dict, ren: set[str], journal_ids: set[str]) -> dict[str, A
         "prof": prof,
         "before": raw,
         "after": after_title,
+        "categoria": categoria,
         "in_scope": True,
         "out_of_scope_reason": "",
         "already_processed": already_processed,
@@ -340,58 +387,10 @@ def verificar_convergencia(proposals: list[dict], ren: set[str], journal_ids: se
             "iq3": p["fields"].get("iq3"),
             "desc": p["fields"].get("desc"),
         }
-        res2 = auditar_sesion(simulado, ren, journal_ids)
+        res2 = auditar_sesion(simulado, ren, journal_ids, live_title=p["after"])
         if res2.get("after") is not None:
             inestables.append({"n": p["n"], "p1": p["after"], "p2": res2["after"], "rules": res2["rules"]})
     return len(inestables), inestables
-
-
-def desglosar_cambios(proposals: list[dict]) -> dict[str, Any]:
-    """Clasifica los cambios propuestos para distinguir mejoras de intención vs churn de sujeto."""
-    solo_iq3 = 0
-    toca_sujeto = 0
-    toca_iq1_iq2 = 0
-    toca_desc = 0
-    combinados = 0
-    total_sujeto_afectado = 0
-
-    for p in proposals:
-        if not p.get("after"):
-            continue
-        rules = p.get("rules", [])
-        m_bef = re.match(r"^\d{3,4}\s*\[([^\]]+)\]", p["before"])
-        m_aft = re.match(r"^\d{3,4}\s*\[([^\]]+)\]", p["after"])
-        suj_bef = m_bef.group(1).strip() if m_bef else ""
-        suj_aft = m_aft.group(1).strip() if m_aft else ""
-        suj_mod = (suj_bef.lower() != suj_aft.lower())
-
-        if suj_mod:
-            total_sujeto_afectado += 1
-
-        iq1_mod = "program-inferred-from-session" in rules or "brand-moved-to-iq1" in rules
-        desc_mod = "redundant-description" in rules
-        iq3_mod = any(r in rules for r in ("intention-inferred-from-session", "canonical-intention-mapped",
-                                            "missing-canonical-intention", "intention-suffix-added"))
-
-        if suj_mod and not (iq1_mod or desc_mod):
-            toca_sujeto += 1
-        elif iq1_mod and not (suj_mod or desc_mod):
-            toca_iq1_iq2 += 1
-        elif desc_mod and not (suj_mod or iq1_mod):
-            toca_desc += 1
-        elif iq3_mod and not (suj_mod or iq1_mod or desc_mod):
-            solo_iq3 += 1
-        else:
-            combinados += 1
-
-    return {
-        "solo_intencion": solo_iq3,
-        "solo_programa_contexto": toca_iq1_iq2,
-        "solo_sujeto": toca_sujeto,
-        "solo_descripcion": toca_desc,
-        "combinados": combinados,
-        "total_tocan_sujeto": total_sujeto_afectado,
-    }
 
 
 def main() -> int:
@@ -401,6 +400,7 @@ def main() -> int:
     ap.add_argument("--out", dest="output_path", default=str(DATA / "proposals.json"))
     ap.add_argument("--journal", default=str(JOURNAL))
     ap.add_argument("--dry-run", action="store_true", help="escribe proposals.json pero no toca la base")
+    ap.add_argument("--only-corrections", action="store_true", help="popula after ÚNICAMENTE para correcciones estructurales")
     args = ap.parse_args()
 
     in_path = Path(args.input_path).expanduser()
@@ -408,9 +408,21 @@ def main() -> int:
         print(f"Error: no existe catálogo en {in_path}", file=sys.stderr)
         return 1
 
+    idx_mtime = in_path.stat().st_mtime
+    idx_hash = file_sha256(in_path)
+    state_mtime = STATE_DB.stat().st_mtime if STATE_DB.exists() else 0.0
+
     datos = json.loads(in_path.read_text(encoding="utf-8"))
     sesiones = datos.get("sessions", [])
     journal_ids = cargar_journal(Path(args.journal).expanduser())
+    live_titles = cargar_titulos_vivos()
+
+    # Sincronizar catálogo con state.db viva
+    for s in sesiones:
+        sid = str(s.get("id") or "")
+        if sid in live_titles:
+            s["raw"] = live_titles[sid]
+
     ren = ya_renombradas(sesiones)
 
     proposals = []
@@ -420,23 +432,36 @@ def main() -> int:
     for s in sesiones:
         if es_auditable(s, ren)[0] and not str(s.get("iq3") or "").strip() and str(s.get("sujeto") or "").strip():
             sin_iq3_inicial += 1
-        res = auditar_sesion(s, ren, journal_ids)
+        res = auditar_sesion(s, ren, journal_ids, live_title=s.get("raw"))
         if "intention-inferred-from-session" in res.get("rules", []):
             con_intencion_inferida += 1
+
+        # Si el usuario solicitó --only-corrections, silenciar after en las que solo son formato
+        if args.only_corrections and res["categoria"] == "formato":
+            res["after"] = None
+
         proposals.append(res)
 
     tot = len(sesiones)
     en_alcance = [p for p in proposals if p["in_scope"]]
     pendientes = [p for p in proposals if "not renamed" in p.get("out_of_scope_reason", "")]
     maquinaria = [p for p in proposals if "machinery" in p.get("out_of_scope_reason", "")]
-    accionables = [p for p in proposals if p["after"] is not None]
     ya_proc = [p for p in proposals if p["already_processed"]]
     ok_count = [p for p in proposals if p["in_scope"] and p["veredicto"] == "ok"]
 
-    desglose = desglosar_cambios(proposals)
+    correcciones = [p for p in proposals if p["categoria"] == "correccion" and p["after"] is not None]
+    formato = [p for p in proposals if p["categoria"] == "formato" and p["after"] is not None]
+    accionables = [p for p in proposals if p["after"] is not None]
+
     fallos_conv, inestables = verificar_convergencia(proposals, ren, journal_ids)
 
     summary = {
+        "snapshot": {
+            "index_path": str(in_path),
+            "index_mtime": idx_mtime,
+            "index_sha256": idx_hash,
+            "state_db_mtime": state_mtime,
+        },
         "total": tot,
         "con_nnn": len(en_alcance),
         "auditables": len(en_alcance),
@@ -444,32 +469,31 @@ def main() -> int:
         "maquinaria": len(maquinaria),
         "already_processed_journal": len(ya_proc),
         "ok_unchanged": len(ok_count),
-        "actionable_proposals": len(accionables),
         "sin_iq3_inicial": sin_iq3_inicial,
         "sin_iq3_resueltas_leyendo": con_intencion_inferida,
-        "desglose_cambios": desglose,
+        "accionables_total": len(accionables),
+        "categorias": {
+            "correcciones_estructurales": len(correcciones),
+            "formato_intencion": len(formato),
+        },
         "convergencia_inestables": fallos_conv,
     }
 
     print("=== Resumen de Auditoría (tools/audit_titles.py) ===")
+    print(f"  Foto de entrada: index.json mtime={idx_mtime:.1f} · state.db mtime={state_mtime:.1f}")
     print(f"  Total sesiones evaluadas: {tot}")
     print(f"  Auditables (con NNN, no maquinaria): {len(en_alcance)}")
-    print(f"  Fuera de alcance: pendientes de renombrar={len(pendientes)} · maquinaria={len(maquinaria)}")
+    print(f"  Fuera de alcance: pendientes={len(pendientes)} · maquinaria={len(maquinaria)}")
     print(f"  Ya procesadas en journal (congeladas): {len(ya_proc)}")
-    print(f"  Sesiones sin intención iniciales: {sin_iq3_inicial}")
-    print(f"  --> Resueltas leyendo la sesión: {con_intencion_inferida} ({con_intencion_inferida/max(sin_iq3_inicial,1)*100:.1f}%)")
-    print(f"\n=== Propuestas Accionables ({len(accionables)}) ===")
-    print(f"  1. SOLO agregar/estandarizar intención iq3: {desglose['solo_intencion']} ({desglose['solo_intencion']/max(len(accionables),1)*100:.1f}%)")
-    print(f"  2. Solo agregar programa/contexto iq1/iq2:   {desglose['solo_programa_contexto']} ({desglose['solo_programa_contexto']/max(len(accionables),1)*100:.1f}%)")
-    print(f"  3. Solo sujeto (verbo o recorte):           {desglose['solo_sujeto']} ({desglose['solo_sujeto']/max(len(accionables),1)*100:.1f}%)")
-    print(f"  4. Solo descripción redundante:             {desglose['solo_descripcion']}")
-    print(f"  5. Cambios combinados:                      {desglose['combinados']}")
-    print(f"  --> TOTAL que modifican el SUJETO:          {desglose['total_tocan_sujeto']} de {len(accionables)} ({desglose['total_tocan_sujeto']/max(len(accionables),1)*100:.1f}%)")
+    print(f"  Sesiones sin intención iniciales: {sin_iq3_inicial} --> Resueltas leyendo: {con_intencion_inferida}")
+    print(f"\n=== Propuestas Accionables Separadas ({len(accionables)}) ===")
+    print(f"  1. CORRECCIONES estructurales (sujeto, marca, redundancia): {len(correcciones)}")
+    print(f"  2. FORMATO masivo (solo agregar sufijo · Intención):        {len(formato)}")
     print(f"\n=== Prueba de Convergencia (Criterio de Aceptación) ===")
     print(f"  Segunda corrida sobre títulos propuestos: {fallos_conv} cambios pendientes ({'CONVERGENCIA 100%' if fallos_conv == 0 else 'FALLÓ'})")
 
     salida = {
-        "version": "1.0",
+        "version": "1.1",
         "generated": time.strftime("%Y-%m-%dT%H:%M:%SZ"),
         "rules_version": "v0.28",
         "summary": summary,
