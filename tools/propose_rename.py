@@ -21,7 +21,7 @@ from pathlib import Path
 import sys
 REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO))
-from core.normalize import shrink_subject
+from core.normalize import shrink_subject, split_verb_subject
 
 DATA = Path.home() / ".hermes/plugin-data/make-it-smart"
 
@@ -95,13 +95,39 @@ def merge_description(cola: str, desc: str) -> str:
     return f"{d}; {clean_tail}"
 
 
+def _marcas_conocidas() -> set[str]:
+    """Marcas del cheat sheet en minúsculas: sirven para no poner una marca como sujeto."""
+    import yaml
+    try:
+        d = yaml.safe_load((REPO / "core/cheat_sheet.yaml").read_text(encoding="utf-8")) or {}
+        return {str(k).lower() for k in list((d.get("marcas") or {})) + list((d.get("programas") or {}))}
+    except Exception:
+        return set()
+
+
+MARCAS_CONOCIDAS = _marcas_conocidas()
+
+
 def derivar_sujeto(raw: str) -> tuple[str, str]:
     """A subject and description out of a free-form title: no model, no invention."""
     t = re.sub(r"^\d{3,4}\s*\[[^\]]*\]\s*\d{0,3}\s*", "", raw or "")
     t = re.sub(r"\[[^\]]*\]", " ", t)
     t = RELLENO.sub(" ", t)
-    corto, cola = shrink_subject(t)
+    # El verbo abre la frase pero NO es el sujeto: es la intención. Y la marca es iq1.
+    verbo, cuerpo = split_verb_subject(t)
+    corto, cola = shrink_subject(cuerpo or t)
+    if not corto:
+        # el recorte se niega a adivinar; el cuerpo ya está limpio, se usa tal cual
+        corto = " ".join((cuerpo or t).split()[:3]).strip(" ,.;:-")
+        if corto and corto[:1].islower():
+            corto = corto[0].upper() + corto[1:]
     if corto:
+        # si el recorte eligió una marca en vez del objeto, se prefiere el objeto
+        palabras = [w for w in (cuerpo or t).split()]
+        sin_marca = [w for w in palabras if w.lower() not in MARCAS_CONOCIDAS]
+        if corto.lower() in MARCAS_CONOCIDAS and len(sin_marca) >= 2:
+            corto = " ".join(sin_marca[:3])
+            corto = corto[0].upper() + corto[1:]
         return corto, cola
     return "", ""
 
@@ -247,6 +273,12 @@ def main() -> int:
                                  "why": "nothing to derive a subject from"})
                 continue
             campos["sujeto"] = derivado
+            # la marca que aparece en el título es iq1, no sujeto
+            if not str(s.get("iq1") or "").strip():
+                for w in re.findall(r"[A-Za-zÁÉÍÓÚÑáéíóúñ0-9]+", raw):
+                    if w.lower() in MARCAS_CONOCIDAS:
+                        campos["iq1"] = w[:1].upper() + w[1:]
+                        break
             if desc_derivada and not s.get("desc"):
                 campos["desc"] = desc_derivada[:90]
             reglas.append("subject-derived-from-title")
@@ -258,6 +290,26 @@ def main() -> int:
             reglas.append("subject-repeats-iq1")
             campos["iq1"] = ""
         # 3 · el sujeto es una frase o está mutilado: reparar o recortar a la cabeza limpia.
+        # El verbo es intención, nunca sujeto; el adjetivo de estado se cae.
+        verbo, cuerpo = split_verb_subject(sujeto)
+        if verbo and cuerpo and cuerpo != sujeto:
+            campos["sujeto"] = cuerpo
+            reglas.append("verb-moved-from-subject-to-intention")
+            if not str(s.get("iq3") or "").strip():
+                from core.taxonomy import normalize_intention
+                intencion = normalize_intention(verbo)
+                if intencion:
+                    campos["iq3"] = intencion
+            sujeto = cuerpo
+
+        # una marca dentro del sujeto es iq1, no sujeto
+        marca = str(iq1 or "").strip()
+        if marca and marca.lower() in sujeto.lower().split():
+            restante = " ".join(w for w in sujeto.split() if w.lower() != marca.lower()).strip()
+            if len(restante.split()) >= 2:
+                campos["sujeto"] = restante
+                sujeto = restante
+
         if len(sujeto.split()) >= 4 and "sujeto" not in campos:
             repaired = repair_mutilated_subject(sujeto, str(s.get("desc") or ""))
             if repaired:

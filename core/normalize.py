@@ -255,6 +255,43 @@ def _is_proper_word(w: str) -> bool:
     return w[:1].isupper() or any(c.isupper() for c in w[1:])
 
 
+VERBO_INF = re.compile(r"^(recuperar|restaurar|reparar|arreglar|instalar|configurar|comparar|"
+                        r"investigar|buscar|consultar|cotizar|comprar|verificar|revisar|eliminar|"
+                        r"crear|listar|explicar|mostrar|activar|desactivar|migrar|actualizar|"
+                        r"corregir|limpiar|resolver|monitorear|vigilar)\b", re.I)
+ADJ_ESTADO = {"perdida", "perdidas", "perdido", "perdidos", "gris", "roto", "rota",
+              "lento", "lenta", "viejo", "vieja", "nuevo", "nueva", "raro", "rara"}
+
+
+def split_verb_subject(subject: str) -> tuple[str, str]:
+    """Separa el verbo del sujeto: el verbo es intención, nunca sujeto.
+
+    («Recuperar ventas y pestañas perdidas») → («Recuperar», «Ventas y Pestañas»)
+    («Eliminar línea gris en tabs»)          → («Eliminar», «Línea Tabs»)
+    """
+    texto = (subject or "").strip()
+    if not texto:
+        return "", ""
+    palabras = [w.strip(".,;:¡!¿?()") for w in texto.split() if w.strip(".,;:¡!¿?()")]
+    if not palabras:
+        return "", ""
+    verbo = ""
+    m = VERBO_INF.match(palabras[0])
+    if m:
+        verbo = palabras.pop(0)
+    conectores = ("de", "del", "la", "el", "los", "las", "un", "una", "a", "en", "con",
+                  "por", "para", "al", "que")
+    cuerpo = [w for w in palabras if w.lower() not in ADJ_ESTADO and w.lower() not in conectores]
+    while cuerpo and cuerpo[-1].lower() in ("y", "o", "e", "u"):
+        cuerpo.pop()
+    if not cuerpo:
+        cuerpo = palabras
+    sujeto = " ".join(cuerpo[:3]).strip(" ,.;:-")
+    if sujeto[:1].islower():
+        sujeto = sujeto[0].upper() + sujeto[1:]
+    return verbo, sujeto
+
+
 def shrink_subject(subject: str, limit: int = 3) -> tuple[str, str]:
     """Cut a long subject down to a clean nominal head, and return the remaining words.
 

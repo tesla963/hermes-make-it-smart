@@ -392,6 +392,8 @@ _INTENT_ALIASES: Final[dict[str, str]] = {
     # Troubleshooting — 'testear' folded here: it verifies a state
     "troubleshooting": "Troubleshooting", "diagnosticar": "Troubleshooting",
     "reparar": "Troubleshooting", "arreglar": "Troubleshooting",
+    "recuperar": "Troubleshooting", "restaurar": "Troubleshooting",
+    "recobrar": "Troubleshooting", "rescatar": "Troubleshooting",
     "componer": "Troubleshooting", "fix": "Troubleshooting",
     "fixing": "Troubleshooting", "repair": "Troubleshooting",
     "diagnostico": "Troubleshooting", "diagnóstico": "Troubleshooting",
