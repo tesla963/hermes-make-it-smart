@@ -35,7 +35,7 @@ here, and the review itself is the reason this release exists.
   skipped and counted, never overwritten.
 
 ### Credits
-README now names the three of us: Jorge, Lisa and Antigravity.
+README now names the three of us: the owner, the assistant and Antigravity.
 
 ## 0.27.3 — 12-nov-2026 · the panel migrates its own data, and remembers every rename
 

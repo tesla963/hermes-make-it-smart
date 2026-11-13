@@ -21,7 +21,7 @@ Last verified: 2026-11-10, on the author's machine (12 profiles, 909 sessions).
 ```
 748 [Modo Desarrollador 001] [Mac mini] [Troubleshooting] 28ago A55 no responde taps · Configurar   (97c)
 754 [Case USB 007] [ORICO] [File System] 17oct medir velocidad case nuevo frente disco · Comparar   (97c)
-755 [Gorgon Halo 192GB 008] [AMD] 27oct Jorge espera chip antes comprar; rastreo · Monitorear       (93c)
+755 [Gorgon Halo 192GB 008] [AMD] 27oct the owner espera chip antes comprar; rastreo · Monitorear       (93c)
 757 [Equipos 192GB 010] [Gorgon Halo] [Automation] 06nov vigilar anuncios Framework · Monitorear    (96c)
 ```
 

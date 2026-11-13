@@ -57,7 +57,7 @@ class ClassifyConfig:
     max_tokens: int = 1200   # the model spends part of this reasoning; below ~1000 the answer comes back empty
     timeout: int = 60
     retries: int = 1
-    agent_name: str = "Lisa"   # what the owner calls the assistant
+    agent_name: str = ""   # what the owner calls the assistant; empty = unnamed
     language: str = "Spanish"
 
 
@@ -241,7 +241,7 @@ def problems_with(facets: Facets) -> list[str]:
 
 # Filler that must not survive in a fallback subject.
 _LEAD_WORDS = frozenset(
-    "lisa hermes por favor necesito quiero puedes podrias revisa revisar mira a ver "
+    "hermes por favor necesito quiero puedes podrias revisa revisar mira a ver "
     "el la los las un una unos unas de del al a en con por para que y o".split()
 )
 _TAIL_WORDS = frozenset(

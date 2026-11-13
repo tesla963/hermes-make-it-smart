@@ -14,7 +14,7 @@
   rule: >
     The assistant has a name the owner chose. When the session is about the
     assistant itself — its identity, its availability, whether it responds —
-    the subject is that NAME ("Lisa"), never a paraphrase like "Disponibilidad
+    the subject is that NAME (whatever the owner chose), never a paraphrase like "Disponibilidad
     del asistente" or "Identidad y modelo". Call things by their name.
   examples:
   control_question: "Is the owner talking TO the assistant, or ABOUT something else?"
@@ -77,7 +77,7 @@
   rule: >
     Decide the verb FIRST, then shape the subject around it. The verb tells you
     what kind of noun the subject must be: a thing (Costo → "Pedido"), the actor
-    being tested (Testing → "Lisa"), a failing part (Falta de Espacio →
+    being tested (Testing → the agent's name), a failing part (Falta de Espacio →
     "Hard Drive"). A subject chosen before the verb is usually the wrong noun.
   examples:
     - { verb: "Costo", subject: "Pedido" }
@@ -239,7 +239,7 @@
     Spanish inside an English session, or the reverse (Spanglish); classify by
     meaning, not by the language of the first word.
   examples:
-    - { mixed: "Lisa revisa el backup del VPS y dime el cost", language: "es" }
+    - { mixed: "revisa el backup del VPS y dime el costo", language: "es" }
   control_question: "What did they mean, regardless of the language they said it in?"
 
 # --------------------------------------------------------------------------- #
@@ -371,12 +371,12 @@
   examples:
   audit: scan every session for " vs ", "versus", "frente a", "comparar"
 
-- id: lisa-is-the-subject
+- id: assistant-name-is-the-subject
   taught: 2026-11-09
   rule: >
     When the session exercises the assistant itself — presenting it, testing
     whether it answers, checking its behaviour — the subject is the assistant's
-    NAME ("Lisa"), and Iq2 is "Testing". Not "Presentación del agente", not
+    NAME (the agent's name), and Iq2 is "Testing". Not "Presentación del agente", not
     "Identidad y modelo".
   examples:
 
@@ -828,11 +828,11 @@
   taught: 2026-11-12
   rule: >
     A company in the private vocabulary says what it does, not just its name.
-    "Miami Express" is a Freight Forwarder, and its context is the city it ships
+    "(tu forwarder)" is a Freight Forwarder, and its context is the city it ships
     from — Miami (iq2). A list of companies without their trade is a list of
     words; with their trade it is knowledge the classifier can use.
   examples:
-    - { company: "Miami Express", trade: "Freight Forwarder", context: "Miami" }
+    - { company: "(tu forwarder)", trade: "Freight Forwarder", context: "Miami" }
     - { company: "ORICO", trade: "storage and enclosures", context: "" }
   control_question: "What does this company do, and where does it operate?"
 

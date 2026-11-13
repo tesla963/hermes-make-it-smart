@@ -133,7 +133,7 @@ Three things are deliberate here:
 Before the first write of any run:
 
 ```
-/Volumes/1TB_HD/Backups-Lisa/<date>_<reason>/
+/Volumes/1TB_HD/Backups-the assistant/<date>_<reason>/
     state.db, profiles/*/state.db      (compressed)
     MANIFEST.json                      sha256 per file, sizes, counts
 ```

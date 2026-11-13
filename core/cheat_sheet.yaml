@@ -24,7 +24,7 @@
 
 version: 1
 updated: 2026-11-09
-owner: jorge
+owner: the owner
 
 # ---------------------------------------------------------------------------
 # MARCAS — name found in a subject -> iq1
@@ -258,14 +258,14 @@ companias:
   cyberpersons: { nombre: CyberPersons, hace: [CyberPanel] }
   blackmagic: { nombre: Blackmagic Design, hace: [DaVinci Resolve] }
   eastgate: { nombre: Eastgate, hace: [Tinderbox] }
-  panama_express: { nombre: Miami Express, hace: [courier, casillero] }
+  mi_forwarder: { nombre: "(tu forwarder)", hace: [courier, casillero] }
 
 # ---------------------------------------------------------------------------
 # SERVICIOS — hired, not bought. Pilar = Servicios.
 # ---------------------------------------------------------------------------
 servicios:
   hosting: { ejemplos: [CyberPersons, VPS, dominio, correo] }
-  courier: { ejemplos: [Miami Express, casillero, freight forwarder] }
+  courier: { ejemplos: ["(tu forwarder)", casillero, freight forwarder] }
   suscripcion: { ejemplos: [Google AI Pro, iCloud, Backblaze] }
 
 # ---------------------------------------------------------------------------

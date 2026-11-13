@@ -314,7 +314,7 @@ def build_messages(
     current_title: str = "",
     channel: str = "",
     corrections: list[dict[str, Any]] | None = None,
-    agent_name: str = "Lisa",
+    agent_name: str = "",
     language: str = "Spanish",
 ) -> list[dict[str, str]]:
     """The full chat payload, ready for any OpenAI-compatible endpoint."""
@@ -332,7 +332,7 @@ def build_messages(
 def prompt_fingerprint(
     corrections: list[dict[str, Any]] | None = None,
     *,
-    agent_name: str = "Lisa",
+    agent_name: str = "",
     language: str = "Spanish",
 ) -> str:
     """Short hash of the system prompt, to stamp every classification run."""

@@ -22,7 +22,7 @@ import yaml
 
 from core.paths import data_dir
 
-OUT = Path.home() / "Documents" / "Reportes - [Lisa]" / datetime.now().strftime("%Y-%m-%d")
+OUT = Path.home() / "Documents" / "Reportes - Plugin" / datetime.now().strftime("%Y-%m-%d")
 
 # La paleta de los nueve ejes: la misma que usa el simulador y el plugin.
 PALETTE = {
@@ -235,7 +235,7 @@ ThinkPad, que «Descuentos a Jubilados» es un nombre y no una oración.<br><br>
 <table><thead><tr><th></th><th>Objetiva</th><th>Personal</th></tr></thead><tbody>
 <tr><td>Archivo</td><td class="mono">core/cheat_sheet.yaml</td><td class="mono">core/cheat_sheet.personal.yaml</td></tr>
 <tr><td>Contiene</td><td>lo que sabe cualquier manual</td><td>lo que solo sabes tú</td></tr>
-<tr><td>Ejemplo</td><td>«Ground Advantage son 2–5 días»</td><td>«Con Miami Express los paquetes se pierden»</td></tr>
+<tr><td>Ejemplo</td><td>«Ground Advantage son 2–5 días»</td><td>«Con (tu forwarder) los paquetes se pierden»</td></tr>
 <tr><td>Viaja con el plugin</td><td class="good">sí</td><td class="bad">nunca — está en .gitignore</td></tr>
 <tr><td>En conflicto</td><td>cede</td><td><b>manda</b></td></tr>
 </tbody></table>

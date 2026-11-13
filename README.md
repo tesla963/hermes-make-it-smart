@@ -262,8 +262,8 @@ with it:
 
 | | |
 |---|---|
-| **Jorge Matsufuji** | The product, the naming algorithm and every decision about what the plugin should do. |
-| **Lisa** (Hermes Agent) | Implementation, measurement and the documentation in `docs/`. |
+| **the owner** | The product, the naming algorithm and every decision about what the plugin should do. |
+| **the assistant** (Hermes Agent) | Implementation, measurement and the documentation in `docs/`. |
 | **Antigravity** | Critical code review of the migration and restore paths. It found a real bug — the restore button undid itself — and the fixes it prompted are recorded in `CHANGELOG.md`. |
 
 Panama, 2026.

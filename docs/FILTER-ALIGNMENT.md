@@ -140,7 +140,7 @@ These speak about the **subject**, and the subject has not moved:
 `qualifier-is-not-identity` · `subject-is-the-nearest-item` ·
 `spelling-variants-are-one-subject` · `one-series-one-topic` ·
 `verb-first-then-subject` · `subject-preposition-exception` ·
-`ventana-permisos-series` · `lisa-is-the-subject` ·
+`ventana-permisos-series` · `assistant-name-is-the-subject` ·
 `third-party-program-is-iq1-not-subject` · `brand-equals-subject-exception` ·
 `brand-and-product-are-two-things` · `brand-of-a-program-comes-from-its-site` ·
 `brand-never-in-subject` · `closest-item-wins-in-compatibility` ·

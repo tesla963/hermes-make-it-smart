@@ -132,7 +132,7 @@ function render(){
         </div>
         <div class="title" id="t-${i}">${esc(d.titulo)}</div>
         <textarea class="notes" id="n-${i}" rows="2"
-          placeholder="Observaciones para Lisa: por qué está mal, qué falta, qué regla aplicar…">${esc(state[i]?.notes || '')}</textarea>
+          placeholder="Observaciones: por qué está mal, qué falta, qué regla aplicar…">${esc(state[i]?.notes || '')}</textarea>
       </div>
       <div class="acts">
         <button class="ok sm ${st==='ok'?'on':''}" data-a="ok" data-i="${i}">✓ Correcto</button>

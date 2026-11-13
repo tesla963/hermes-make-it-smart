@@ -44,3 +44,10 @@ desktop/*.bak_*
 *.bak_*
 
 SPEC-BATCH.md
+
+# Personal vocabulary and generated artifacts: never published.
+core/cheat_sheet.personal.yaml
+vocab.personal.yaml
+*.personal.yaml
+.plugin-under-test.mjs
+reports/

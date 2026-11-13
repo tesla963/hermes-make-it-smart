@@ -96,7 +96,7 @@ def main() -> int:
         print("(dry-run: nada escrito. Usa --apply.)")
         return 0
 
-    dest = Path("/Volumes/1TB_HD/Backups-Lisa")
+    dest = Path("/Volumes/1TB_HD/Backups-the assistant")
     print("backup…")
     bdir = backup_databases(dest, "pre-no-date")
     print(f"  {bdir}")

@@ -26,7 +26,7 @@ done
 ```
 
 The plugin makes its own backup before writing, in
-`/Volumes/<tu disco>/Backups-Lisa/<fecha>_<motivo>/`. **But don't trust it
+`/Volumes/<tu disco>/Backups-the assistant/<fecha>_<motivo>/`. **But don't trust it
 alone**: your backup is the one you know where it is.
 
 > Over time you'll want to version the names, not the database. A `titulos.txt`

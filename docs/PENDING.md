@@ -54,7 +54,7 @@ in place: it is only deleted after restarting Desktop and seeing that it loads.
 
 They are pasted into the plugin's search box as is. The rule: the brand goes in
 iq1 and the subject describes what was done with it. Watch out for the two
-cases that Jorge himself already resolved earlier:
+cases that the owner himself already resolved earlier:
 
 - **365 Pinokio** → iq1 `Pinokio`, subject `Control CLI`.
 - **93** → the correct subject is `Unsloth Studio` (the one compared), not Ollama.
@@ -64,9 +64,9 @@ And the saved exception: if removing the brand leaves the subject meaningless (`
 
 ## 4 · Refine the axis rules
 
-Jorge left it for tomorrow. Useful context: out of **460 subjects**, **369 appear
+the owner left it for tomorrow. Useful context: out of **460 subjects**, **369 appear
 only once**; four of them concentrate 206 sessions. The full map is in
-`~/Documents/Reportes - [Lisa]/2026-11-10_[reporte]_sujetos-del-plugin-frecuencia.md`.
+`~/Documents/Reportes - [the assistant]/2026-11-10_[reporte]_sujetos-del-plugin-frecuencia.md`.
 
 ## 5 · Run the evaluation set
 
@@ -101,7 +101,7 @@ now detects it and says so.
   it names the cause with a link to the [issue #140222](https://github.com/NousResearch/hermes-agent/issues/140222),
   points out the direction (pause and recreate in `no_agent` mode) and makes clear that
   the panel does not touch the cron jobs: that is asked of the Hermes agent.
-- Button to copy the ready-made text: «Lisa, I have N empty cron sessions…».
+- Button to copy the ready-made text: «the assistant, I have N empty cron sessions…».
 - **"Vacío"/"Empty" filter**, the third one in the status row and **enabled by
   default**: sessions with no messages do not appear in the listing. It is
   disabled with one click.

@@ -18,7 +18,7 @@ vocabulary term is, how the plugin finds it, and which part of that vocabulary t
 | a machine family: `ThinkPad`, `Mac mini` | a date or a year alone: `14-sep-2026` |
 | an event with its year: `Nous Hackaton 2026` | a numeric range from a list: `56-110` |
 | a capacity **being bought**: `16GB RAM` | a bare size: `27B`, `192GB` |
-| a company with its trade: `Miami Express` (Forwarder) | a personal identifier: a username, a phone number |
+| a company with its trade: `(tu forwarder)` (Forwarder) | a personal identifier: a username, a phone number |
 
 Five rules govern this, and each one exists because the catalogue broke without it:
 
@@ -67,11 +67,11 @@ into the wrong filter — and the user notices immediately.
 ## 3. Company types — the shareable part
 
 A specific company belongs to one person; **the type of company belongs to everyone.**
-"Miami Express" is useful only to its client. "Forwarder" is useful to any user who imports.
+"(tu forwarder)" is useful only to its client. "Forwarder" is useful to any user who imports.
 
 | Type | What it does | Known examples |
 |---|---|---|
-| `Forwarder` | receives in the US and ships to the user's country | Miami Express (personal) |
+| `Forwarder` | receives in the US and ships to the user's country | (tu forwarder) (personal) |
 | `Marketplace` | sells what others make | Amazon, eBay, Alibaba, AliExpress |
 | `Retailer` | sells its own stock | Best Buy, Walmart, Newegg |
 | `Manufacturer` | makes the product | Apple, Lenovo, DJI, Samsung, AMD, Nvidia |
@@ -96,14 +96,14 @@ That keeps the repository useful without exposing anybody's supplier.
 ```yaml
 # vocab.personal.yaml — the user's own world, editable by hand
 companias:
-  miami_express: {nombre: Miami Express, tipo: Forwarder, contexto: Miami}
+  mi_forwarder: {nombre: (tu forwarder), tipo: Forwarder, contexto: Miami}
 marcas:
   lenovo: {preferencia: 1, contexto: [Laptop, Desktop]}
   dell:   {preferencia: 2, contexto: [Laptop, Desktop]}
 productos:
   thinkpad_p53: {marca: Lenovo, contexto: Laptop, parte: Tarjeta Gráfica}
 personas:
-  ivette: {nombre: Ivette Batista, relacion: pareja}
+  pareja: {nombre: the partner, relacion: pareja}
 lugares:
   panama: {tipo: país}
 eventos:

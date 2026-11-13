@@ -91,7 +91,7 @@ def main() -> int:
     ap.add_argument("--n", type=int, default=50)
     ap.add_argument("--out", default=str(Path.home() / "Desktop" / "review_eval.html"))
     ap.add_argument("--model", default="deepseek-flash")
-    ap.add_argument("--agent", default="Lisa", help="the assistant's name")
+    ap.add_argument("--agent", default="", help="the assistant's name")
     ap.add_argument("--no-classify", action="store_true")
     ap.add_argument("--cache", default="/tmp/make_review_cache.json")
     ap.add_argument("--exclude", help="JSON list of session ids to leave out")

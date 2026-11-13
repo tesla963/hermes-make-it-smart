@@ -136,7 +136,7 @@ def main() -> int:
     from adapters.hermes import HermesTitleWriter, backup_databases
     from core.normalize import Facets, render
 
-    dest = Path("/Volumes/1TB_HD/Backups-Lisa")
+    dest = Path("/Volumes/1TB_HD/Backups-the assistant")
     if dest.exists():
         print(f"\nbackup → {backup_databases(dest, 'pre-drop-desc-dates')}")
 

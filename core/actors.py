@@ -42,7 +42,7 @@ STOPWORDS = {
     "el", "la", "los", "las", "un", "una", "de", "del", "en", "con", "por",
     "para", "que", "y", "o", "mi", "tu", "su", "lo", "se", "es", "son", "ya",
     "the", "a", "an", "of", "to", "in", "on", "for", "and", "or", "is", "it",
-    "how", "what", "why", "when", "lisa", "hermes", "hoy", "ayer",
+    "how", "what", "why", "when", "hermes", "hoy", "ayer",
 }
 
 

@@ -100,7 +100,7 @@ operates:
 | "los precios de Lenovo están altos" | `Lenovo` | `—` | `—` |
 | "Lenovo ThinkPad P53 usada" | `ThinkPad P53` | `Lenovo` | `Laptop` |
 | "comparar la GPU de una Lenovo con una Dell" | `Tarjeta Gráfica` | `Lenovo` | `Laptop` |
-| "comprar en Miami Express" | `Miami Express` | `Forwarder` | `Miami` |
+| "comprar en (tu forwarder)" | `(tu forwarder)` | `Forwarder` | `Miami` |
 
 The third row is the one that matters: the session is not about a laptop, it is about a **part**
 that happens to live inside two brands. The chain `producto → parte → producto alternativo` comes

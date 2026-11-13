@@ -1,6 +1,6 @@
 # How the algorithm learns
 
-> "Nuestro algoritmo no aprende nada nuevo." — Jorge, 2026-11-08
+> "Nuestro algoritmo no aprende nada nuevo." — the owner, 2026-11-08
 
 He was right, and it is the most serious weakness the project had. This document is the
 fix, written down so it cannot quietly regress.

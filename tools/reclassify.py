@@ -195,7 +195,7 @@ def main() -> int:
 
     from adapters.hermes import HermesTitleWriter
 
-    dest = backup_databases(Path("/Volumes/1TB_HD/Backups-Lisa"), "pre-esquema-2026-11-10")
+    dest = backup_databases(Path("/Volumes/1TB_HD/Backups-the assistant"), "pre-esquema-2026-11-10")
     print(f"\nbackup -> {dest}")
     w = HermesTitleWriter()
     ok = 0

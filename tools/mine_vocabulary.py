@@ -56,7 +56,7 @@ REJECT = [
     (r"^\d+b$", "model size (parameters)"),
     (r"^\d+$", "bare number"),
     (r"^(attached|out[- ]of[- ]band|num|url|mmm|nnn)\b", "interface scaffolding"),
-    (r"^tesla369$", "personal identifier — never vocabulary"),
+    (r"^<user>$", "personal identifier — never vocabulary"),
 ]
 EVENT_HINTS = ("hackaton", "hackathon", "congreso", "feria", "curso", "taller",
                "conferencia", "summit", "apedé", "apede", "expo")
@@ -75,7 +75,7 @@ def tokens(texto: str) -> list[str]:
 
 def priv(texto: str) -> str:
     """Nothing personal leaves this script: paths and usernames become placeholders."""
-    return re.sub(r"/Users/[^/\s]+", "/Users/<user>", str(texto)).replace("tesla369", "<user>")
+    return re.sub(r"/Users/[^/\s]+", "/Users/<user>", str(texto)).replace("<user>", "<user>")
 
 
 def oraciones(texto: str) -> list[str]:
@@ -172,7 +172,7 @@ def main() -> None:
                     en_sesiones[term].add(s.get("id") or s.get("n"))
                     ejemplo.setdefault(term, frase)
 
-    PERSONAS = {"lisa", "jorge", "ivette", "ivett", "sofía", "sofia", "antigravity"}
+    PERSONAS = {"the owner", "pareja", "ivett", "sofía", "sofia", "antigravity"}
     RUIDO = {"ai", "ia", "max", "halo", "still", "continue", "still in", "in progress",
              "todo", "none", "tb", "gb", "vram", "ssd", "ram", "out of band", "user",
              "message", "busca", "buscar", "verificar", "investigar", "comparar",
@@ -197,8 +197,6 @@ def main() -> None:
             return "attribute · memory"
         if re.match(r"^\d+\s*(gb|tb|mb)\s+(de\s+)?ram$", t):
             return "attribute · memory"
-        if t.startswith("miami express"):
-            return "known company"
         if t in RUIDO:
             return "noise"
         if t in PERSONAS:

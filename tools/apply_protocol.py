@@ -167,7 +167,7 @@ def main() -> int:
         print("nada que aplicar")
         return 0
 
-    dest = backup_databases(Path("/Volumes/1TB_HD/Backups-Lisa"), "pre-protocolo-masivo")
+    dest = backup_databases(Path("/Volumes/1TB_HD/Backups-the assistant"), "pre-protocolo-masivo")
     print(f"\nbackup -> {dest}")
 
     from adapters.hermes import HermesTitleWriter

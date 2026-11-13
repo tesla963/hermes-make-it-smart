@@ -1635,7 +1635,7 @@ def _load_personal_cheat_sheet() -> dict[str, Any]:
             except Exception:
                 pass
         else:
-            return {"version": 1, "owner": "jorge", "vocabulario": {}, "reglas": {}, "servicios": {}}
+            return {"version": 1, "owner": "the owner", "vocabulario": {}, "reglas": {}, "servicios": {}}
     try:
         data = yaml.safe_load(p.read_text(encoding="utf-8"))
         return data if isinstance(data, dict) else {}

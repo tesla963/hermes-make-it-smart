@@ -696,10 +696,10 @@ const I18N = {
     avActivos: '{n} cron jobs activos',
     avConsejo:
       'Dirección de la solución: pausar esos cron jobs y volver a crearlos en modo no_agent (sin LLM, sin sesión). Este panel no toca tus cron jobs: pídeselo a tu agente de Hermes.',
-    avCopiar: 'Copiar mensaje para Lisa',
+    avCopiar: 'Copiar mensaje para el asistente',
     avCopiado: 'Copiado',
     avTexto:
-      'Lisa, tengo {n} sesiones vacías de cron (source=cron sin ningún mensaje). Bórralas y dime qué cron jobs tengo activos para pausarlos o pasarlos a modo no_agent.',
+      'Tengo {n} sesiones vacías de cron (source=cron sin ningún mensaje). Bórralas y dime qué cron jobs tengo activos para pausarlos o pasarlos a modo no_agent.',
     vIntro:
       'Catálogo navegable de tus sesiones: las indexa de las 12 bases, les pone nombre canónico y las deja filtrar por plataforma, familia y pilar. La ventana del plugin solo pinta — el clasificador es Python puro y no sabe que existe Hermes.',
     vSub: 'v0.25 · plugin nativo',
@@ -876,10 +876,10 @@ const I18N = {
     avActivos: '{n} active cron jobs',
     avConsejo:
       'Where the fix goes: pause those cron jobs and recreate them in no_agent mode (no LLM, no session). This panel does not touch your cron jobs — ask your Hermes agent to do it.',
-    avCopiar: 'Copy message for Lisa',
+    avCopiar: 'Copy message for the assistant',
     avCopiado: 'Copied',
     avTexto:
-      'Lisa, I have {n} empty cron sessions (source=cron with no messages). Delete them and tell me which cron jobs are active so I can pause them or move them to no_agent mode.',
+      'I have {n} empty cron sessions (source=cron with no messages). Delete them and tell me which cron jobs are active so I can pause them or move them to no_agent mode.',
     vIntro:
       'A browsable catalogue of your sessions: it indexes them from the 12 databases, gives each a canonical name and lets you filter by platform, family and pillar. The plugin window only paints — the classifier is pure Python and does not know Hermes exists.',
     vSub: 'v0.25 · native plugin',
@@ -1502,7 +1502,7 @@ async function loadCatalogue(ctx) {
         : 0
     const horas = Number(idx.horas || liveMin || 0)
     const motor = (ex.motor || idx.motor || (live && live.model) || '').trim()
-    const autor = (idx.autor || (prof === 'default' ? 'Lisa' : prof)).trim()
+    const autor = (idx.autor || prof || 'default').trim()
     const claves = Array.isArray(idx.claves) ? idx.claves : []
     const resumen = idx.resumen || (claves[0] || (live && live.preview) || '')
 
