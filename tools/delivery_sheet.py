@@ -27,8 +27,14 @@ VIGILADOS = ("desktop/plugin.js", "core/", "tools/", "docs/", "tests/", "plugin.
 
 
 def archivos() -> list[Path]:
-    out = subprocess.run(["git", "ls-files"], cwd=REPO, capture_output=True, text=True).stdout
-    return [REPO / f for f in out.split() if (REPO / f).exists() and f.startswith(VIGILADOS)]
+    """Rastreados Y no rastreados. Un archivo nuevo sin `git add` también es un cambio que hay que ver:
+    si la hoja solo mirara `git ls-files`, el trabajo de otro agente quedaría invisible."""
+    listado = subprocess.run(["git", "ls-files"], cwd=REPO, capture_output=True, text=True).stdout
+    sueltos = subprocess.run(["git", "ls-files", "--others", "--exclude-standard"],
+                             cwd=REPO, capture_output=True, text=True).stdout
+    nombres = {f for f in (listado + "\n" + sueltos).split() if f}
+    return [REPO / f for f in sorted(nombres)
+            if (REPO / f).exists() and f.startswith(VIGILADOS) and not f.startswith(".")]
 
 
 def hash_de(p: Path) -> str:
