@@ -41,6 +41,26 @@ CANON = re.compile(r"^\d{3,4} \[")
 LIMIT = 100
 
 
+RELLENO = re.compile(
+    r"\b(hola|por favor|necesito|quiero|quisiera|puedes|podrias|ayudame|dime|dame|"
+    r"me gustaria|o sea|basicamente|simplemente|entonces|bueno|mira|fijate|a ver|"
+    r"renombrar|renombra|titulo|sesion|sesiones|plugin|agregar|agrega|poner|pon|"
+    r"actualizar|actualiza|revisar|revisa|crear|crea|hacer|haz|verificar|verifica)\b", re.I)
+
+
+def derivar_sujeto(raw: str) -> str:
+    """A subject out of a free-form title: no model, no invention — the words that are left."""
+    t = re.sub(r"^\d{3,4}\s*\[[^\]]*\]\s*\d{0,3}\s*", "", raw or "")
+    t = re.sub(r"\[[^\]]*\]", " ", t)
+    t = RELLENO.sub(" ", t)
+    palabras = [w.strip(".,;:¡!¿?()") for w in t.split()]
+    palabras = [w for w in palabras if len(w) > 2 and not w.isdigit()]
+    if not palabras:
+        return ""
+    eleccion = palabras[:3]
+    return " ".join(eleccion).strip()
+
+
 def canon_title(s: dict) -> str:
     """The same shape the panel builds, so a proposal is never prettier than reality."""
     nnn = f"{int(s.get('n') or 0):03d}"
@@ -91,12 +111,17 @@ def main() -> int:
             saltadas.append({"id": s.get("id"), "title": raw[:60], "why": "machinery"})
             continue
 
-        # Sin sujeto no hay propuesta: inventarlo sería peor que dejarlo como está.
-        if not sujeto or sujeto == "Sin sujeto":
-            saltadas.append({"id": s.get("id"), "title": raw[:60], "why": "no subject yet: needs classification"})
-            continue
-
         reglas, campos = [], {}
+        # Sin sujeto se deriva de las palabras que quedan del título; si no queda nada,
+        # se deja como está en lugar de inventar.
+        if not sujeto or sujeto == "Sin sujeto":
+            derivado = derivar_sujeto(raw)
+            if not derivado:
+                saltadas.append({"id": s.get("id"), "title": raw[:60],
+                                 "why": "nothing to derive a subject from"})
+                continue
+            campos["sujeto"] = derivado
+            reglas.append("subject-derived-from-title")
         # 1 · un título que no sigue la forma canónica
         if not CANON.match(raw):
             reglas.append("not-canonical-title")
@@ -106,7 +131,7 @@ def main() -> int:
             campos["iq1"] = ""
         # 3 · el sujeto es una frase, no un bloque: no se recorta, se pide un nombre.
         # Recortar "Educación Estatal o Particular" a "Educación Estatal o" no es un sujeto.
-        if len(sujeto.split()) >= 4:
+        if len(sujeto.split()) >= 4 and "sujeto" not in campos:
             saltadas.append({"id": s.get("id"), "title": raw[:60],
                              "why": "subject-too-long: needs a real name, not a trim"})
             continue

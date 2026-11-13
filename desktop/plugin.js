@@ -726,7 +726,7 @@ const I18N = {
     tabNewRules: 'New Rules',
     tabNewRulesTitle: 'Aplicar las reglas nuevas a los títulos, con respaldo y revert',
     newRulesIdle: 'Sin propuesta. Generala con: python3 tools/propose_rename.py',
-    newRulesApply: 'Update New Rules on Session DB ({n})',
+    newRulesApply: 'Apply New Rules en Session DB ({n})',
     newRulesApplyTitle: 'Escribe un respaldo de la base de títulos y después aplica los cambios',
     newRulesReload: 'Recargar propuesta',
     machineryNote: '+{n} de maquinaria (bots, subagentes), no se renombran',
@@ -915,7 +915,7 @@ const I18N = {
     tabNewRules: 'New Rules',
     tabNewRulesTitle: 'Apply the new rules to the titles, with backup and revert',
     newRulesIdle: 'No proposal. Generate it with: python3 tools/propose_rename.py',
-    newRulesApply: 'Update New Rules on Session DB ({n})',
+    newRulesApply: 'Apply New Rules en Session DB ({n})',
     newRulesApplyTitle: 'Writes a backup of the title database, then applies the changes',
     newRulesReload: 'Reload proposal',
     machineryNote: '+{n} machinery sessions (bots, subagents) are never renamed',
@@ -983,9 +983,15 @@ position:relative;display:flex;flex-direction:column;width:100%;height:100%;min-
 .mmws .headtab::before,.mmws .headtab::after{content:'';position:absolute;top:5px;bottom:-1px;width:2px;border-radius:1px;opacity:.4;transition:opacity .12s,background .12s}
 .mmws .headtab::before{left:0}
 .mmws .headtab::after{right:0}
-.mmws .headtab:first-child::before,.mmws .headtab:first-child::after{background:var(--ok)}
-.mmws .headtab:last-child::before,.mmws .headtab:last-child::after{background:var(--gold)}
+/* The colour belongs to the tab by NAME, never by position: when New Rules became the last
+   child it inherited the gold of Process, and hovering it lit the first tab instead. */
+.mmws .headtab.tabactual::before,.mmws .headtab.tabactual::after{background:var(--ok)}
+.mmws .headtab.tabprocess::before,.mmws .headtab.tabprocess::after{background:var(--gold)}
+.mmws .headtab::before,.mmws .headtab::after{opacity:.22}
 .mmws .headtab:hover{color:var(--tx)}
+.mmws .headtab:hover::before,.mmws .headtab:hover::after{opacity:.5}
+.mmws .headtab.on{color:var(--tx);opacity:1}
+.mmws .headtab.on::before,.mmws .headtab.on::after{opacity:.95}
 /* New Rules acts on the catalogue, so it wears its own colour: violet, never the gold of Process. */
 .mmws .headtab.newruletab.on{color:#c9a8f0;background:#1d1428;border-bottom-color:#8b5cf6}
 .mmws .headtab.newruletab.on::before,.mmws .headtab.newruletab.on::after{background:#8b5cf6;opacity:.9}
@@ -2710,7 +2716,8 @@ function App({ ctx }) {
       const data = JSON.parse(res.text)
       setProp(data)
       const n = Array.isArray(data.changes) ? data.changes.length : 0
-      setPropMsg(`${n} título(s) propuestos · generado ${data.generated || ''}`)
+      const tot = Number(data.sessions) || 0
+      setPropMsg(`${tot} sesiones evaluadas · ${n} cambio(s) · ${data.rules_version || ''}`)
     } catch (e) {
       setProp(null); setPropMsg(String((e && e.message) || e))
     }
@@ -3592,7 +3599,7 @@ function App({ ctx }) {
             'button',
             {
               role: 'tab',
-              className: 'headtab' + (activeTab === 'actual' ? ' on' : ''),
+              className: 'headtab tabactual' + (activeTab === 'actual' ? ' on' : ''),
               onClick: () => switchTab('actual'),
               title: t('tabActualTitle'),
             },
@@ -3602,7 +3609,7 @@ function App({ ctx }) {
             'button',
             {
               role: 'tab',
-              className: 'headtab' + (activeTab === 'testing' ? ' on testing' : ''),
+              className: 'headtab tabprocess' + (activeTab === 'testing' ? ' on testing' : ''),
               onClick: () => switchTab('testing'),
               title: t('tabTestingTitle'),
             },
