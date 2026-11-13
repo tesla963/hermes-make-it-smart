@@ -733,7 +733,7 @@ const I18N = {
     iqNoData: 'Generá el inventario con: python3 tools/plugin_iq.py',
     iqRuleOf: 'regla', iqOf: 'de',
     newRulesIdle: 'Sin propuesta. Generala con: python3 tools/propose_rename.py',
-    newRulesApply: 'Procesar todas las sesiones ({n} cambios)',
+    newRulesApply: 'Procesar todas las sesiones ({n})',
     newRulesApplyTitle: 'Escribe un respaldo de la base de títulos y después aplica los cambios',
     newRulesReload: 'Recargar propuesta',
     machineryNote: '+{n} de maquinaria (bots, subagentes), no se renombran',
@@ -929,7 +929,7 @@ const I18N = {
     iqNoData: 'Build the inventory with: python3 tools/plugin_iq.py',
     iqRuleOf: 'rule', iqOf: 'of',
     newRulesIdle: 'No proposal. Generate it with: python3 tools/propose_rename.py',
-    newRulesApply: 'Procesar todas las sesiones ({n} cambios)',
+    newRulesApply: 'Procesar todas las sesiones ({n})',
     newRulesApplyTitle: 'Writes a backup of the title database, then applies the changes',
     newRulesReload: 'Reload proposal',
     machineryNote: '+{n} machinery sessions (bots, subagents) are never renamed',
@@ -2825,6 +2825,13 @@ function App({ ctx }) {
     await syncIndexRaw(updates)
     setSessions((prev) => prev.map((d) => (updates.has(d.id) ? { ...d, raw: updates.get(d.id) } : d)))
 
+    // El título cambió en la base: hay que releer el catálogo o la tabla sigue mostrando el viejo
+    // y el usuario cree que el botón no hizo nada.
+    try {
+      const fresco = await loadCatalogue(ctx)
+      if (fresco && Array.isArray(fresco.sessions)) setSessions(fresco.sessions)
+    } catch (_) {}
+
     // Barrido completo, una por una: las iguales no se tocaron, las de maquinaria no se tocan nunca.
     const iguales = Math.max(evaluadas - ok, 0)
     const reporte = {
@@ -3957,7 +3964,7 @@ function App({ ctx }) {
                       onClick: aplicarPropuesta,
                       title: t('newRulesApplyTitle'),
                     },
-                    t('newRulesApply', { n: (prop && prop.changes && prop.changes.length) || 0 })
+                    t('newRulesApply', { n: sessions.length })
                   ),
                   h('button', { key: 'rel', className: 'ghost', onClick: leerPropuesta }, t('newRulesReload')),
                   h('span', { key: 'msg', className: 'footmsg', id: 'propMsg' }, propMsg),
@@ -4498,7 +4505,7 @@ function App({ ctx }) {
                 onClick: aplicarPropuesta,
                 title: t('newRulesApplyTitle'),
               },
-              t('newRulesApply', { n: (prop && prop.changes && prop.changes.length) || 0 })
+              t('newRulesApply', { n: sessions.length })
             ),
             h('button', { id: 'btnReloadProposal', onClick: leerPropuesta }, t('newRulesReload'))
           )
