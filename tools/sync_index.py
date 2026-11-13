@@ -81,6 +81,40 @@ def main() -> int:
             f.write_text(json.dumps(d, ensure_ascii=False, indent=1), encoding="utf-8")
             print(f"     respaldo: {resp.name} · escrito")
 
+    # Lo contrario también cuenta: sesiones que la base tiene y el índice no conoce.
+    # Sin esto, una sesión nueva no aparece en Process y el dueño no puede renombrarla nunca.
+    anadidas = 0
+    for base in (DATA, ESPEJO):
+        f = base / "index.json"
+        if not f.exists():
+            continue
+        d = json.loads(f.read_text(encoding="utf-8"))
+        sesiones = d.get("sessions") or []
+        conocidas = {str(s.get("id")) for s in sesiones}
+        siguiente = max([int(s.get("n") or 0) for s in sesiones] or [0]) + 1
+        nuevas = []
+        for sid, titulo in vivos.items():
+            if sid in conocidas or not titulo:
+                continue
+            nuevas.append({
+                "id": sid, "n": siguiente, "mmm": 1, "prof": "default",
+                "raw": titulo, "date": "", "sujeto": "", "iq0": "", "iq1": "",
+                "iq2": "", "iq3": "", "desc": "", "verb": "", "nueva": True,
+            })
+            siguiente += 1
+        if nuevas:
+            sesiones.extend(nuevas)
+            d["sessions"] = sesiones
+            d["total"] = len(sesiones)
+            anadidas += len(nuevas)
+            print(f"  {str(f)[-42:]}: +{len(nuevas)} sesión(es) nueva(s) que la base tenía")
+            for s in nuevas[:5]:
+                print(f"     #{s['n']} «{s['raw'][:52]}»")
+            if args.apply:
+                (base / f"index-backup-{time.strftime('%Y%m%d_%H%M')}.json").write_bytes(f.read_bytes())
+                f.write_text(json.dumps(d, ensure_ascii=False, indent=1), encoding="utf-8")
+                print("     escrito")
+
     if informe:
         print("\n  ejemplos (índice → base):")
         for n, antes, ahora in informe:
