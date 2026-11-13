@@ -1,6 +1,6 @@
 # Ejemplo de vocabulario personal — copiar a ~/.hermes/plugin-data/make-it-smart/vocab.personal.yaml
 #
-# Esto NO es la chuleta de fábrica: es el mundo del usuario. Todo lo de aquí es suyo y
+# Esto NO es la batería de fábrica: es el mundo del usuario. Todo lo de aquí es suyo y
 # nunca viaja al repositorio. Los nombres de este archivo son ficticios a propósito:
 # el plugin solo comparte los TIPOS (Forwarder, Retailer, Laptop), no las marcas de nadie.
 #

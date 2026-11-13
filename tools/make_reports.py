@@ -245,7 +245,7 @@ ThinkPad, que «Descuentos a Jubilados» es un nombre y no una oración.<br><br>
 <p class="lead">El clasificador las consulta en este orden: marcas → productos → programas → compañías → servicios → conceptos → logística → sin_marca.</p>
 {"".join(sections)}
 """
-    return page("La cheat_sheet · chuleta del plugin", f"{len(bat)} secciones · {'personal separada' if has_personal else 'sin cheat_sheet personal'}", body)
+    return page("La batería · Cheat-Sheet del plugin", f"{len(bat)} secciones · {'personal separada' if has_personal else 'sin cheat_sheet personal'}", body)
 
 
 def main() -> int:

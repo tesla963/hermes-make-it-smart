@@ -296,7 +296,7 @@ code{{background:#241f2b;border:1px solid var(--line);border-radius:4px;padding:
 <h1>Propuestas de fusión del vocabulario</h1>
 <p class="sub">{len(finales)} propuestas sobre {len(filas)} términos · generadas el 12-nov-2026 · nada aplicado</p>
 <div class="privado"><b>Archivo personal.</b> Este documento y el vocabulario que lo alimenta son datos
-tuyos: no viajan al repositorio ni a la chuleta de fábrica. Vive en
+tuyos: no viajan al repositorio ni a la batería de fábrica. Vive en
 <code>~/Desktop/hermes-make-it-smart-work/reportes/</code>.</div>
 <div class="grid">
 <div class="card"><b>Listas para aceptar</b><div class="big">{altas}</div></div>

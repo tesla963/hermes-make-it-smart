@@ -8,6 +8,17 @@ vocabulary term is, how the plugin finds it, and which part of that vocabulary t
 
 ---
 
+## 0. What we call things
+
+| Concept | Español | English | Never |
+|---|---|---|---|
+| the dictionary the classifier reads | **batería** | **Cheat-Sheet** | "chuleta" |
+| the file | `cheat_sheet.yaml` | `cheat_sheet.yaml` | `bateria.yaml` |
+
+The Spanish word is **batería** (what a band plays; what you have ready). The English word is
+**Cheat-Sheet**, with the hyphen. The code keeps `cheat_sheet` in snake_case because a file name
+cannot have a hyphen.
+
 ## 1. What counts as a term
 
 | Is a term | Is not a term |
