@@ -309,3 +309,52 @@ Every correction the user dictates is:
 The algorithm does not "learn" by itself — it learns because a correction that is not
 written down is a correction that will be made again. See
 [`CORRECTIONS.md`](CORRECTIONS.md).
+
+## 12. What the teacher taught us
+
+Evaluating title generation rules against the reference database of 862 canonical sessions
+established five concrete invariants. Each resolves a measured failure pattern:
+
+### Rule 1 · Never duplicate the subject name in Iq1 (15 cases measured)
+
+When the subject in `iq0` is already the application, program, or brand name, `iq1` must never repeat
+that exact token. Repeating the program in both slots creates "one answer in two fields" and degrades
+faceted navigation.
+
+- **Rule**: If `sujeto.lower() == iq1.lower()`, blank `iq1` so `iq2` can cleanly hold the machine or environment.
+- **Wrong**: `041 [Logseq] 001 [Logseq] [Mac mini M4] Instalación Logseq 2.0 vía Homebrew; confiabilidad gestor`
+- **Right**: `041 [Logseq] 001 [Mac mini M4] Instalación Logseq 2.0 vía Homebrew; confiabilidad gestor`
+
+### Rule 2 · Extract known entities from conversational sentences (5 cases measured)
+
+Sessions initiated with conversational greetings or prompts must not retain full chat sentences
+in the subject slot.
+
+- **Rule**: Identify known entities (`DeepSeek`, `Brave`, `Handbrake`, `Nous`) inside the sentence, promote the entity to `iq0`, and transfer the predicate to the description without duplicating the header.
+- **Wrong**: `024 [Hola DeepSeek estás funcionando] 001 [DeepSeek] [IA] 024 [Hola DeepSeek estás funcionando] 001`
+- **Right**: `024 [DeepSeek] 001 [IA] Hola estás funcionando`
+
+### Rule 3 · Do not amputate prepositional complements or model tiers (2 cases measured)
+
+A 4-word nominal syntagm bound by prepositions or model qualifiers (`Migración Android a iPhone`, `Gemini 3.1 Flash Lite`) is a single semantic block. Severing it between words strands hanging prepositions or broken version fragments.
+
+- **Rule**: If a nominal subject cannot be reduced to 1–3 words without leaving a hanging preposition (`a iPhone`) or orphaned model tier (`3.1 Lite`) in the tail, leave it intact. Never append trailing fragments into the description using `·`.
+- **Wrong**: `091 [Migración Android] 001 [Apple] [Teléfono] Backup WhatsApp Android Gmail antes · a iPhone`
+- **Right**: `091 [Migración Android a iPhone] 001 [Apple] [Teléfono] Backup WhatsApp Android Gmail antes`
+
+### Rule 4 · Recover entities from description when subject is sliced mid-word (5 cases measured)
+
+Sessions previously processed with naive length slicing (e.g. at 35 characters) contain sliced words
+(`perdid`, `proyect`, `plugin Ma`).
+
+- **Rule**: Detect mutilated word endings (`_is_mutilated`). Inspect the description or raw text for the intact known entity (`Brave`, `Make It Smart`), assign that clean entity to `iq0`, and restore the description.
+- **Wrong**: `947 [Recuperar ventanas y pestañas perdid] 001 Recuperar ventanas y pestañas perdidas de Brave`
+- **Right**: `947 [Brave] 001 Recuperar ventanas y pestañas perdidas`
+
+### Rule 5 · Transfer the predicate to description on uncanonical titles (5 cases measured)
+
+When extracting a subject from a virgin title, discarding the remaining words empties the description.
+
+- **Rule**: When deriving `iq0` from a free-form title, pass the remaining words directly into `desc` so the session purpose is preserved.
+- **Wrong**: `Firefox tarda mucho en arrancar` → `972 [Firefox] 001` (empty description)
+- **Right**: `Firefox tarda mucho en arrancar` → `972 [Firefox] 001 tarda mucho en arrancar`

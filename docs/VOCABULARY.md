@@ -185,3 +185,26 @@ narrow + wide pair       → iq0 is the narrow word, iq1 the wide one
 
 **The goal is that the user never types `Celular Android` next to `A55`.** They type the model
 once, under its brand, and the context follows from [`BRAND-CONTEXT.md`](BRAND-CONTEXT.md).
+
+---
+
+## 7. Special vocabulary cases: unbranded models, context drifts, and acronyms
+
+### 1 · Models without a brand (unbranded models)
+
+Users frequently write a product model or component without mentioning the parent company (`COM-6900`, `3.1 Flash Lite`, `Avata 2`).
+
+- **Rule**: A model number or tier name alone is never a standalone subject. It must be resolved to its commercial anchor (`Steren COM-6900`, `Gemini 3.1 Flash Lite`, `DJI Avata 2`). If the brand is known from the prompt, pair them together.
+
+### 2 · Context drifts (store vs. machine vs. country)
+
+`iq2` (Context) is strictly restricted to three mutually exclusive real-world anchors: **store**, **country**, or **machine**.
+
+- **Rule**: Conceptual domains, themes, or software categories (e.g. `Networking`, `IA`, `Educación`) must never drift into `iq2`. If the session runs on the local computer, `iq2` takes the machine (`Mac mini M4`, `ThinkPad P53`); if it occurs in a physical market, `iq2` takes the country or platform (`Panamá`, `Amazon`, `VPS`).
+
+### 3 · Acronyms and CamelCase tokens
+
+Technical protocols (`SMTP`, `DMARC`, `DNS`, `CLI`, `MCP`) and CamelCase product names (`iPhone`, `macOS`, `iTerm`, `CyberPanel`) have specific structural behavior:
+
+- **Rule**: Protocol acronyms are technical attributes belonging in the description unless the session's explicit purpose is configuring that exact protocol (e.g. `DMARC` in `#534`).
+- **Rule**: CamelCase words with lowercase prefixes (`iPhone`, `macOS`, `iCloud`) are full proper nouns. Tokenizers and subject cutters must never treat their lowercase prefix as a common word, nor slice them into broken fragments.

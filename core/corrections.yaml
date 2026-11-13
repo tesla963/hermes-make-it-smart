@@ -895,3 +895,63 @@
     - { right: "curl · Open Source", wrong: "curl · Daniel Stenberg" }
     - { right: "Firefox · Mozilla", wrong: "Firefox · Open Source" }
   control_question: "Is there a company or foundation behind it? If there is, use it; if not, the ecosystem."
+
+- id: subject-does-not-repeat-program
+  taught: 2026-11-13
+  rule: >
+    When the subject in iq0 is already the program (e.g. Logseq, DEVONthink, Tinderbox),
+    iq1 must NEVER repeat that same name. A duplicate tag in iq1 is "one answer in two
+    fields" and dilutes faceted filtering. Leave iq1 empty so that iq2 can carry the
+    machine or environment.
+  examples:
+    - { right: "041 [Logseq] 001 [Mac mini M4] ...", wrong: "041 [Logseq] 001 [Logseq] [Mac mini M4] ..." }
+    - { right: "071 [DEVONthink] 001 Evaluar CLI/MCP...", wrong: "071 [DEVONthink] 001 [DEVONthink] Evaluar CLI/MCP..." }
+  control_question: "Does iq1 repeat the exact same name already given in iq0?"
+
+- id: no-prepositional-amputation
+  taught: 2026-11-13
+  rule: >
+    A four-word nominal syntagm bound by prepositions or model qualifiers (e.g.
+    "Migración Android a iPhone", "Gemini 3.1 Flash Lite") must NEVER be severed
+    leaving dangling prepositions ("a iPhone") or isolated model qualifiers ("3.1 Lite")
+    tacked onto descriptions. If a subject cannot be reduced to a clean 1-3 word nominal
+    head without stranding proper nouns or prepositional complements, leave it intact.
+  examples:
+    - { right: "091 [Migración Android a iPhone] 001 [Apple]", wrong: "091 [Migración Android] 001 [Apple] ... · a iPhone" }
+    - { right: "257 [Gemini 3.1 Flash Lite] 001 [Google]", wrong: "257 [Gemini] 001 [Google] ... · 3.1 Lite · Comparar" }
+  control_question: "Does cutting the subject leave a dangling prepositional complement or stranded proper noun?"
+
+- id: repair-mutilated-subject-from-description
+  taught: 2026-11-13
+  rule: >
+    When legacy mechanical cuts (such as 35-character slicing) have severed words
+    mid-word ("perdid", "proyect", "plugin Ma"), do not discard or mutilate further.
+    Look into the description or first user message for the intact known entity (e.g.
+    "Brave", "Make It Smart") and assign that clean entity as the subject, restoring
+    the remaining words to the description.
+  examples:
+    - { right: "947 [Brave] 001 Recuperar ventanas y pestañas perdidas", wrong: "947 [Recuperar ventanas y pestañas perdid] 001 ..." }
+    - { right: "927 [Make It Smart] 001 Verificar sesión nueva", wrong: "927 [Verificar sesión nueva del plugin Ma] 001 ..." }
+  control_question: "Is a word sliced mid-word in the subject, and does the description contain the intact entity?"
+
+- id: description-never-contains-middle-dot
+  taught: 2026-11-13
+  rule: >
+    The middle dot (" · ") is strictly reserved for separating the canonical trailing
+    verb at the end of the title. It must NEVER be used to join phrases or appended
+    fragments within the description field. Join clauses inside description with
+    commas, semicolons or natural syntax.
+  examples:
+    - { right: "Costo por token vs DeepSeek V4 Flash Vision · Comparar", wrong: "Costo por token vs DeepSeek V4 Flash Vision · 3.1 Lite · Comparar" }
+  control_question: "Does the title contain more than one middle dot (' · ')?"
+
+- id: transfer-tail-to-description-on-virgin-titles
+  taught: 2026-11-13
+  rule: >
+    When deriving a subject from a virgin, uncanonical title (e.g. "Firefox tarda mucho
+    en arrancar"), never discard the remaining tail of words. Transfer the tail directly
+    into the description so the session context and task purpose are preserved.
+  examples:
+    - { right: "972 [Firefox] 001 tarda mucho en arrancar", wrong: "972 [Firefox] 001" }
+    - { right: "973 [Steren COM-6900] 001 Configurar layout del teclado", wrong: "973 [Steren COM-6900] 001" }
+  control_question: "Did extracting the subject leave the session description empty when there was a descriptive predicate in the original title?"

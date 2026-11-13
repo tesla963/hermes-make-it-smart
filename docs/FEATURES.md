@@ -234,3 +234,13 @@ Rules that follow from this:
   `desktop-plugins/<key>/` together, then **fully restart** Hermes Desktop (⌘Q) — it scans the folder
   only at launch.
 
+## 16 · Division of responsibilities: Process, New Rules, and Scripts
+
+The workflow separates pending intake from database-wide rule re-evaluations:
+
+| Surface | Target Scope | Responsibilities & Invariants |
+|---|---|---|
+| **Process Tab** | Virgin / uncanonical sessions only | Only lists sessions that lack canonical nomenclature (`^NNN [`). Processes unindexed items, performs backups prior to commits, and provides Revert. Does **not** process or touch already-canonical sessions. |
+| **New Rules Tab** | Entire database (all sessions) | Reads `proposed-index.json`. Evaluates all sessions against updated rules. Displays the sweep counter (`N reviewed · X renamed · Y already correct · Z machinery`) and applies proposed changes with automated snapshot backup. |
+| **`tools/propose_rename.py`** | Offline proposal generation & evaluation | Generates `proposed-index.json` without writing to live state. Supports `--teacher` (asserting 100% exact reproduction of reference titles) and `--eval` (measuring agreement % and rule improvements). |
+

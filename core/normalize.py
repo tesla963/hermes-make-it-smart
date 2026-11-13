@@ -245,6 +245,16 @@ def _is_clean_head(head: str, limit: int = 3) -> bool:
     return True
 
 
+def _is_proper_word(w: str) -> bool:
+    """True if w is capitalized or CamelCase, and not an action verb or common stopword."""
+    if not w or _is_mutilated(w):
+        return False
+    low = w.lower().strip(".,;:¡!¿?()\"'")
+    if low in ACTION_VERBS or low in DANG_WORDS:
+        return False
+    return w[:1].isupper() or any(c.isupper() for c in w[1:])
+
+
 def shrink_subject(subject: str, limit: int = 3) -> tuple[str, str]:
     """Cut a long subject down to a clean nominal head, and return the remaining words.
 
@@ -272,13 +282,18 @@ def shrink_subject(subject: str, limit: int = 3) -> tuple[str, str]:
             head_words = [KNOWN_ENTITIES[low]]
             if i + 1 < len(palabras):
                 next_w = palabras[i + 1]
-                if (next_w[:1].isupper() and next_w.lower() not in ACTION_VERBS
-                        and next_w.lower() not in DANG_WORDS and not _is_mutilated(next_w)):
+                if (_is_proper_word(next_w) and not _is_mutilated(next_w)):
                     head_words.append(next_w)
             head = " ".join(head_words)
             if _is_clean_head(head, limit):
                 cola_words = [cw for j, cw in enumerate(palabras)
                               if not (i <= j < i + len(head_words)) and not _is_mutilated(cw)]
+                sub_cola = [
+                    cw for cw in cola_words
+                    if _is_proper_word(cw) and cw.lower() not in {"hola", "buenas", "hey", "aria", "agent", "by", "use"}
+                ]
+                if sub_cola:
+                    return "", ""
                 cola = " ".join(cola_words).strip(" ,.;:-")
                 return head, cola
 
@@ -286,8 +301,7 @@ def shrink_subject(subject: str, limit: int = 3) -> tuple[str, str]:
     proper_spans = []
     current_span = []
     for w in palabras:
-        if (w[:1].isupper() and w.lower() not in ACTION_VERBS
-                and w.lower() not in DANG_WORDS and not _is_mutilated(w)):
+        if _is_proper_word(w):
             current_span.append(w)
         else:
             if current_span:
@@ -308,7 +322,7 @@ def shrink_subject(subject: str, limit: int = 3) -> tuple[str, str]:
                 cola_words = [cw for cw in palabras if cw not in best_span and not _is_mutilated(cw)]
                 sub_cola = [
                     cw for cw in cola_words
-                    if cw[:1].isupper() and cw.lower() not in ACTION_VERBS and cw.lower() not in {"hola", "buenas", "hey"}
+                    if _is_proper_word(cw) and cw.lower() not in {"hola", "buenas", "hey", "aria", "agent", "by", "use"}
                 ]
                 if sub_cola:
                     return "", ""

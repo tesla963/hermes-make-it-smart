@@ -19,7 +19,8 @@ import time
 from pathlib import Path
 
 import sys
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+REPO = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(REPO))
 from core.normalize import shrink_subject
 
 DATA = Path.home() / ".hermes/plugin-data/make-it-smart"
@@ -88,22 +89,45 @@ def merge_description(cola: str, desc: str) -> str:
     clean_tail = " ".join(new_words).strip(" ,.;:-")
     if not clean_tail:
         return d
-    return f"{d} · {clean_tail}"
+    # NEVER use '·' inside the description; '·' is reserved exclusively for the canonical verb tail.
+    if clean_tail.split()[0].lower() in {"a", "de", "en", "con", "por", "para", "sobre", "hacia"}:
+        return f"{d} {clean_tail}"
+    return f"{d}; {clean_tail}"
 
 
-def derivar_sujeto(raw: str) -> str:
-    """A subject out of a free-form title: no model, no invention — the words that are left."""
+def derivar_sujeto(raw: str) -> tuple[str, str]:
+    """A subject and description out of a free-form title: no model, no invention."""
     t = re.sub(r"^\d{3,4}\s*\[[^\]]*\]\s*\d{0,3}\s*", "", raw or "")
     t = re.sub(r"\[[^\]]*\]", " ", t)
     t = RELLENO.sub(" ", t)
-    corto, _cola = shrink_subject(t)
+    corto, cola = shrink_subject(t)
     if corto:
-        return corto
-    return ""
+        return corto, cola
+    return "", ""
+
+
+def repair_mutilated_subject(sujeto: str, desc: str) -> tuple[str, str] | None:
+    """Repair subjects that were sliced mid-word by legacy 35-char caps."""
+    from core.normalize import KNOWN_ENTITIES, _is_mutilated
+    if not any(_is_mutilated(w) for w in sujeto.split()):
+        return None
+    d = (desc or "").strip()
+    d_low = d.lower()
+    for k, v in KNOWN_ENTITIES.items():
+        if re.search(r"\b" + re.escape(k) + r"\b", d_low):
+            clean_d = re.sub(r"\b(de|del|en|para|con)\s+" + re.escape(k) + r"\b", "", d, flags=re.I).strip()
+            clean_d = re.sub(r"\b" + re.escape(k) + r"\b", "", clean_d, flags=re.I).strip()
+            clean_d = re.sub(r"\s+", " ", clean_d).strip(" ,.;:-")
+            return v, clean_d
+    if "make it smart" in d_low:
+        clean_d = re.sub(r"del plugin make it smart", "", d, flags=re.I).strip()
+        clean_d = re.sub(r"\s+", " ", clean_d).strip(" ,.;:-")
+        return "Make It Smart", clean_d
+    return None
 
 
 def canon_title(s: dict) -> str:
-    """The same shape the panel builds, so a proposal is never prettier than reality."""
+    """The same shape desktop/plugin.js builds, so a proposal is never prettier than reality."""
     nnn = f"{int(s.get('n') or 0):03d}"
     subj = str(s.get("sujeto") or s.get("iq0") or "").strip() or "Sin sujeto"
     mmm = f"{int(s.get('mmm') or 1):03d}"
@@ -114,17 +138,71 @@ def canon_title(s: dict) -> str:
             head += f" [{v}]"
     if len(head) >= LIMIT:
         return head[:LIMIT].rstrip()
-    fecha = str(s.get("fecha") or "").strip()[:10]
-    desc = str(s.get("desc") or "").strip()
+
     verb = str(s.get("verb") or "").strip()
-    out = head
-    if fecha:
-        out += f" {fecha}"
-    if desc:
-        out += f" {desc}"
-    if verb:
-        out += f" · {verb}"
-    return out[:LIMIT].rstrip()
+    tail = f" · {verb}" if verb else ""
+    budget = LIMIT - len(head) - 1 - len(tail)
+
+    desc = str(s.get("desc") or "").strip()
+    if desc and budget > 0:
+        if len(desc) > budget:
+            desc = desc[:budget].rstrip()
+        return f"{head} {desc}{tail}".strip()
+    if tail and len(head) + len(tail) + 1 <= LIMIT:
+        return f"{head}{tail}".strip()
+    return head
+
+
+def run_teacher(teacher_path: Path) -> int:
+    """Evaluate 100% title reproduction using teacher fields."""
+    if not teacher_path.exists():
+        print(f"  error: no existe el archivo maestro: {teacher_path}", file=sys.stderr)
+        return 1
+
+    datos = json.loads(teacher_path.read_text(encoding="utf-8"))
+    good = datos.get("teacher_good", datos)
+    bad = datos.get("teacher_bad", {})
+
+    total = len(good)
+    exactos = 0
+    diferencias = []
+
+    for sid, t in good.items():
+        raw = t.get("raw") or ""
+        built = canon_title(t)
+        if built == raw:
+            exactos += 1
+        else:
+            motivo = []
+            if len(raw) > LIMIT:
+                motivo.append("raw supera LIMIT")
+            if t.get("sujeto") not in raw:
+                motivo.append("sujeto no coincide con raw")
+            diferencias.append({
+                "id": sid,
+                "n": t.get("n"),
+                "raw": raw,
+                "built": built,
+                "why": ", ".join(motivo) or "diferencia en ensamblado",
+            })
+
+    pct = (exactos / total * 100) if total else 0.0
+    print("=== Corrida con trampa (--teacher) ===")
+    print(f"  sesiones en teacher_good: {total} · reproducidas exactas: {exactos} ({pct:.1f}%) · "
+          f"diferencias: {len(diferencias)}")
+    if bad:
+        print(f"  sesiones en teacher_bad:  {len(bad)} (contraejemplos para contrastar mejoras)")
+
+    if diferencias:
+        print("\n  Diferencias encontradas:")
+        for d in diferencias[:10]:
+            print(f"    #{d['n']} ({d['id']}): {d['why']}")
+            print(f"      RAW:   {d['raw']}")
+            print(f"      BUILT: {d['built']}")
+        return 1
+
+    print("  reproducción perfecta: 100% de los títulos de teacher_good ensamblados exactamente")
+    return 0
 
 
 def main() -> int:
@@ -133,7 +211,14 @@ def main() -> int:
     ap.add_argument("--path", default=str(DATA / "index.json"))
     ap.add_argument("--out", default=str(DATA / "proposed-index.json"))
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--teacher", nargs="?", const=str(REPO / "tools/teacher.json"), default=None,
+                    help="Run in teacher mode to verify title reconstruction")
+    ap.add_argument("--eval", action="store_true",
+                    help="Measure agreement of the proposal against tools/teacher.json")
     args = ap.parse_args()
+
+    if args.teacher:
+        return run_teacher(Path(args.teacher).expanduser())
 
     ruta = Path(args.path).expanduser()
     datos = json.loads(ruta.read_text(encoding="utf-8"))
@@ -156,12 +241,14 @@ def main() -> int:
         # Sin sujeto se deriva de las palabras que quedan del título; si no queda nada,
         # se deja como está en lugar de inventar.
         if not sujeto or sujeto == "Sin sujeto":
-            derivado = derivar_sujeto(raw)
+            derivado, desc_derivada = derivar_sujeto(raw)
             if not derivado:
                 saltadas.append({"id": s.get("id"), "title": raw[:60],
                                  "why": "nothing to derive a subject from"})
                 continue
             campos["sujeto"] = derivado
+            if desc_derivada and not s.get("desc"):
+                campos["desc"] = desc_derivada[:90]
             reglas.append("subject-derived-from-title")
         # 1 · un título que no sigue la forma canónica
         if not CANON.match(raw):
@@ -170,21 +257,25 @@ def main() -> int:
         if iq1 and sujeto.lower() == iq1.lower():
             reglas.append("subject-repeats-iq1")
             campos["iq1"] = ""
-        # 3 · el sujeto es una frase, no un bloque: no se recorta, se pide un nombre.
-        # Recortar "Educación Estatal o Particular" a "Educación Estatal o" no es un sujeto.
+        # 3 · el sujeto es una frase o está mutilado: reparar o recortar a la cabeza limpia.
         if len(sujeto.split()) >= 4 and "sujeto" not in campos:
-            corto, cola = shrink_subject(sujeto)
-            if corto and corto != sujeto and len(corto.split()) <= 3:
-                campos["sujeto"] = corto
-                if cola:
-                    merged = merge_description(cola, str(s.get("desc") or ""))
-                    if merged:
-                        campos["desc"] = merged[:90]
-                reglas.append("subject-shrunk-to-its-head")
+            repaired = repair_mutilated_subject(sujeto, str(s.get("desc") or ""))
+            if repaired:
+                campos["sujeto"], campos["desc"] = repaired
+                reglas.append("mutilated-subject-repaired")
             else:
-                saltadas.append({"id": s.get("id"), "title": raw[:60],
-                                 "why": "subject-too-long and no safe head to cut"})
-                continue
+                corto, cola = shrink_subject(sujeto)
+                if corto and corto != sujeto and len(corto.split()) <= 3:
+                    campos["sujeto"] = corto
+                    if cola:
+                        merged = merge_description(cola, str(s.get("desc") or ""))
+                        if merged:
+                            campos["desc"] = merged[:90]
+                    reglas.append("subject-shrunk-to-its-head")
+                else:
+                    saltadas.append({"id": s.get("id"), "title": raw[:60],
+                                     "why": "subject-too-long and no safe head to cut"})
+                    continue
 
         # Re-verificar si el sujeto resultante repite iq1 tras el recorte
         suj_final = campos.get("sujeto") or sujeto
@@ -231,6 +322,47 @@ def main() -> int:
           f"idénticas: {iguales_count} · omitidas: {saltadas_count}")
     for c in cambios[:8]:
         print(f"    {c['before'][:46]:46s} → {c['after'][:46]}")
+
+    if args.eval:
+        teacher_path = REPO / "tools/teacher.json"
+        if teacher_path.exists():
+            teacher_raw = json.loads(teacher_path.read_text(encoding="utf-8"))
+            teacher_good = teacher_raw.get("teacher_good", teacher_raw)
+            teacher_bad = teacher_raw.get("teacher_bad", {})
+            cambios_by_id = {c["id"]: c for c in cambios}
+
+            # 1. Medir acuerdo SOLO contra teacher_good
+            good_exactos = 0
+            good_diffs = []
+            for sid, t in teacher_good.items():
+                if sid in cambios_by_id:
+                    c = cambios_by_id[sid]
+                    good_diffs.append((t["n"], t["raw"], c["after"], c["rules"]))
+                else:
+                    good_exactos += 1
+            pct_good = (good_exactos / len(teacher_good) * 100) if teacher_good else 0.0
+
+            # 2. Medir corrección de teacher_bad
+            bad_corregidas = 0
+            bad_sin_tocar = 0
+            for sid, t in teacher_bad.items():
+                if sid in cambios_by_id:
+                    bad_corregidas += 1
+                else:
+                    bad_sin_tocar += 1
+            pct_bad_corr = (bad_corregidas / len(teacher_bad) * 100) if teacher_bad else 0.0
+
+            print("\n=== Evaluación contra el Maestro (--eval) ===")
+            print("  AVISO: mide 'no propuso cambio' como acuerdo, y lee los campos del índice,")
+            print("  que es la misma fuente del maestro. Sirve para detectar regresiones, no como")
+            print("  medida de inteligencia. Para eso hace falta la corrida con modelo.")
+            print(f"  teacher_good ({len(teacher_good)} sesiones): acuerdo exacto: {good_exactos} ({pct_good:.2f}%) · diferencias: {len(good_diffs)}")
+            print(f"  teacher_bad  ({len(teacher_bad)} sesiones): corregidas por reglas: {bad_corregidas} ({pct_bad_corr:.1f}%) · sin tocar: {bad_sin_tocar}")
+            if good_diffs:
+                print("  Diferencias en teacher_good:")
+                for n, raw, after, r in good_diffs[:5]:
+                    print(f"    #{n} ({', '.join(r)}):\n      RAW:   {raw}\n      AFTER: {after}")
+
     if args.dry_run:
         print("  dry run — nada escrito")
         return 0
