@@ -310,7 +310,7 @@ __all__ = [
 # --------------------------------------------------------------------------- #
 # The 2026-11-10 schema
 # --------------------------------------------------------------------------- #
-# iq1 = the maker of the subject (adjective)
+# iq1 = the program the work happens in (or that the work is about)
 # iq2 = the context that qualifies it (store, country or machine)
 # iq3 = the intention (a verb)
 # iq4 = the work front (theme, with subcategories)
@@ -390,6 +390,9 @@ _INTENT_ALIASES: Final[dict[str, str]] = {
     "comprar": "Buy", "compra": "Buy", "buy": "Buy", "purchase": "Buy",
     # Troubleshooting — 'testear' folded here: it verifies a state
     "troubleshooting": "Troubleshooting", "diagnosticar": "Troubleshooting",
+    "reparar": "Troubleshooting", "arreglar": "Troubleshooting",
+    "componer": "Troubleshooting", "fix": "Troubleshooting",
+    "fixing": "Troubleshooting", "repair": "Troubleshooting",
     "diagnostico": "Troubleshooting", "diagnóstico": "Troubleshooting",
     "testear": "Troubleshooting", "testing": "Troubleshooting",
     "test": "Troubleshooting", "verificar": "Troubleshooting",

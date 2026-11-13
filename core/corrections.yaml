@@ -479,8 +479,8 @@
     THE USER — the one he already owns or is about to use — never the accessory
     under evaluation. Asking "do these RayNeo glasses work with my DJI RC 2"
     is a session about the RC 2: the controller is the thing he flies, the
-    glasses are the candidate. Iq1 is the maker of the subject (DJI), and the
-    candidate goes in the description with its brand intact.
+    glasses are the candidate. Iq1 is the program or maker behind the subject
+    (DJI), and the candidate goes in the description with its brand intact.
   why: >
     The old rule keyed on brand and turned every DJI-adjacent session into
     "[DJI]" with the wrong subject. The brand is an attribute of the subject,
@@ -582,8 +582,12 @@
   taught: 2026-11-10
   rule: >
     The five axes have ONE meaning each, and an older rule that says otherwise
-    is superseded. iq1 is the maker of the subject, an adjective, never the
-    assistant. iq2 is CONTEXT and only context: a store ("Ebay", "Amazon"), a
+    is superseded. iq1 is the PROGRAM the work happens in — or the program the
+    work is about — never a bare adjective and never the assistant by default.
+    The program goes in iq1 only when the subject is a part of it; when the
+    intention makes the program the object of the work, the program IS the
+    subject (iq0) and iq1 holds its maker or stays empty. iq2 is CONTEXT and
+    only context: a store ("Ebay", "Amazon"), a
     country ("Panamá") or a machine ("Mac mini M4"). iq3 is the INTENTION and
     nothing else, one of exactly seven: Troubleshooting, Search the Web,
     Compatibility, Buy, Quote, Compare, Configuration. "Investigar" no longer
@@ -668,3 +672,15 @@
     - { right: "Search the Web", wrong: "Investigar" }
     - { right: "Search the Web", wrong: "Consultar" }
   control_question: "Am I going out to find something I do not know, or am I reading something I already have?"
+
+- id: reparar-folds-into-troubleshooting
+  taught: 2026-11-12
+  rule: >
+    "Reparar" is not an intention of its own. Troubleshooting implies repairing,
+    fixing, mending: you cannot repair what you have not diagnosed. Repairing is
+    what troubleshooting produces, so both verbs land on Troubleshooting.
+  examples:
+    - { right: "Troubleshooting", wrong: "Reparar" }
+    - { right: "Troubleshooting", wrong: "Arreglar" }
+    - { right: "Troubleshooting", wrong: "Fixing" }
+  control_question: "Do I know the cause? If I do not, it is Troubleshooting — and the fix is its outcome, not a second intention."

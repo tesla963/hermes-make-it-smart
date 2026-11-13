@@ -34,7 +34,8 @@ mode) before it is cut. The verb is the first thing dropped.
 
 ## 3. Subject — what the session is about
 
-The **object, problem or symptom**, in 2–4 words. Never the program.
+The **object, problem or symptom**, in 1–3 words: the block, or the program itself when
+the intention turns the program into the object of the work (see §5c). Never a sentence.
 
 **Rules**
 
@@ -43,7 +44,7 @@ The **object, problem or symptom**, in 2–4 words. Never the program.
 | Strip the action prefix, keep the core | The verb goes to the description | `Vitamin C Supplement` → `Vitamin C` |
 | Drop state adjectives | "unusual", "stuck", "with error" describe, not name | `Interosseous Pain` → `Interosseous` |
 | Name the failure point | It is what you will search for later | `Protocol` for a broken gateway |
-| Never repeat Iq1 | Two fields, one answer = not navigable | If Iq1 is YouTube, the subject is `Transcription` |
+| Never repeat Iq1 | Two fields, one answer = not navigable | If Iq1 is YouTube and the work happens inside it, the subject is `Transcription`, not `Video` |
 | Never repeat the platform in the subject | Same reason | `Video` was removed from a YouTube subject |
 
 **The control question:** *would this subject help me find this session in six months?*
@@ -69,7 +70,10 @@ It is the only one that opens the title, so it carries the weight of the search.
 
 - It names the **block or part** of the thing: `Protocol` inside a gateway,
   `Stuck Startup` inside Firefox, `Hermes Desktop` inside Hermes Agent.
-- It is **never the program itself** — the program goes in iq1.
+- It is the program itself **only when the intention makes the program the object**
+  (`Search the Web`, `Compare`, `Quote`, `Buy`). When the work happens *inside* the
+  program (`Troubleshooting`, `Configuration`), the subject is the part that broke and
+  the program goes to iq1.
 - Two to four words. If it needs a verb, the verb belongs in the description.
 
 **The hard limit: three words.** A subject of four words or more is not a subject,
@@ -256,12 +260,18 @@ Description: `Compare the Fly More bundle`. Verb: `Comparar`.
 
 ## 10. When subject and Iq1 collide
 
-If they are nearly the same, **something is wrong**. The subject names a *thing or a
-problem*; the axis names the *platform*. 187 sessions were corrected on this rule alone.
+Two identical fields answer the same question twice, and a catalogue where two fields
+carry one answer stops being navigable. The rule survives the correction: **when the
+program is the subject, iq1 must hold the maker or stay empty** — never the same word.
 
-Legitimate exceptions exist — `[Precios Amazon] [Amazon] [Comparación]` — where the
-subject is genuinely a topic, not a platform. Judge each case; do not apply the rule
-blindly.
+| Subject | iq1 | Verdict |
+|---|---|---|
+| `Firefox` | `—` | right: the intention made the program the object |
+| `Firefox` | `Mozilla` | right: the program and its maker |
+| `Firefox` | `Firefox` | **wrong**: one answer in two fields |
+| `Stuck Startup` | `Firefox` | right: the part and the whole |
+
+187 sessions were corrected on this rule before the program could be a subject at all.
 
 ## 11. Corrections are part of the algorithm
 
