@@ -34,6 +34,10 @@ import sys
 import time
 from pathlib import Path
 
+REPO = Path(__file__).resolve().parent.parent
+if str(REPO) not in sys.path:
+    sys.path.insert(0, str(REPO))
+
 HOME = Path.home()
 DATA = HOME / ".hermes/plugin-data/make-it-smart"
 BACKUPS = DATA / "backups"
@@ -96,6 +100,63 @@ def titulo_vivo(ident: str) -> str | None:
         con.close()
 
 
+CACHE_DESC = DATA / "descriptions.json"
+
+
+def _cache_desc() -> dict:
+    if CACHE_DESC.exists():
+        try:
+            return json.loads(CACHE_DESC.read_text(encoding="utf-8"))
+        except Exception:
+            return {}
+    return {}
+
+
+def descripcion_llm(ident: str, sujeto: str, max_reintentos: int = 1) -> tuple[str, str]:
+    """La descripción la escribe el modelo leyendo el post inicial. Nunca se deja vacía.
+
+    Devuelve (frase, fuente). Si no hay con qué, devuelve ("", "sin-post") y quien llama decide.
+    """
+    from core.session_reader import textos_sesion
+    cache = _cache_desc()
+    prev = cache.get(ident)
+    if prev and prev.get("desc"):
+        return prev["desc"], "cache"
+
+    textos = textos_sesion(ident, max_mensajes=4)
+    primero = next((t for r, t in textos if r == "user"), "")
+    if not primero:
+        return "", "sin-post"
+    primero = primero[:1200]
+
+    instruccion = (
+        "Leé este pedido inicial de una sesión y escribí UNA sola frase que amplíe su título sin "
+        "repetirlo. Máximo 8 palabras, en el idioma del pedido, sin comillas, sin markdown, sin punto "
+        f"final. El sujeto del título es «{sujeto}», no lo repitas.\n\nPedido:\n{primero}\n\n"
+        "Respondé solo la frase."
+    )
+    for _ in range(max_reintentos + 1):
+        try:
+            r = subprocess.run(["hermes", "-z", instruccion], capture_output=True, text=True, timeout=120)
+        except subprocess.TimeoutExpired:
+            continue
+        frase = " ".join((r.stdout or "").strip().split())
+        frase = frase.strip('"\'`*· ')
+        palabras = frase.split()
+        if not frase or len(palabras) > 10:
+            continue
+        if sujeto and sujeto.lower() in frase.lower():
+            continue
+        if any(c in frase for c in "[]{}`*#"):
+            continue
+        frase = frase[:90]
+        cache[ident] = {"desc": frase, "sujeto": sujeto, "ts": time.strftime("%Y-%m-%dT%H:%M:%S"),
+                        "evidencia": primero[:120]}
+        CACHE_DESC.write_text(json.dumps(cache, ensure_ascii=False, indent=1), encoding="utf-8")
+        return frase, "llm"
+    return "", "fallo"
+
+
 def respaldar(plan: list[dict]) -> Path:
     BACKUPS.mkdir(parents=True, exist_ok=True)
     f = BACKUPS / f"commit-backup-{stamp()}.json"
@@ -130,6 +191,8 @@ def main() -> int:
     ap.add_argument("--proposals", default=str(DATA / "proposed-index.json"))
     ap.add_argument("--apply", action="store_true", help="escribe de verdad")
     ap.add_argument("--only", default="", help="ids o números separados por coma")
+    ap.add_argument("--sin-desc", action="store_true",
+                    help="no pedirle la descripción al modelo (sólo para pruebas)")
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--journal", default=str(JOURNAL), help="journal alterno (para pruebas)")
     args = ap.parse_args()
@@ -203,6 +266,16 @@ def main() -> int:
 
     ok, fallos = 0, []
     for c in plan:
+        # La descripción la escribe el modelo leyendo el post inicial: nunca se deja vacía.
+        if not args.sin_desc:
+            cabeza, _, cola = str(c["after"]).partition(" · ")
+            sujeto = cabeza[cabeza.find("[") + 1:cabeza.find("]")] if "[" in cabeza else ""
+            ya_tiene = len(cabeza.split("]")) > 2 and cabeza.split("]")[-1].strip()
+            if not ya_tiene:
+                frase, fuente = descripcion_llm(c["id"], sujeto)
+                if frase:
+                    c["after"] = f"{cabeza} {frase}" + (f" · {cola}" if cola else "")
+                    c["desc_source"] = fuente
         bien, err = renombrar(c)
         if bien:
             ok += 1

@@ -242,5 +242,67 @@ if (typeof tieneNumero === 'function' && typeof esMaquinaria === 'function') {
   ok(s976 && s976.vacia === false, 'sesión con campos en blanco pero título real no es vacia (vacia === false)')
 } else ok(false, 'tieneNumero y esMaquinaria se exportan')
 
+console.log('\n§ ramas del diálogo de confirmación (bug del botón Process)')
+const dlgMatch = src.match(/id:\s*['"]dlgOk['"][\s\S]*?onClick:\s*async\s*\(\)\s*=>\s*\{([\s\S]*?)\n\s*\},/)
+ok(Boolean(dlgMatch), 'el botón dlgOk y su manejador existen en el código')
+if (dlgMatch) {
+  const handlerBody = dlgMatch[1]
+
+  // Todos los `kind` emitidos por botones del panel vía setDialogo({ kind: '...' })
+  const emittedKinds = [
+    ...new Set([...src.matchAll(/setDialogo\(\{\s*kind:\s*['"]([^'"]+)['"]/g)].map((m) => m[1])),
+  ]
+  ok(emittedKinds.length >= 3, `se detectan los kinds emitidos por el panel (${emittedKinds.join(', ')})`)
+
+  // Todos los `kind` con rama explícita en el manejador de confirmación
+  const handledKinds = new Set(
+    [...handlerBody.matchAll(/d\.kind\s*===\s*['"]([^'"]+)['"]/g)].map((m) => m[1])
+  )
+
+  // Cada kind emitido por la UI DEBE tener su rama correspondiente
+  const missing = emittedKinds.filter((k) => !handledKinds.has(k))
+  ok(missing.length === 0, missing.length ? `faltan ramas para: ${missing.join(', ')}` : 'todos los kinds emitidos tienen rama')
+
+  // Kinds canónicos esperados
+  for (const k of ['process', 'processall', 'restore', 'applynewrules']) {
+    ok(handledKinds.has(k), `el manejador tiene rama explícita para '${k}'`)
+  }
+
+  // Verificación de comportamiento en runtime con mocks
+  const testHandler = new Function('dialogo', 'calls', `
+    let setDialogoCalled = false;
+    const setDialogo = (v) => { setDialogoCalled = true; };
+    const restaurarOriginales = async () => { calls.push('restaurarOriginales'); };
+    const procesarTodo = async () => { calls.push('procesarTodo'); };
+    const aplicarPropuesta = async () => { calls.push('aplicarPropuesta'); };
+    const handleCommit = async () => { calls.push('handleCommit'); };
+    return (async () => {
+      ${handlerBody}
+      return { setDialogoCalled, calls };
+    })();
+  `)
+
+  // 'process' DEBE llamar a procesarTodo y NUNCA a handleCommit
+  const callsProcess = []
+  await testHandler({ kind: 'process', n: 5 }, callsProcess)
+  ok(callsProcess.includes('procesarTodo'), "dialogo 'process' ejecuta procesarTodo")
+  ok(!callsProcess.includes('handleCommit'), "dialogo 'process' NO cae en handleCommit")
+
+  // 'processall' llama a procesarTodo
+  const callsProcessAll = []
+  await testHandler({ kind: 'processall', n: 5 }, callsProcessAll)
+  ok(callsProcessAll.includes('procesarTodo'), "dialogo 'processall' ejecuta procesarTodo")
+
+  // 'restore' llama a restaurarOriginales
+  const callsRestore = []
+  await testHandler({ kind: 'restore', n: 5 }, callsRestore)
+  ok(callsRestore.includes('restaurarOriginales'), "dialogo 'restore' ejecuta restaurarOriginales")
+
+  // 'applynewrules' llama a aplicarPropuesta
+  const callsApply = []
+  await testHandler({ kind: 'applynewrules', n: 5 }, callsApply)
+  ok(callsApply.includes('aplicarPropuesta'), "dialogo 'applynewrules' ejecuta aplicarPropuesta")
+}
+
 console.log(failures ? `\n${failures} fallo(s)` : '\nTODO OK')
 process.exit(failures ? 1 : 0)
