@@ -6,8 +6,14 @@ Audits field by field: iq0 (sujeto), iq1 (programa), iq2 (contexto), iq3 (intenc
 Synchronizes with the live state.db (mode=ro) so that `before` is always 100% current.
 
 Separates proposals into two clean categories:
-  1. CORRECCIONES: structural errors (verbs in subject, brand in subject, subject >= 4 words, redundant description).
-  2. FORMATO: massive intention suffix styling (· Intención).
+  1. CORRECCIONES: genuine structural errors (verbs in subject, brand in subject, redundant desc).
+  2. FORMATO: massive intention suffix styling (· Intención), deferred to owner.
+
+Strict assembly validation (Better not to propose than to propose garbage):
+  - Subject MUST be a clean noun phrase (1-3 words, no conjugated verbs, no negations, no greetings).
+  - Balanced brackets (no unclosed '[' or dangling brackets).
+  - Descriptions repeating subject without amplifying are NOT proposed.
+  - Personal assistant name is never leaked into proposals.
 
 Outputs `proposals.json` with field-by-field verdicts, evidence, and rule breakdown.
 Guarantees 100% convergence: running a second audit on proposed titles yields 0 changes.
@@ -43,7 +49,25 @@ CANONICAL_INDEX = DATA / "index.json"
 STATE_DB = HOME / ".hermes/state.db"
 LIMIT = 100
 
-VERBO = re.compile(r"\b\w+(?:ar|er|ir|ando|iendo|ado|ido)\b", re.I)
+CANON_FULL = re.compile(r"^\d{3,4} \[[^\]]+\] \d{3}(?: \[[^\]]+\])*(?: [^·\[\]]+)?(?: · [^·\[\]]+)?$")
+
+VERBO_O_FRASE = re.compile(
+    r"\b(hola|buenos|buenas|saludos|no|nunca|jamas|esta|estás|estas|está|estoy|es|son|era|fue|"
+    r"puede|puedo|puedes|podria|podrias|abriendo|abrir|cerrando|cerrar|funciona|funcionando|"
+    r"tarda|tarde|hace|hago|hacer|crea|crear|recuperar|consultar|eliminar|listar|explicar|"
+    r"investiga|este|se|por|favor|quiero|quisiera|ayuda|ayudame)\b",
+    re.I,
+)
+
+
+def es_sintagma_nominal_limpio(sujeto: str) -> bool:
+    """Un sujeto debe ser un sintagma nominal de 1 a 3 palabras sin verbos, negaciones ni saludos."""
+    palabras = sujeto.strip().split()
+    if not (1 <= len(palabras) <= 3):
+        return False
+    if VERBO_O_FRASE.search(sujeto):
+        return False
+    return True
 
 
 def file_sha256(p: Path) -> str:
@@ -98,9 +122,12 @@ def canon_title(s: dict) -> str:
     budget = LIMIT - len(head) - 1 - len(tail)
 
     desc = str(s.get("desc") or "").strip()
+    # Limpiar cualquier resto de corchetes rotos o scaffolding previo
     desc = re.sub(r"\d{3,4}\s*\[[^\]]*\]\s*\d{0,3}", " ", desc)
     desc = re.sub(r"\[[^\]]*\]", " ", desc)
+    desc = re.sub(r"[\[\]]", "", desc)  # Elimina corchetes colgantes sin pareja
     desc = re.sub(r"\s{2,}", " ", desc).strip(" ·,;:-")
+
     if desc and budget > 0:
         if len(desc) > budget:
             desc = desc[:budget].rstrip()
@@ -108,6 +135,52 @@ def canon_title(s: dict) -> str:
     if tail and len(head) + len(tail) + 1 <= LIMIT:
         return f"{head}{tail}".strip()
     return head
+
+
+def validar_titulo_ensamblado(titulo: str, sujeto: str, desc: str, categoria: str, iq1: str = "") -> tuple[bool, str]:
+    """Valida exhaustivamente el título ensamblado antes de permitir emitir una propuesta."""
+    if not titulo:
+        return False, "empty-title"
+
+    # 1. Balance y solidez de corchetes
+    if titulo.count("[") != titulo.count("]"):
+        return False, "unbalanced-brackets"
+    if re.search(r"\[[^\]]*\[|\][^\[]*\]", titulo):
+        return False, "nested-or-broken-brackets"
+    if re.search(r"\[\s*\]", titulo):
+        return False, "empty-brackets"
+    if re.search(r"\[$", titulo):
+        return False, "trailing-open-bracket"
+
+    # 2. Límite estricto de longitud
+    if len(titulo) > LIMIT:
+        return False, f"exceeds-{LIMIT}-limit"
+
+    # 3. Estructura canónica completa
+    if not CANON_FULL.match(titulo):
+        return False, "invalid-canonical-structure"
+
+    # 4. En correcciones: el sujeto DEBE ser sintagma nominal limpio (1-3 palabras, sin verbos)
+    if categoria == "correccion":
+        if not es_sintagma_nominal_limpio(sujeto):
+            return False, "subject-not-clean-noun-phrase"
+
+    # 5. Redundancia: si la descripción solo clona el sujeto y no amplifica, rechazar
+    s_words = set(re.findall(r"[a-záéíóúñ]{3,}", sujeto.lower()))
+    d_words = set(re.findall(r"[a-záéíóúñ]{3,}", desc.lower()))
+    if s_words and d_words and len(d_words) > 0:
+        if len(s_words & d_words) / len(d_words) >= 0.6:
+            return False, "redundant-description-not-amplified"
+
+    # 6. Fuga del nombre del asistente del dueño en sesiones ajenas
+    if "lisa" in titulo.lower() and sujeto.lower() != "lisa":
+        return False, "assistant-name-leaked"
+
+    # 7. Sujeto no debe repetir iq1
+    if iq1 and sujeto.strip().lower() == iq1.strip().lower():
+        return False, "subject-repeats-iq1"
+
+    return True, "ok"
 
 
 def auditar_sesion(s: dict, ren: set[str], journal_ids: set[str], live_title: str | None = None) -> dict[str, Any]:
@@ -180,22 +253,26 @@ def auditar_sesion(s: dict, ren: set[str], journal_ids: set[str], live_title: st
     else:
         verbo, cuerpo = split_verb_subject(sujeto)
         if verbo and cuerpo and cuerpo != sujeto:
-            cambios["sujeto"] = cuerpo
-            suj_verd = "ajustar"
-            suj_regla = "verb-moved-from-subject-to-intention"
-            suj_evid = f"Se removió verbo inicial '{verbo}' del sujeto para dejar la entidad limpia."
-            reglas.append(suj_regla)
-            es_correccion = True
-            if not iq3:
-                norm_int = normalize_intention(verbo)
-                if norm_int:
-                    cambios["iq3"] = norm_int
-            sujeto = cuerpo
+            # Solo proponer si el cuerpo resultante es un sintagma nominal limpio
+            if es_sintagma_nominal_limpio(cuerpo):
+                cambios["sujeto"] = cuerpo
+                suj_verd = "ajustar"
+                suj_regla = "verb-moved-from-subject-to-intention"
+                suj_evid = f"Se removió verbo inicial '{verbo}' del sujeto para dejar la entidad limpia."
+                reglas.append(suj_regla)
+                es_correccion = True
+                if not iq3:
+                    norm_int = normalize_intention(verbo)
+                    if norm_int:
+                        cambios["iq3"] = norm_int
+                sujeto = cuerpo
+            else:
+                suj_evid = f"Sujeto contiene verbo '{verbo}', pero el remanente no es un sintagma nominal válido."
 
         # Desacoplar marca del sujeto si pertenece a iq1 o repite iq1
         if iq1 and iq1.lower() in sujeto.lower().split():
             restante = " ".join(w for w in sujeto.split() if w.lower() != iq1.lower()).strip()
-            if len(restante.split()) >= 2:
+            if len(restante.split()) >= 2 and es_sintagma_nominal_limpio(restante):
                 cambios["sujeto"] = restante
                 sujeto = restante
                 suj_verd = "ajustar"
@@ -206,7 +283,7 @@ def auditar_sesion(s: dict, ren: set[str], journal_ids: set[str], live_title: st
 
         if len(sujeto.split()) >= 4 and "sujeto" not in cambios:
             corto, cola = shrink_subject(sujeto)
-            if corto and corto != sujeto and len(corto.split()) <= 3:
+            if corto and corto != sujeto and len(corto.split()) <= 3 and es_sintagma_nominal_limpio(corto):
                 cambios["sujeto"] = corto
                 sujeto = corto
                 suj_verd = "ajustar"
@@ -316,7 +393,7 @@ def auditar_sesion(s: dict, ren: set[str], journal_ids: set[str], live_title: st
         "documented": desc_doc,
     }
 
-    # --- 6. ENSAMBLADO Y CATEGORIZACIÓN ---
+    # --- 6. ENSAMBLADO Y VALIDACIÓN ESTRICTA ---
     campos_finales = {
         "n": n_val,
         "sujeto": cambios.get("sujeto", sujeto),
@@ -327,22 +404,29 @@ def auditar_sesion(s: dict, ren: set[str], journal_ids: set[str], live_title: st
     }
     nuevo_titulo = canon_title(campos_finales)
 
-    # Si solo se agregó el sufijo de intención, marcar la regla explícita
+    # Si solo se agregó el sufijo de intención, registrar regla
     if act_iq3 and f"· {act_iq3}" not in raw and "·" not in raw and "intention-suffix-added" not in reglas:
         reglas.append("intention-suffix-added")
+
+    categoria = "correccion" if es_correccion else ("formato" if nuevo_titulo != raw else "ninguna")
+
+    # VALIDACIÓN DE ENSAMBLADO ANTES DE EMITIR (Regla: mejor no proponer que proponer basura)
+    valido, motivo_rechazo = validar_titulo_ensamblado(
+        nuevo_titulo, campos_finales["sujeto"], campos_finales["desc"], categoria, iq1=campos_finales["iq1"]
+    )
 
     if already_processed:
         veredicto = "skip"
         after_title = None
         categoria = "ninguna"
-    elif suj_verd == "reconstruir":
-        veredicto = "reconstruir"
+    elif not valido:
+        veredicto = "skip"
         after_title = None
-        categoria = "correccion"
+        categoria = "ninguna"
+        reglas.append(f"assembly-rejected:{motivo_rechazo}")
     elif nuevo_titulo != raw:
         veredicto = "ajustar"
         after_title = nuevo_titulo
-        categoria = "correccion" if es_correccion else "formato"
     else:
         veredicto = "ok"
         after_title = None
@@ -451,6 +535,7 @@ def main() -> int:
 
     correcciones = [p for p in proposals if p["categoria"] == "correccion" and p["after"] is not None]
     formato = [p for p in proposals if p["categoria"] == "formato" and p["after"] is not None]
+    rechazadas = [p for p in proposals if any(r.startswith("assembly-rejected:") for r in p.get("rules", []))]
     accionables = [p for p in proposals if p["after"] is not None]
 
     fallos_conv, inestables = verificar_convergencia(proposals, ren, journal_ids)
@@ -475,6 +560,7 @@ def main() -> int:
         "categorias": {
             "correcciones_estructurales": len(correcciones),
             "formato_intencion": len(formato),
+            "propuestas_rechazadas_ensamblado": len(rechazadas),
         },
         "convergencia_inestables": fallos_conv,
     }
@@ -487,13 +573,14 @@ def main() -> int:
     print(f"  Ya procesadas en journal (congeladas): {len(ya_proc)}")
     print(f"  Sesiones sin intención iniciales: {sin_iq3_inicial} --> Resueltas leyendo: {con_intencion_inferida}")
     print(f"\n=== Propuestas Accionables Separadas ({len(accionables)}) ===")
-    print(f"  1. CORRECCIONES estructurales (sujeto, marca, redundancia): {len(correcciones)}")
-    print(f"  2. FORMATO masivo (solo agregar sufijo · Intención):        {len(formato)}")
+    print(f"  1. CORRECCIONES estructurales aprobadas: {len(correcciones)}")
+    print(f"  2. FORMATO masivo (solo agregar sufijo · Intención): {len(formato)}")
+    print(f"  3. Rechazadas por ensamblado (no se emiten): {len(rechazadas)}")
     print(f"\n=== Prueba de Convergencia (Criterio de Aceptación) ===")
     print(f"  Segunda corrida sobre títulos propuestos: {fallos_conv} cambios pendientes ({'CONVERGENCIA 100%' if fallos_conv == 0 else 'FALLÓ'})")
 
     salida = {
-        "version": "1.1",
+        "version": "1.2",
         "generated": time.strftime("%Y-%m-%dT%H:%M:%SZ"),
         "rules_version": "v0.28",
         "summary": summary,
