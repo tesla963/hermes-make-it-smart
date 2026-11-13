@@ -708,3 +708,41 @@
     - { right: "Firefox · Mozilla · Search the Web", wrong: "Firefox · — · Search the Web" }
     - { right: "Firefox · Mozilla · Search the Web", wrong: "Firefox · Firefox · Search the Web" }
   control_question: "Who makes this program? That name goes in iq1 — never the program a second time."
+
+- id: product-in-iq0-puts-brand-in-iq1
+  taught: 2026-11-12
+  rule: >
+    The pair is always narrow + wide, in that order. When iq0 names the product,
+    the model or the codename, iq1 names the BRAND that makes it. The brand is
+    the amplifier of the product: without it, "Avata 360" could be anything;
+    with it, the session is findable. This is the shape the catalogue already
+    uses (80 sessions): Gorgon Halo · AMD, Avata 360 · DJI, ThinkPad P53 ·
+    Lenovo, Case USB · ORICO.
+  examples:
+    - { right: "Gorgon Halo · AMD", wrong: "AMD · Gorgon Halo" }
+    - { right: "Avata 360 · DJI", wrong: "DJI · Avata 360" }
+    - { right: "ThinkPad P53 · Lenovo", wrong: "Lenovo · ThinkPad P53" }
+    - { right: "V4 Flash · DeepSeek", wrong: "DeepSeek · V4 Flash" }
+  control_question: "Which of the two words is the narrower one? The narrower goes in iq0, the wider in iq1."
+
+- id: brand-can-be-the-subject-and-iq1-amplifies-it
+  taught: 2026-11-12
+  rule: >
+    A brand CAN be the subject, and it is not an exception to the rules — it is
+    the same narrow + wide pair turned around. When the session is about the
+    brand itself (its catalogue, its strategy, whether to stay with it, its
+    reputation), iq0 is the brand and iq1 is the AMPLIFIER: the product, the
+    line or the model the brand is being discussed through — "Apple · Mac mini
+    M4", "DJI · Avata 360", "AMD · Ryzen". The intention (iq3) and the context
+    (iq2) keep their own seats and are not touched by this: the brand changes
+    WHO is in iq0 and iq1, never why or where.
+    One case is exempt and must be written down: when the session covers the
+    brand as a whole, with no product to narrow it, iq1 stays empty. The maker
+    of a brand is the brand, so filling iq1 with it would be the same word in
+    two fields — the one thing that is always an error.
+  examples:
+    - { right: "Apple · Mac mini M4 · Compare", wrong: "Apple · Apple · Compare" }
+    - { right: "DJI · Avata 360 · Quote", wrong: "DJI · — · Quote" }
+    - { right: "Apple · — · Compare", note: "the whole brand, nothing to narrow it" }
+    - { right: "DJI · — · Search the Web", note: "brand strategy: no product yet" }
+  control_question: "Am I talking about one thing this brand makes, or about the brand itself? If the brand is the subject, what narrows it goes in iq1."

@@ -137,6 +137,28 @@ Two consequences worth writing down, because they resolve most doubtful cases:
 2. **A program in iq1 requires that the subject be a part of it.** If no part can be
    named, the program belongs in iq0 and the session has no iq1.
 
+### The pair is narrow + wide — in both directions
+
+The same logic covers products and brands, which is where most sessions actually live.
+**iq0 is the narrower word, iq1 the wider one.** Nothing else changes: the intention keeps
+iq3 and the context keeps iq2, whatever sits in the first two fields.
+
+| Direction | iq0 (narrow) | iq1 (wide) | Sessions today |
+|---|---|---|---|
+| product → brand | `Avata 360` | `DJI` | 5 |
+| codename → brand | `Gorgon Halo` | `AMD` | 61 |
+| model → brand | `ThinkPad P53` | `Lenovo` | 4 |
+| program → company | `Firefox` | `Mozilla` | — |
+| **brand → amplifier** | `Apple` | the product it is discussed through: `Mac mini M4` | 1 (broken) |
+
+**A brand may be the subject.** It is not an exception: it is the same pair turned around.
+`Apple · Mac mini M4` says "the brand, seen through that machine", exactly as
+`Gorgon Halo · AMD` says "that chip, seen through its brand".
+
+**The one case that leaves iq1 empty** is the brand as a whole — its strategy, its
+catalogue, whether to stay with it. The maker of a brand is the brand, so filling iq1
+with it would be the same word twice.
+
 ### The product-analysis pattern (marketplace)
 
 When the session is about evaluating or buying a product, the shape is:
