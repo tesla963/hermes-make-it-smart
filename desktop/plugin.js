@@ -725,6 +725,8 @@ const I18N = {
     tabTesting: 'Process',
     tabNewRules: 'New Rules',
     tabNewRulesTitle: 'Aplicar las reglas nuevas a los títulos, con respaldo y revert',
+    procAll: 'Procesar toda la base ({n})',
+    procAllTitle: 'Reescribir el título de todas las sesiones con la forma canónica: respalda, aplica y reporta qué quedó igual',
     tabIq: 'Plugin IQ',
     tabIqTitle: 'Las reglas del algoritmo, los scripts y los documentos del plugin',
     iqRules: 'Reglas', iqScripts: 'Scripts', iqDocs: 'Documentos',
@@ -919,6 +921,8 @@ const I18N = {
     tabTesting: 'Process',
     tabNewRules: 'New Rules',
     tabNewRulesTitle: 'Apply the new rules to the titles, with backup and revert',
+    procAll: 'Process the whole database ({n})',
+    procAllTitle: 'Rewrite every session title in canonical form: backs up, applies and reports what came out the same',
     tabIq: 'Plugin IQ',
     tabIqTitle: 'The algorithm rules, the scripts and the documents of this plugin',
     iqRules: 'Rules', iqScripts: 'Scripts', iqDocs: 'Documents',
@@ -986,31 +990,25 @@ position:relative;display:flex;flex-direction:column;width:100%;height:100%;min-
 .mmws header.top{flex:0 0 auto;z-index:40;background:linear-gradient(180deg,#100d12,#0d0b0e);border-bottom:1px solid var(--line);padding:10px 18px}
 .mmws .brandrow{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .mmws .headtabs{display:inline-flex;align-items:flex-end;gap:2px;background:transparent;border:0;border-bottom:1px solid transparent;border-radius:0;padding:0;margin-left:10px}
-.mmws .headtab{position:relative;border:0;border-bottom:2px solid transparent;background:transparent;color:var(--tx3);font-size:11.5px;font-weight:600;padding:6px 16px 5px;border-radius:6px 6px 0 0;cursor:pointer;display:inline-flex;align-items:center;gap:6px;margin-bottom:-1px;transition:color .12s,background .12s,border-color .12s}
-/* Cada pestaña lleva su color alrededor, como una pestaña de ventana: los
-   laterales aquí y el borde inferior más abajo (atenuado si está inactiva).
-   Verde la base real, amarillo la simulación. */
-.mmws .headtab::before,.mmws .headtab::after{content:'';position:absolute;top:5px;bottom:-1px;width:2px;border-radius:1px;opacity:.4;transition:opacity .12s,background .12s}
+.mmws .headtab{position:relative;border:0;border-bottom:2px solid transparent;background:transparent;color:var(--tx3);font-size:11.5px;font-weight:600;padding:7px 16px 6px;border-radius:6px 6px 0 0;cursor:pointer;display:inline-flex;align-items:center;gap:6px;margin-bottom:-1px;white-space:nowrap;opacity:.72;transition:opacity .12s,color .12s,background .12s,border-color .12s}
+.mmws .headtab::before,.mmws .headtab::after{content:'';position:absolute;top:6px;bottom:-1px;width:2px;border-radius:1px;opacity:.3;transition:opacity .12s;background:var(--accent,#8d8399)}
 .mmws .headtab::before{left:0}
 .mmws .headtab::after{right:0}
-/* The colour belongs to the tab by NAME, never by position: when New Rules became the last
-   child it inherited the gold of Process, and hovering it lit the first tab instead. */
-.mmws .headtab.tabactual::before,.mmws .headtab.tabactual::after{background:var(--ok)}
-.mmws .headtab.tabprocess::before,.mmws .headtab.tabprocess::after{background:var(--gold)}
-.mmws .headtab::before,.mmws .headtab::after{opacity:.22}
-.mmws .headtab:hover{color:var(--tx)}
-.mmws .headtab:hover::before,.mmws .headtab:hover::after{opacity:.5}
-.mmws .headtab.on{color:var(--tx);opacity:1}
-.mmws .headtab.on::before,.mmws .headtab.on::after{opacity:.95}
-/* New Rules acts on the catalogue, so it wears its own colour: violet, never the gold of Process. */
-.mmws .headtab.newruletab.on{color:#c9a8f0;background:#1d1428;border-bottom-color:#8b5cf6}
-.mmws .headtab.newruletab.on::before,.mmws .headtab.newruletab.on::after{background:#8b5cf6;opacity:.9}
-.mmws .headtab.newruletab:not(.on){color:#a98fd0}
-.mmws .headtab.newruletab:not(.on)::before,.mmws .headtab.newruletab:not(.on)::after{background:#5b3f86}
-.mmws .headtab.iqtab::before,.mmws .headtab.iqtab::after{background:#3fa8a0}
-.mmws .headtab.iqtab.on{color:#7fd6ce;background:#0f1d1c;border-bottom-color:#3fa8a0}
-.mmws .headtab.iqtab:not(.on){color:#6fa8a2}
-.mmws .iqpanel{position:absolute;inset:0;background:var(--bg);z-index:6;display:flex;flex-direction:column;gap:10px;padding:14px 18px;overflow:hidden}
+/* La identidad va por NOMBRE de pestaña, nunca por posición: así añadir una no repinta las otras. */
+.mmws .headtab.tabactual{--accent:var(--ok)}
+.mmws .headtab.tabprocess{--accent:var(--gold)}
+.mmws .headtab.newruletab{--accent:#8b5cf6}
+.mmws .headtab.iqtab{--accent:#3fa8a0}
+/* Inactiva: atenuada pero completa, con su color de identidad en los laterales. */
+.mmws .headtab:not(.on){color:var(--tx3);opacity:.7}
+.mmws .headtab:not(.on)::before,.mmws .headtab:not(.on)::after{opacity:.3}
+/* Hover: solo se ilumina la que tiene el cursor. */
+.mmws .headtab:hover{opacity:1;color:var(--tx2)}
+.mmws .headtab:hover::before,.mmws .headtab:hover::after{opacity:.65}
+/* Activa: su color, su fondo, su borde inferior. */
+.mmws .headtab.on{opacity:1;color:var(--accent);background:#1b1720;border-bottom-color:var(--accent)}
+.mmws .headtab.on::before,.mmws .headtab.on::after{opacity:1}
+.iqpanel{position:absolute;inset:0;background:var(--bg);z-index:6;display:flex;flex-direction:column;gap:10px;padding:14px 18px;overflow:hidden}
 .mmws .iqpanel .iqhead{display:flex;gap:14px;align-items:center;font-size:12px;color:var(--tx3)}
 .mmws .iqpanel .iqstrip{display:flex;gap:6px;flex-wrap:wrap}
 .mmws .iqpanel .iqbtn{border:1px solid var(--line);background:#17141b;color:var(--tx2);font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer}
@@ -2997,6 +2995,54 @@ function App({ ctx }) {
     await refreshData()
   }
 
+  /**
+   * Procesar TODA la base: reescribe el título de cada sesión con la forma canónica, no solo
+   * las que el panel marca como pendientes. Respalda primero y deja un reporte que dice
+   * cuántas quedaron iguales, cuántas cambiaron y cuántas fallaron.
+   */
+  const procesarTodo = async () => {
+    const filesApi = (ctx && ctx.files) || (host && host.files)
+    if (!filesApi || typeof filesApi.writeText !== 'function') {
+      setBtnMsg((p) => ({ ...p, commit: 'sin permiso de escritura' }))
+      return
+    }
+    const elegibles = sessions.filter((d) => !esIntocable(d) && d.canonTitle)
+    setIsCommitting(true)
+
+    // 1 · respaldo de los títulos actuales, antes de tocar nada
+    const fname = `commit-backup-${getBackupStamp()}.json`
+    const payload = {
+      filename: fname, ts: Date.now(), committed: false, reverted: false,
+      origin: 'process-all', changedCount: elegibles.length,
+      entries: elegibles.map((d) => ({ id: d.id, title_before: d.raw, title_after: d.canonTitle, prof: d.prof, ts: new Date().toISOString() })),
+    }
+    try { await filesApi.writeText('data', fname, JSON.stringify(payload, null, 2)) } catch (_) {}
+    try { await filesApi.writeText('data', 'commit-last.json', JSON.stringify(payload, null, 2)) } catch (_) {}
+    setLastBackup(payload)
+
+    // 2 · aplicar a todas
+    const updates = new Map()
+    let iguales = 0, cambiados = 0, fallos = 0
+    for (const d of elegibles) {
+      if ((d.raw || '') === (d.canonTitle || '')) { iguales += 1; continue }
+      try {
+        const r = await callRpc(ctx, 'session.resume', { session_id: d.id, profile: d.prof === 'default' ? undefined : d.prof, lazy: true, omit_messages: true })
+        if (r && r.session_id) {
+          await callRpc(ctx, 'session.title', { session_id: r.session_id, title: d.canonTitle })
+          updates.set(d.id, d.canonTitle); cambiados += 1
+        } else { fallos += 1 }
+      } catch (_) { fallos += 1 }
+    }
+    await syncIndexRaw(updates)
+    setSessions((prev) => prev.map((d) => (updates.has(d.id) ? { ...d, raw: updates.get(d.id) } : d)))
+
+    // 3 · reporte: qué quedó igual, qué cambió y con qué respaldo revertir
+    const reporte = { ts: new Date().toISOString(), total: elegibles.length, iguales, cambiados, fallos, backup: fname }
+    try { await filesApi.writeText('data', 'apply-report.json', JSON.stringify(reporte, null, 2)) } catch (_) {}
+    setIsCommitting(false)
+    setBtnMsg((p) => ({ ...p, commit: `procesadas ${elegibles.length}: ${cambiados} cambiadas · ${iguales} iguales · ${fallos} fallos · respaldo ${fname}` }))
+  }
+
   const handleCommit = async () => {
     // The backup belongs to this moment and to no other: the user asked to process, so the
     // backup is written now, describing the titles as they are right now. Reusing one taken
@@ -4362,6 +4408,20 @@ function App({ ctx }) {
                   t('procCount', { n: pendingRows.length })
                 )
               : h('span', { className: 'procnone', id: 'btnProcess' }, t('procCount', { n: 0 })),
+            h(
+              'button',
+              {
+                className: 'procbtn',
+                id: 'btnProcessAll',
+                disabled: isCommitting || isReverting,
+                onClick: () => setDialogo({
+                  kind: 'processall',
+                  n: sessions.filter((d) => !esIntocable(d)).length,
+                }),
+                title: t('procAllTitle'),
+              },
+              t('procAll', { n: sessions.filter((d) => !esIntocable(d)).length })
+            ),
             pendingRows.length === 0 && !btnMsg.commit
               ? h('span', { className: 'footmsg nopending', id: 'noPending' }, t('noSessions'))
               : null,
@@ -4484,6 +4544,7 @@ function App({ ctx }) {
                     const d = dialogo
                     setDialogo(null)
                     if (d.kind === 'restore') await restaurarOriginales()
+                    else if (d.kind === 'processall') await procesarTodo()
                     else await handleCommit()
                   },
                 },
