@@ -71,9 +71,10 @@ It is the only one that opens the title, so it carries the weight of the search.
 - It names the **block or part** of the thing: `Protocol` inside a gateway,
   `Stuck Startup` inside Firefox, `Hermes Desktop` inside Hermes Agent.
 - It is the program itself **only when the intention makes the program the object**
-  (`Search the Web`, `Compare`, `Quote`, `Buy`). When the work happens *inside* the
-  program (`Troubleshooting`, `Configuration`), the subject is the part that broke and
-  the program goes to iq1.
+  (`Search the Web`, `Compare`, `Quote`, `Buy`) — and then iq1 takes the company or the
+  author, never the program twice. When the work happens *inside* the program
+  (`Troubleshooting`, `Configuration`), the subject is the part that broke and the
+  program goes to iq1.
 - Two to four words. If it needs a verb, the verb belongs in the description.
 
 **The hard limit: three words.** A subject of four words or more is not a subject,
@@ -115,7 +116,7 @@ intention tells you which**.
 | iq3 (intention) | Program is… | iq0 | iq1 |
 |---|---|---|---|
 | `Troubleshooting`, `Configurar`, `Instalar` | the **container** of the work | the part that broke: `Protocol` | the whole: `Hermes Gateway` |
-| `Search the Web`, `Compare`, `Quote`, `Buy` | the **object** of the work | the program: `Firefox` | its maker, or empty: `—` |
+| `Search the Web`, `Compare`, `Quote`, `Buy` | the **object** of the work | the program: `Firefox` | **its company or author**: `Mozilla` |
 | `Testear`, `Compatibilidad` | the **object**, under test | the program: `Antigravity` | its maker: `Google` |
 
 **Read it as a test:** ask *"is the program the thing I am looking at, or the thing the
@@ -124,13 +125,15 @@ problem lives in?"* Looking at it → iq0. A part of it → iq1, and the part go
 ```
 Firefox · Stuck Startup · Troubleshooting      ← the problem lives inside Firefox
 Hermes Gateway · Protocol · Troubleshooting    ← Protocol is a part of Hermes Gateway
-Firefox · — · Search the Web                   ← Firefox itself is the object
+Firefox · Mozilla · Search the Web             ← Firefox itself is the object
 ```
 
 Two consequences worth writing down, because they resolve most doubtful cases:
 
 1. **A program in iq0 is not an error when the intention makes it the object.** It is
-   the correct answer, and iq1 stays empty (or holds the maker).
+   the correct answer — and then **iq1 carries the company that makes the program or the
+   name of its author**, never an empty slot: `Firefox · Mozilla`, `Antigravity · Google`,
+   `Brave · Brave Software`, `Hermes Agent · Nous Research`.
 2. **A program in iq1 requires that the subject be a part of it.** If no part can be
    named, the program belongs in iq0 and the session has no iq1.
 
@@ -266,8 +269,8 @@ program is the subject, iq1 must hold the maker or stay empty** — never the sa
 
 | Subject | iq1 | Verdict |
 |---|---|---|
-| `Firefox` | `—` | right: the intention made the program the object |
-| `Firefox` | `Mozilla` | right: the program and its maker |
+| `Firefox` | `Mozilla` | right: the program and the company that makes it |
+| `Firefox` | `—` | **wrong**: a program in iq0 always names its company or author |
 | `Firefox` | `Firefox` | **wrong**: one answer in two fields |
 | `Stuck Startup` | `Firefox` | right: the part and the whole |
 

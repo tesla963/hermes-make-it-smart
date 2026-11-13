@@ -628,8 +628,10 @@
     INTENTION (iq3) that decides, never taste. When the intention makes the
     program the OBJECT of the work — Investigar, Comparar, Cotizar — the program
     is iq0 and iq1 holds its maker or stays empty. When the intention works
-    INSIDE the program — Troubleshooting, Configurar, Instalar — the program is
-    the container and goes to iq1, and iq0 names the part that broke.
+    INSIDE the program — Troubleshooting, Configuration — the program is
+    the container and goes to iq1, and iq0 names the part that broke. When the
+    program is iq0, iq1 is not left empty: it carries the company that makes the
+    program or the name of its author.
   examples:
     - { right: "Firefox · — · Investigar", wrong: "— · Firefox · Investigar" }
     - { right: "Stuck Startup · Firefox · Troubleshooting", wrong: "Firefox · — · Troubleshooting" }
@@ -684,3 +686,25 @@
     - { right: "Troubleshooting", wrong: "Arreglar" }
     - { right: "Troubleshooting", wrong: "Fixing" }
   control_question: "Do I know the cause? If I do not, it is Troubleshooting — and the fix is its outcome, not a second intention."
+
+- id: program-in-iq0-fills-iq1-with-its-maker
+  taught: 2026-11-12
+  rule: >
+    When the program sits in iq0 as the subject, iq1 must name the COMPANY that
+    makes it or the AUTHOR who wrote it. Never the program again — that would be
+    one answer in two fields — and never an empty slot, because the field is
+    there to say who stands behind the thing. A program with no company and no
+    author gets no iq1, but that is the exception, not the default.
+  why: >
+    It closes the only hole left by "the program may be the subject": if iq0 takes
+    the program, the axis loses its natural tenant. The company or the author
+    takes the seat, and the pair reads as one idea — the product and who makes it.
+  examples:
+    - { subject: "Firefox", iq1: "Mozilla" }
+    - { subject: "Antigravity", iq1: "Google" }
+    - { subject: "Brave", iq1: "Brave Software" }
+    - { subject: "Logseq", iq1: "Logseq Inc" }
+    - { subject: "Hermes Agent", iq1: "Nous Research" }
+    - { right: "Firefox · Mozilla · Search the Web", wrong: "Firefox · — · Search the Web" }
+    - { right: "Firefox · Mozilla · Search the Web", wrong: "Firefox · Firefox · Search the Web" }
+  control_question: "Who makes this program? That name goes in iq1 — never the program a second time."
