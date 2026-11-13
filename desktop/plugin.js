@@ -2031,11 +2031,11 @@ function App({ ctx }) {
     return true
   }
 
-  // In the Testing tab only the sessions a commit would actually change are listed:
-  // a session already carrying its canonical title is not work, and Bot Chat,
-  // cron, empty, deleted and subagent rows are never renamed.
+  // In the Process (testing) tab only unrenamed / virgin sessions are listed:
+  // sessions that never received a canonical title (^NNN [ ...).
+  // Machinery (bots, cron, subagents) is excluded.
   const pendingRows = useMemo(
-    () => sessions.filter((d) => !esIntocable(d) && d.canonTitle && d.canonTitle !== d.raw),
+    () => sessions.filter((d) => !esIntocable(d) && !/^\d{3,4} \[/.test(String(d.raw || ''))),
     [sessions]
   )
 
@@ -2763,10 +2763,28 @@ function App({ ctx }) {
 
   const aplicarPropuesta = async () => {
     const cambios = (prop && Array.isArray(prop.changes)) ? prop.changes : []
-    if (!cambios.length) return
     const filesApi = (ctx && ctx.files) || (host && host.files)
     if (!filesApi || typeof filesApi.writeText !== 'function') { setPropMsg('sin permiso de escritura'); return }
     setIsCommitting(true)
+
+    const todas = sessions.length
+    const maquinaria = sessions.filter(esIntocable).length
+    const evaluadas = todas - maquinaria
+
+    // Si la propuesta está vacía (0 cambios), corre el barrido completo igual y reporta.
+    if (!cambios.length) {
+      const reporte = {
+        ts: new Date().toISOString(), origen: 'new-rules',
+        total: todas, evaluadas, cambiadas: 0, iguales: evaluadas, maquinaria,
+      }
+      try { await filesApi.writeText('data', 'apply-report.json', JSON.stringify(reporte, null, 2)) } catch (_) {}
+      setIsCommitting(false)
+      setPropMsg(
+        `${todas} sesiones revisadas · 0 renombradas · ${evaluadas} ya estaban bien · ` +
+        `${maquinaria} de maquinaria sin tocar`
+      )
+      return
+    }
 
     // 1. El respaldo va primero, siempre. Sin respaldo no se escribe nada.
     const fname = `commit-backup-${getBackupStamp()}.json`
@@ -2808,10 +2826,7 @@ function App({ ctx }) {
     setSessions((prev) => prev.map((d) => (updates.has(d.id) ? { ...d, raw: updates.get(d.id) } : d)))
 
     // Barrido completo, una por una: las iguales no se tocaron, las de maquinaria no se tocan nunca.
-    const todas = sessions.length
-    const maquinaria = sessions.filter(esIntocable).length
-    const evaluadas = todas - maquinaria
-    const iguales = Math.max(evaluadas - cambios.length, 0)
+    const iguales = Math.max(evaluadas - ok, 0)
     const reporte = {
       ts: new Date().toISOString(), origen: 'new-rules',
       total: todas, evaluadas, cambiadas: ok, iguales, maquinaria, respaldo: fname,
@@ -3086,9 +3101,9 @@ function App({ ctx }) {
     // The backup belongs to this moment and to no other: the user asked to process, so the
     // backup is written now, describing the titles as they are right now. Reusing one taken
     // earlier would describe a catalogue that no longer exists.
-    const curBackup = await createCommitBackup(sessions)
+    const curBackup = await createCommitBackup(pendingRows)
     const targets = (curBackup && curBackup.entries) || []
-    const eligibleCount = sessions.filter((d) => !esIntocable(d)).length
+    const eligibleCount = pendingRows.length
     const unchangedCount = eligibleCount - targets.length
 
     if (targets.length === 0) {
@@ -3902,16 +3917,7 @@ function App({ ctx }) {
                   h(
                     'button',
                     {
-                      key: 'pall', className: 'procbtn', disabled: isCommitting || isReverting,
-                      onClick: () => setDialogo({ kind: 'processall', n: sessions.filter((d) => !esIntocable(d)).length }),
-                      title: t('procAllTitle'),
-                    },
-                    t('procAll', { n: sessions.filter((d) => !esIntocable(d)).length })
-                  ),
-                  h(
-                    'button',
-                    {
-                      key: 'pend', className: 'ghost', disabled: isCommitting || isReverting || !pendingRows.length,
+                      key: 'pend', className: 'procbtn', disabled: isCommitting || isReverting || !pendingRows.length,
                       onClick: () => setDialogo({ kind: 'process', n: pendingRows.length }),
                       title: t('procTitle'),
                     },
@@ -3947,7 +3953,7 @@ function App({ ctx }) {
                     'button',
                     {
                       key: 'apply', className: 'procbtn', id: 'btnApplyNewRules',
-                      disabled: isCommitting || isReverting || !(prop && prop.changes && prop.changes.length),
+                      disabled: isCommitting || isReverting,
                       onClick: aplicarPropuesta,
                       title: t('newRulesApplyTitle'),
                     },
@@ -4483,19 +4489,17 @@ function App({ ctx }) {
             'div',
             { className: 'footbtns' },
             h('span', { className: 'footmsg', id: 'propMsg' }, propMsg || t('newRulesIdle')),
-            prop && Array.isArray(prop.changes) && prop.changes.length > 0
-              ? h(
-                  'button',
-                  {
-                    className: 'procbtn',
-                    id: 'btnApplyNewRules',
-                    disabled: isCommitting || isReverting,
-                    onClick: aplicarPropuesta,
-                    title: t('newRulesApplyTitle'),
-                  },
-                  t('newRulesApply', { n: prop.changes.length })
-                )
-              : null,
+            h(
+              'button',
+              {
+                className: 'procbtn',
+                id: 'btnApplyNewRules',
+                disabled: isCommitting || isReverting,
+                onClick: aplicarPropuesta,
+                title: t('newRulesApplyTitle'),
+              },
+              t('newRulesApply', { n: (prop && prop.changes && prop.changes.length) || 0 })
+            ),
             h('button', { id: 'btnReloadProposal', onClick: leerPropuesta }, t('newRulesReload'))
           )
         : activeTab === 'testing'
@@ -4515,20 +4519,6 @@ function App({ ctx }) {
                   t('procCount', { n: pendingRows.length })
                 )
               : h('span', { className: 'procnone', id: 'btnProcess' }, t('procCount', { n: 0 })),
-            h(
-              'button',
-              {
-                className: 'procbtn',
-                id: 'btnProcessAll',
-                disabled: isCommitting || isReverting,
-                onClick: () => setDialogo({
-                  kind: 'processall',
-                  n: sessions.filter((d) => !esIntocable(d)).length,
-                }),
-                title: t('procAllTitle'),
-              },
-              t('procAll', { n: sessions.filter((d) => !esIntocable(d)).length })
-            ),
             pendingRows.length === 0 && !btnMsg.commit
               ? h('span', { className: 'footmsg nopending', id: 'noPending' }, t('noSessions'))
               : null,
