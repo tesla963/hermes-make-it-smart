@@ -304,5 +304,108 @@ if (dlgMatch) {
   ok(callsApply.includes('aplicarPropuesta'), "dialogo 'applynewrules' ejecuta aplicarPropuesta")
 }
 
+console.log('\n§ derivación de campos y títulos canónicos (bug títulos kilométricos #975)')
+const { derivarCampos, canonicalTitle, esSujetoInvalido, esDescClonada, esPendiente } = mod
+if (
+  typeof derivarCampos === 'function' &&
+  typeof canonicalTitle === 'function' &&
+  typeof esSujetoInvalido === 'function' &&
+  typeof esDescClonada === 'function' &&
+  typeof esPendiente === 'function'
+) {
+  // 1. Derivación del caso exacto #975
+  const d975 = derivarCampos('Compare Xfce vs LXQt on Fedora')
+  ok(d975 && d975.sujeto === 'Xfce vs LXQt', 'deriva sujeto nominal limpio (Xfce vs LXQt)')
+  ok(d975 && d975.context === 'Fedora', 'deriva contexto iq2 (Fedora)')
+  ok(d975 && d975.verb === 'Compare', 'deriva intención/verbo iq3 (Compare)')
+  ok(d975 && d975.desc === '', 'deja descripción vacía')
+
+  // Derivación desde el título canónico malformado que quedó grabado
+  const d975Bad = derivarCampos('975 [Compare Xfce vs LXQt on Fedora] 001 Compare Xfce vs LXQt on Fedora')
+  ok(d975Bad && d975Bad.sujeto === 'Xfce vs LXQt', 'deriva sujeto limpio desde título malo grabado en state.db')
+  ok(d975Bad && d975Bad.context === 'Fedora', 'deriva contexto Fedora desde título malo')
+  ok(d975Bad && d975Bad.verb === 'Compare', 'deriva verbo Compare desde título malo')
+
+  // 2. Frases verbales típicas
+  const dBrave = derivarCampos('Recuperar ventas y pestañas perdidas en Brave')
+  ok(dBrave && dBrave.sujeto === 'Ventas y Pestañas', 'deriva sujeto nominal (Ventas y Pestañas)')
+  ok(dBrave && dBrave.context === 'Brave', 'deriva contexto Brave')
+  ok(dBrave && dBrave.verb === 'Recuperar', 'deriva verbo Recuperar')
+
+  const dAnti = derivarCampos('Instalar y configurar Antigravity')
+  ok(dAnti && dAnti.sujeto === 'Antigravity', 'deriva sujeto Antigravity')
+  ok(dAnti && dAnti.verb === 'Instalar', 'deriva verbo Instalar para verbo compuesto')
+
+  // 3. Guardia: si después de quitar el verbo no queda un sintagma nominal de 1-3 palabras, null
+  const dMonster = derivarCampos('Investigar por qué el servidor de producción se cayó tres veces anoche')
+  ok(dMonster === null, 'guardia rechaza frase verbal larga que no es sintagma nominal limpio')
+
+  // 4. canonicalTitle con las reglas del dueño
+  // Caso #975 virgen
+  const t975Virgin = canonicalTitle({ n: 975, mmm: 1, raw: 'Compare Xfce vs LXQt on Fedora' })
+  ok(t975Virgin === '975 [Xfce vs LXQt] 001 [Fedora] · Compare', `título virgen #975 genera: ${t975Virgin}`)
+
+  // Caso #975 ya grabado con título malo (debe repararlo a la forma esperada)
+  const t975Bad = canonicalTitle({
+    n: 975, mmm: 1,
+    raw: '975 [Compare Xfce vs LXQt on Fedora] 001 Compare Xfce vs LXQt on Fedora',
+    sujeto: 'Compare Xfce vs LXQt on Fedora',
+    desc: 'Compare Xfce vs LXQt on Fedora',
+  })
+  ok(t975Bad === '975 [Xfce vs LXQt] 001 [Fedora] · Compare', `título malo grabado #975 genera: ${t975Bad}`)
+
+  // Caso Brave
+  const tBrave = canonicalTitle({ n: 50, mmm: 1, raw: 'Recuperar ventas y pestañas perdidas en Brave' })
+  ok(tBrave === '050 [Ventas y Pestañas] 001 [Brave] · Recuperar', `frase Brave genera: ${tBrave}`)
+
+  // Caso Antigravity
+  const tAnti = canonicalTitle({ n: 10, mmm: 1, raw: 'Instalar y configurar Antigravity' })
+  ok(tAnti === '010 [Antigravity] 001 · Instalar', `caso Antigravity genera: ${tAnti}`)
+
+  // Guardia en canonicalTitle: devuelve d.raw si no se puede derivar sujeto limpio
+  const tMonster = canonicalTitle({ n: 99, mmm: 1, raw: 'Investigar por qué el servidor de producción se cayó tres veces anoche' })
+  ok(tMonster === 'Investigar por qué el servidor de producción se cayó tres veces anoche', 'guardia en canonicalTitle devuelve d.raw sin crear monstruo')
+
+  // 5. Regla de descripción: mejor vacía que clonada
+  ok(esDescClonada('Xfce vs LXQt', 'Xfce vs LXQt', 'raw'), 'desc idéntica al sujeto es clonada')
+  ok(
+    esDescClonada('Compare Xfce vs LXQt on Fedora', 'Xfce vs LXQt', 'Compare Xfce vs LXQt on Fedora', 'Fedora', 'Compare'),
+    'desc que repite raw/ejes es clonada'
+  )
+  ok(
+    !esDescClonada('Consumo de RAM y respuesta', 'Xfce vs LXQt', 'raw', 'Fedora', 'Compare'),
+    'desc con información amplificadora real se conserva'
+  )
+
+  // 6. Validación de sujeto inválido
+  ok(esSujetoInvalido('Compare Xfce vs LXQt on Fedora'), 'sujeto con verbo y 6 palabras es inválido')
+  ok(esSujetoInvalido('975 [Compare Xfce vs LXQt on Fedora] 001'), 'sujeto entre corchetes con verbo es inválido')
+  ok(!esSujetoInvalido('Xfce vs LXQt'), 'sujeto nominal de 3 palabras es válido')
+
+  // 7. Capacidad de reprocesar en Process (esPendiente)
+  ok(
+    esPendiente({
+      raw: '975 [Compare Xfce vs LXQt on Fedora] 001 Compare Xfce vs LXQt on Fedora',
+      canonTitle: '975 [Xfce vs LXQt] 001 [Fedora] · Compare',
+    }),
+    'esPendiente incluye la sesión #975 con título canónico malformado para poder corregirla'
+  )
+  ok(
+    !esPendiente({
+      raw: '975 [Xfce vs LXQt] 001 [Fedora] · Compare',
+      canonTitle: '975 [Xfce vs LXQt] 001 [Fedora] · Compare',
+    }),
+    'esPendiente excluye sesión #975 una vez corregida'
+  )
+  ok(
+    esPendiente({ raw: 'Compare Xfce vs LXQt on Fedora' }),
+    'esPendiente incluye sesión virgen'
+  )
+  ok(
+    !esPendiente({ raw: 'Subagent: Traducir al inglés' }),
+    'esPendiente excluye maquinaria'
+  )
+} else ok(false, 'derivarCampos, canonicalTitle, esSujetoInvalido, esDescClonada y esPendiente se exportan')
+
 console.log(failures ? `\n${failures} fallo(s)` : '\nTODO OK')
 process.exit(failures ? 1 : 0)

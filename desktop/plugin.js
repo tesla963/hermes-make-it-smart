@@ -159,6 +159,168 @@ const esIntocable = (d) => Boolean(d && (esCron(d) || d.vacia || esBorrada(d) ||
 /** Bot machinery: the canonical Bot Chat and subagent transcripts. Hidden by default. */
 const esBotSession = (d) => Boolean(d && (esBotChat(d) || esSubagent(d)))
 
+/* ------------------------------------------------------------------ *
+ * Normalización de sujetos y derivación de campos (paridad con Python)
+ * ------------------------------------------------------------------ */
+const DANG_WORDS = new Set([
+  'de', 'del', 'la', 'el', 'los', 'las', 'un', 'una', 'unos', 'unas',
+  'y', 'o', 'u', 'e', 'a', 'en', 'con', 'por', 'para', 'al', 'que',
+  'este', 'esta', 'estos', 'estas', 'su', 'sus', 'mi', 'mis', 'tu', 'tus',
+  'se', 'si', 'no', 'on', 'in', 'at', 'to', 'for', 'with', 'by', 'of', 'the'
+])
+
+const ACTION_VERBS = new Set([
+  'crear', 'hacer', 'instalar', 'configurar', 'recuperar', 'eliminar',
+  'listar', 'abrir', 'verificar', 'explicar', 'consultar', 'revisar',
+  'analizar', 'comparar', 'arreglar', 'renombrar', 'borrar', 'actualizar',
+  'modificar', 'rename', 'use', 'testear', 'buscar', 'comprar', 'cotizar',
+  'compare', 'install', 'configure', 'setup', 'fix', 'clean', 'limpiar',
+  'solve', 'resolver', 'restaurar', 'restore', 'check', 'migrar', 'migrate',
+  'monitorear', 'monitor', 'vigilar', 'organizar', 'organize'
+])
+
+const QUESTION_WORDS = new Set([
+  'qué', 'que', 'cómo', 'como', 'cuál', 'cual', 'quién', 'quien',
+  'dónde', 'donde', 'cuándo', 'cuando', 'why', 'how', 'what', 'where', 'when', 'who', 'which'
+])
+
+const VERBO_INF_RE = /^(compare|comparar|recuperar|restaurar|reparar|arreglar|instalar|install|configurar|configure|setup|investigar|buscar|search|consultar|cotizar|comprar|buy|verificar|check|revisar|eliminar|delete|crear|create|listar|list|explicar|explain|mostrar|show|activar|activate|desactivar|deactivate|migrar|migrate|actualizar|update|corregir|fix|limpiar|clean|resolver|solve|monitorear|monitor|vigilar)\b/i
+
+const VERBOS_COMPUESTOS = [
+  { re: /^(?:instalar\s+y\s+configurar|configurar\s+e\s+instalar)\b/i, verb: 'Instalar' },
+  { re: /^(?:revisar\s+y\s+corregir|corregir\s+y\s+revisar)\b/i, verb: 'Revisar' },
+  { re: /^(?:buscar\s+y\s+comparar|comparar\s+y\s+evaluar)\b/i, verb: 'Comparar' },
+]
+
+const ADJ_ESTADO = new Set([
+  'perdida', 'perdidas', 'perdido', 'perdidos', 'gris', 'roto', 'rota',
+  'lento', 'lenta', 'viejo', 'vieja', 'nuevo', 'nueva', 'raro', 'rara',
+  'inusual', 'trancado', 'colgado', 'fallando'
+])
+
+const CONNECTORS = new Set([
+  'de', 'del', 'la', 'el', 'los', 'las', 'un', 'una', 'y', 'o', 'u', 'e',
+  'vs', 'vs.', 'versus', 'a', 'en', 'con', 'por', 'para', 'al', 'on', 'in', 'of', 'the', 'and'
+])
+
+const capWord = (w) => {
+  if (!w) return ''
+  const low = w.toLowerCase()
+  if (CONNECTORS.has(low)) return low
+  if (w.slice(1).toLowerCase() !== w.slice(1)) return w[0].toUpperCase() + w.slice(1)
+  return w[0].toUpperCase() + w.slice(1).toLowerCase()
+}
+
+const isCleanHead = (head, limit = 3) => {
+  if (!head || typeof head !== 'string') return false
+  const words = head.trim().split(/\s+/).filter(Boolean)
+  if (words.length < 1 || words.length > limit) return false
+  const first = words[0].toLowerCase().replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, '')
+  const last = words[words.length - 1].toLowerCase().replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, '')
+  if (DANG_WORDS.has(first) || DANG_WORDS.has(last)) return false
+  for (const w of words) {
+    const clean = w.toLowerCase().replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, '')
+    if (ACTION_VERBS.has(clean) || QUESTION_WORDS.has(clean)) return false
+  }
+  return true
+}
+
+const esSujetoInvalido = (texto) => {
+  if (!texto || typeof texto !== 'string') return true
+  let s = texto.trim()
+  const m = s.match(/^\d{3,4}\s+\[(?<subj>.+?)\]/)
+  if (m && m.groups) s = m.groups.subj.trim()
+  else s = s.replace(/^\d{3,4}\s+/, '').trim()
+  if (!s || s === 'Sin sujeto' || s === 'Sin título') return true
+  const words = s.split(/\s+/).filter(Boolean)
+  if (words.length > 3 || VERBO_INF_RE.test(words[0])) return true
+  return !isCleanHead(s, 3)
+}
+
+const derivarCampos = (rawTitle) => {
+  if (!rawTitle || typeof rawTitle !== 'string') return null
+  let t = rawTitle.trim()
+  const mB = t.match(/^\d{3,4}\s+\[(?<subj>.+?)\](?:\s+\d{3,4})?(?<rest>.*)$/)
+  if (mB && mB.groups) t = mB.groups.subj.trim()
+  else t = t.replace(/^\d{3,4}\s+/, '').trim()
+
+  let context = ''
+  const mCtx = t.match(/\b(?:on|en)\s+([A-Z0-9][A-Za-z0-9._-]*(?:\s+[A-Z0-9][A-Za-z0-9._-]*)*)\s*$/i)
+  if (mCtx) {
+    context = mCtx[1].trim()
+    t = t.slice(0, mCtx.index).trim()
+  }
+
+  let verb = ''
+  for (const cv of VERBOS_COMPUESTOS) {
+    const m = t.match(cv.re)
+    if (m) {
+      verb = cv.verb
+      t = t.slice(m[0].length).trim()
+      break
+    }
+  }
+  if (!verb) {
+    const mV = t.match(VERBO_INF_RE)
+    if (mV) {
+      verb = mV[1][0].toUpperCase() + mV[1].slice(1).toLowerCase()
+      if (mV[1].toLowerCase() === 'compare') verb = 'Compare'
+      t = t.slice(mV[0].length).trim()
+    }
+  }
+
+  t = t.replace(/^(?:de|del|la|el|los|las|un|una|para|sobre)\s+/i, '').trim()
+  let words = t.split(/\s+/).map((w) => w.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, '')).filter(Boolean)
+  words = words.filter((w) => !ADJ_ESTADO.has(w.toLowerCase()))
+  while (words.length && CONNECTORS.has(words[words.length - 1].toLowerCase())) words.pop()
+  if (words.length === 0) return null
+
+  const sujeto = words.map((w, idx) => (idx === 0 ? w[0].toUpperCase() + w.slice(1) : capWord(w))).join(' ')
+  if (!isCleanHead(sujeto, 3)) return null
+
+  return {
+    sujeto,
+    context,
+    verb,
+    iq2: context,
+    iq3: verb,
+    desc: '',
+  }
+}
+
+const normWords = (str) =>
+  (str || '')
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+    .split(/\s+/)
+    .filter(Boolean)
+
+const esDescClonada = (desc, sujeto, rawTitle, context = '', verb = '') => {
+  if (!desc || !desc.trim()) return true
+  const dNorm = desc.trim().toLowerCase()
+  const sNorm = (sujeto || '').trim().toLowerCase()
+  const rNorm = (rawTitle || '').trim().toLowerCase()
+  if (dNorm === sNorm || dNorm === rNorm) return true
+  const dWords = normWords(desc)
+  if (dWords.length === 0) return true
+  const knownWords = new Set([
+    ...normWords(sujeto),
+    ...normWords(context),
+    ...normWords(verb),
+    'de', 'del', 'la', 'el', 'los', 'las', 'un', 'una', 'en', 'on', 'con', 'por', 'para', 'al', 'y', 'o'
+  ])
+  const newWords = dWords.filter((w) => !knownWords.has(w))
+  return newWords.length === 0
+}
+
+/** Sesión candidata para la pestaña Process: virgen o con título canónico malformado que puede corregirse. */
+const esPendiente = (d) =>
+  Boolean(
+    d &&
+      !esMaquinaria(d) &&
+      (!tieneNumero(d.raw) || (d.canonTitle && d.canonTitle !== d.raw && esSujetoInvalido(d.raw)))
+  )
+
 /**
  * Is this row drawn as a child of another row on screen?
  *
@@ -513,8 +675,21 @@ function canonicalTitle(d) {
   if (!d) return ''
   if (esIntocable(d)) return d.raw || ''
 
+  let subj = (d.sujeto || d.iq0 || '').trim()
+  if (!subj || esSujetoInvalido(subj)) {
+    const derived = derivarCampos(subj || d.raw)
+    if (derived && derived.sujeto) {
+      subj = derived.sujeto
+      if (!d.iq2 && derived.context) d.iq2 = derived.context
+      if (!d.verb && derived.verb) d.verb = derived.verb
+      if (!d.iq3 && derived.verb) d.iq3 = derived.verb
+    } else {
+      // Guardia: si después de quitar el verbo no queda un sintagma nominal limpio de 1-3 palabras, no inventar
+      return d.raw || ''
+    }
+  }
+
   const nnn = String(Number(d.n) || 0).padStart(3, '0')
-  const subj = (d.sujeto || d.iq0 || '').trim() || 'Sin sujeto'
   const mmm = String(Number(d.mmm) || 1).padStart(3, '0')
 
   let head = `${nnn} [${subj}] ${mmm}`
@@ -527,11 +702,15 @@ function canonicalTitle(d) {
     return head.slice(0, 100).trimEnd()
   }
 
-  const verb = (d.verb || '').trim()
+  const verb = (d.verb || d.iq3 || '').trim()
   const tail = verb ? ` · ${verb}` : ''
   const budget = 100 - head.length - 1 - tail.length
 
   let desc = (d.desc || '').trim()
+  if (esDescClonada(desc, subj, d.raw, t2, verb)) {
+    desc = ''
+  }
+
   if (desc && budget > 0) {
     if (desc.length > budget) {
       desc = desc.slice(0, budget).trimEnd()
@@ -1546,31 +1725,46 @@ async function loadCatalogue(ctx) {
     const semana = isoWeek(fecha) || idx.semana || ''
     const anio = (ex.anio || idx.anio || ex.iq5 || idx.iq5 || (fecha ? fecha.slice(0, 4) : '') || '').trim()
 
-    const sujeto = (
+    let sujeto = (
       (g && g.subject) ||
       ex.sujeto ||
       idx.sujeto ||
       (rawTitle ? rawTitle.slice(0, 36) : 'Sin título')
     ).trim()
-    const iq1 = ((g && g.iq1) || ex.iq1 || idx.iq1 || '').trim()
-    const iq2 = ((g && g.iq2) || ex.iq2 || idx.iq2 || '').trim()
-    const iq3 = (ex.iq3 || idx.iq3 || '').trim()
+    let iq1 = ((g && g.iq1) || ex.iq1 || idx.iq1 || '').trim()
+    let iq2 = ((g && g.iq2) || ex.iq2 || idx.iq2 || '').trim()
+    let iq3 = (ex.iq3 || idx.iq3 || '').trim()
     const pilar = (ex.pilar || idx.pilar || ex.iq4 || idx.iq4 || '').trim()
     const pais = (ex.pais || idx.pais || '').trim()
     const iq4 = (ex.iq4 || idx.iq4 || pais || pilar || '').trim()
     const iq5 = (ex.iq5 || idx.iq5 || anio || '').trim()
     const iq6 = (ex.iq6 || idx.iq6 || '').trim()
+    let verb = ((g && g.verb) || idx.verb || '').trim()
+
+    // Si el sujeto viene de un título virgen o es inválido/verbal, derivar campos nominales
+    if (!g || esSujetoInvalido(sujeto)) {
+      const der = derivarCampos(sujeto || rawTitle)
+      if (der && der.sujeto) {
+        sujeto = der.sujeto
+        if (!iq2 && der.context) iq2 = der.context
+        if (!verb && der.verb) verb = der.verb
+        if (!iq3 && der.verb) iq3 = der.verb
+      }
+    }
+
     // A title that already parsed as canonical must never become its own
     // description: '925 [Sin título] 001' came out as
     // '925 [Sin título] 001 925 [Sin título] 001' on the next commit.
-    const desc = (
+    let desc = (
       (g && g.desc) ||
       idx.desc ||
       (live && live.preview) ||
       (g ? '' : rawTitle) ||
       ''
     ).trim()
-    const verb = ((g && g.verb) || idx.verb || '').trim()
+    if (esDescClonada(desc, sujeto, rawTitle, iq2, verb)) {
+      desc = ''
+    }
     const prof = (live && (live._prof || live.profile)) || idx.prof || 'default'
     const mc = Number((live && (live.live_message_count || live.message_count)) || ex.mc || idx.mc || idx.posts || 0)
     const posts = Number(idx.posts || (mc > 0 ? Math.max(1, Math.round(mc / 2)) : 0))
@@ -1653,7 +1847,7 @@ async function loadCatalogue(ctx) {
       esCron: Boolean(idx.esCron || /^cron[_-]/i.test(id) || /^cron[_-]/i.test(prof)),
       esBot: Boolean(idx.esBot) || (live && String(live.source || '').toLowerCase() === 'subagent'),
       parent: idx.parent || '',
-      _canonical: Boolean(g),
+      _canonical: Boolean(g && !esSujetoInvalido(g.subject)),
       isLive,
       runtimeVivo: isLive,
       vivo: isLive,
@@ -2074,11 +2268,11 @@ function App({ ctx }) {
     return true
   }
 
-  // In the Process (testing) tab only unrenamed / virgin sessions are listed:
-  // sessions that never received a canonical title (^NNN...).
+  // In the Process (testing) tab unrenamed / virgin sessions and sessions with
+  // malformed titles (verbal / oversized subject) that can be corrected are listed.
   // Machinery (bots, cron, subagents) is excluded.
   const pendingRows = useMemo(
-    () => sessions.filter((d) => !esMaquinaria(d) && !tieneNumero(d.raw)),
+    () => sessions.filter((d) => esPendiente(d)),
     [sessions]
   )
 
@@ -2833,7 +3027,7 @@ function App({ ctx }) {
       const lista = (fresco && Array.isArray(fresco.sessions)) ? fresco.sessions : null
       if (lista) setSessions(lista)
       const base = lista || sessions
-      const pend = base.filter((d) => !esMaquinaria(d) && !tieneNumero(d.raw)).length
+      const pend = base.filter((d) => esPendiente(d)).length
       setBtnMsg({ updb: t('updbDone', { n: base.length, v: pend }) + ' · ' + t('updbHelp'),
                  mig: t('updbDone', { n: base.length, v: pend }) + ' · ' + t('updbHelp') })
     } catch (e) {
@@ -4851,7 +5045,8 @@ function App({ ctx }) {
 
 // Named exports so tests/test_plugin.mjs can exercise the pure helpers without React.
 export { numSel, fmtC, fmtH, fmtN, loadCatalogue, canonicalTitle, jerarquia, isChildRow,
-  esEsquemaViejo, migrarEjes, contarEjes, ESQUEMA_ACTUAL, tieneNumero, esMaquinaria
+  esEsquemaViejo, migrarEjes, contarEjes, ESQUEMA_ACTUAL, tieneNumero, esMaquinaria,
+  esPendiente, esSujetoInvalido, esDescClonada, derivarCampos
 }
 
 export default {
