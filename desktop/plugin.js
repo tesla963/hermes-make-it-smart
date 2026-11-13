@@ -1012,7 +1012,7 @@ position:relative;display:flex;flex-direction:column;width:100%;height:100%;min-
 .mmws .actbar{display:flex;align-items:center;gap:10px;padding:10px 18px;border-bottom:1px solid var(--line);background:#141018;flex-wrap:wrap}
 .mmws .actbar .procbtn{font-size:12px;padding:6px 12px}
 .mmws .actbar .footmsg{color:var(--tx3);font-size:11.8px}
-.mmws .footrow.actmode .footbtns{display:none}
+.mmws .footrow.actmode{display:none}
 .mmws .iqpanel .iqhead{display:flex;gap:14px;align-items:center;font-size:12px;color:var(--tx3)}
 .mmws .iqpanel .iqstrip{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;padding:2px 0 6px}
 .mmws .iqpanel .iqstrip.main .iqbtn{font-size:12px;padding:5px 16px;border-bottom:2px solid transparent}
@@ -3900,6 +3900,24 @@ function App({ ctx }) {
                   canRevert
                     ? h('button', { key: 'rev', className: 'revertbtn', disabled: isCommitting || isReverting, onClick: handleRevert }, t('revertir'))
                     : null,
+                  h(
+                    'button',
+                    {
+                      key: 'rest', className: 'ghost restorebtn', id: 'btnRestaurarTop',
+                      disabled: isCommitting || isReverting,
+                      onClick: async () => {
+                        const filesApi = (ctx && ctx.files) || (host && host.files)
+                        let n = 0
+                        try {
+                          const r = await filesApi.readText('data', 'titles-origin.json')
+                          if (r && r.ok && r.text) n = Object.keys(JSON.parse(r.text) || {}).length
+                        } catch (_) {}
+                        setDialogo({ kind: 'restore', n })
+                      },
+                      title: t('restTitle'),
+                    },
+                    t('restTitle')
+                  ),
                   machineryPending.length > 0
                     ? h('span', { key: 'mach', className: 'footmsg' }, t('machineryNote', { n: machineryPending.length }))
                     : null,
