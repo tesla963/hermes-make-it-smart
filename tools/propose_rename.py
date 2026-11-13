@@ -170,6 +170,10 @@ def canon_title(s: dict) -> str:
     budget = LIMIT - len(head) - 1 - len(tail)
 
     desc = str(s.get("desc") or "").strip()
+    # Una descripción no repite el andamiaje del título viejo: "107 [consultar deepseek...] 001"
+    desc = re.sub(r"\d{3,4}\s*\[[^\]]*\]\s*\d{0,3}", " ", desc)
+    desc = re.sub(r"\[[^\]]*\]", " ", desc)
+    desc = re.sub(r"\s{2,}", " ", desc).strip(" ·,;:-")
     if desc and budget > 0:
         if len(desc) > budget:
             desc = desc[:budget].rstrip()
