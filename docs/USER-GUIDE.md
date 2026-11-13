@@ -7,6 +7,10 @@ to do things so the plugin works well, and why that order matters.
 
 ## Before touching anything: make a backup
 
+> Where those backups are kept on macOS, Windows and Linux — and the exact moment they are
+> written — is in [`BACKUPS.md`](BACKUPS.md). The short version: nothing is written before a
+> backup of the current titles exists.
+
 The plugin **renames your sessions**. Renaming doesn't delete anything —the
 messages, the costs and the dates stay intact— but a name is the only way to
 recognize a session six months later. If something goes wrong, you want to be

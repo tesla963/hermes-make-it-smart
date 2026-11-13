@@ -2,6 +2,9 @@
 
 > Reference document for **Hermes autonomous agents**. It defines the storage roots, the state files, the write responsibilities and the verification protocol.
 
+
+> Backups: when they are written and where they live on macOS, Windows and Linux — [`BACKUPS.md`](BACKUPS.md).
+
 ---
 
 ## 1. Storage roots

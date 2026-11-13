@@ -2,6 +2,9 @@
 
 The plugin writes to two places, and they are not the same thing:
 
+
+> Backups: when they are written and where they live on macOS, Windows and Linux — [`BACKUPS.md`](BACKUPS.md).
+
 | Where | What it holds | Survives an uninstall? |
 |---|---|---|
 | `~/.hermes/plugin-data/make-it-smart/` | `index.json`, `facets.json`, `backups/` | **Yes** — nothing deletes it |

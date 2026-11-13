@@ -1,6 +1,6 @@
 # Features — Hermes, Make it Smart!
 
-Companion documents: [`VOCABULARY.md`](VOCABULARY.md) (what a term is), [`BRAND-CONTEXT.md`](BRAND-CONTEXT.md) (which context each brand produces), [`OBSOLETE.md`](OBSOLETE.md) (what no longer applies).
+Companion documents: [`BACKUPS.md`](BACKUPS.md) (when a backup is written and where it lives, by platform), [`VOCABULARY.md`](VOCABULARY.md) (what a term is), [`BRAND-CONTEXT.md`](BRAND-CONTEXT.md) (which context each brand produces), [`OBSOLETE.md`](OBSOLETE.md) (what no longer applies).
 
 ## 1 · What it really is
 

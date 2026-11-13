@@ -2783,8 +2783,8 @@ function App({ ctx }) {
           setEsqViejo(Boolean(res.esquemaViejo))
         }
       } catch (_) {}
-      const pendingRevert = lastBackup && lastBackup.committed && !lastBackup.reverted
-      await createCommitBackup(rows, { keepLedger: pendingRevert })
+      // No backup here. Entering a window only looks; the backup belongs to the moment
+      // the user asks to process or apply, and it is written before anything changes.
     }
   }
 
@@ -2950,19 +2950,10 @@ function App({ ctx }) {
   }
 
   const handleCommit = async () => {
-    let curBackup = lastBackup
-    // Reuse a fresh backup only when it is still pending: one that is already
-    // committed describes titles that are already written, and re-applying it
-    // would report the previous commit's count as if it were new work.
-    if (
-      !curBackup ||
-      curBackup.committed ||
-      curBackup.reverted ||
-      !curBackup.ts ||
-      Date.now() - curBackup.ts > 600000
-    ) {
-      curBackup = await createCommitBackup(sessions)
-    }
+    // The backup belongs to this moment and to no other: the user asked to process, so the
+    // backup is written now, describing the titles as they are right now. Reusing one taken
+    // earlier would describe a catalogue that no longer exists.
+    const curBackup = await createCommitBackup(sessions)
     const targets = (curBackup && curBackup.entries) || []
     const eligibleCount = sessions.filter((d) => !esIntocable(d)).length
     const unchangedCount = eligibleCount - targets.length
