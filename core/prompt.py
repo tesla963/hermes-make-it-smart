@@ -132,7 +132,7 @@ A subject chosen before the verb is usually the wrong noun.
 ## The nine fields you return
 
 subject     What the session is ABOUT: the object, the problem, the symptom.
-            2-4 words, written in {language}. NEVER the name of a program or platform.
+            1-3 words, written in {language}. NEVER the name of a program or platform.
             Strip the action prefix ("Configuration of X" -> "X") and the state
             adjectives ("trancado", "inusual", "con error").
             If it is a failure, name the POINT OF FAILURE ("Protocolo"),

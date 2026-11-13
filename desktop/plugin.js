@@ -662,14 +662,14 @@ const I18N = {
     kSes2: 'visibles',
     kCos1: 'Costo',
     kCos2: 'acumulado',
-    lblPlataforma: 'plataforma',
-    lblFamilia: 'familia',
-    lblPilar: 'pilar',
-    lblPais: 'país',
+    lblPlataforma: 'programa / marca',
+    lblFamilia: 'contexto',
+    lblPilar: 'intención',
+    lblPais: 'tema',
     lblAnio: 'año',
-    lblMaquina: 'máquina',
-    lblLibre: 'libre',
-    lblProyecto: 'Proyecto',
+    lblMaquina: 'retirado (iq2)',
+    lblLibre: 'reservado',
+    lblProyecto: 'reservado',
     kHor1: 'Horas',
     kHor2: 'trabajo',
     kPost1: 'Total',
@@ -857,14 +857,14 @@ const I18N = {
     kSes2: 'sessions',
     kCos1: 'Total',
     kCos2: 'cost',
-    lblPlataforma: 'platform',
-    lblFamilia: 'family',
-    lblPilar: 'pillar',
-    lblPais: 'country',
+    lblPlataforma: 'program / brand',
+    lblFamilia: 'context',
+    lblPilar: 'intention',
+    lblPais: 'theme',
     lblAnio: 'year',
-    lblMaquina: 'machine',
-    lblLibre: 'free',
-    lblProyecto: 'Project',
+    lblMaquina: 'retired (iq2)',
+    lblLibre: 'reserved',
+    lblProyecto: 'reserved',
     kHor1: 'Work',
     kHor2: 'hours',
     kPost1: 'Total',
@@ -1028,19 +1028,22 @@ position:relative;display:flex;flex-direction:column;width:100%;height:100%;min-
 .mmws .headtabs .headtab:focus,
 .mmws .headtabs .headtab:focus-visible,
 .mmws .headtabs .headtab:active{border-color:transparent!important;background-color:transparent!important;box-shadow:none!important;outline:0!important}
-/* La pestaña cierra su silueta también abajo, en su propio color atenuado: con
-   el borde inferior transparente se veía la línea base gris del contenedor como
-   una hebra gris pegada al borde inferior del tab inactivo (verde o amarillo). */
-.mmws .headtabs .headtab:first-child{border-bottom-color:var(--ok40)!important}
-.mmws .headtabs .headtab:last-child{border-bottom-color:var(--gold40)!important}
-/* Hover: el tab inactivo sube a color pleno, para que se vea que es una pestaña
-   y que responde. Va después del estado base: misma especificidad, gana el orden. */
-.mmws .headtabs .headtab:first-child:hover{border-bottom-color:var(--ok)!important}
-.mmws .headtabs .headtab:last-child:hover{border-bottom-color:var(--gold)!important}
-/* Las activas se reimponen al final: el hover tiene la misma especificidad que
-   .headtab.on, así que el orden decide y el color pleno debe ganar siempre. */
-.mmws .headtabs .headtab.on{border-bottom-color:var(--ok)!important}
-.mmws .headtabs .headtab.on.testing{border-bottom-color:var(--gold)!important}
+/* La pestaña cierra su silueta también abajo en su propio color atenuado.
+   La identidad va por NOMBRE de pestaña, nunca por posición. */
+.mmws .headtabs .headtab.tabactual{border-bottom-color:var(--ok40)!important}
+.mmws .headtabs .headtab.tabprocess{border-bottom-color:var(--gold40)!important}
+.mmws .headtabs .headtab.newruletab{border-bottom-color:rgba(139,92,246,0.4)!important}
+.mmws .headtabs .headtab.iqtab{border-bottom-color:rgba(63,168,160,0.4)!important}
+/* Hover: el tab inactivo sube a color pleno bajo el cursor. */
+.mmws .headtabs .headtab.tabactual:hover{border-bottom-color:var(--ok)!important}
+.mmws .headtabs .headtab.tabprocess:hover{border-bottom-color:var(--gold)!important}
+.mmws .headtabs .headtab.newruletab:hover{border-bottom-color:#8b5cf6!important}
+.mmws .headtabs .headtab.iqtab:hover{border-bottom-color:#3fa8a0!important}
+/* Activa: su color pleno y su texto iluminado. */
+.mmws .headtabs .headtab.tabactual.on{border-bottom-color:var(--ok)!important;color:var(--ok)!important}
+.mmws .headtabs .headtab.tabprocess.on{border-bottom-color:var(--gold)!important;color:var(--gold)!important}
+.mmws .headtabs .headtab.newruletab.on{border-bottom-color:#8b5cf6!important;color:#8b5cf6!important}
+.mmws .headtabs .headtab.iqtab.on{border-bottom-color:#3fa8a0!important;color:#3fa8a0!important}
 
 .mmws .bodywrap{flex:1 1 auto;min-height:0;display:flex;align-items:stretch;position:relative;overflow:hidden}
 /* Process and New Rules do not filter: they act. The left aside would be dead weight. */
@@ -2262,8 +2265,8 @@ function App({ ctx }) {
       d.raw,
       t('sujeto').toLowerCase() + ': ' + d.sujeto + ' · ordinal ' + String(d.mmm).padStart(3, '0'),
       'iq1 (' + t('lblPlataforma').toLowerCase() + '): ' + k(d.iq1) + ' | iq2 (' + t('lblFamilia').toLowerCase() + '): ' + k(d.iq2),
-      'iq3 (' + t('lblPilar').toLowerCase() + '): ' + k(d.pilar || d.iq3) + ' | iq4 (' + t('lblPais').toLowerCase() + '): ' + k(d.pais || d.iq4) + ' | iq5 (' + t('lblAnio').toLowerCase() + '): ' + k(d.anio || d.iq5),
-      'iq6 (' + t('lblMaquina').toLowerCase() + '): ' + k(d.iq6),
+      'iq3 (' + t('lblPilar').toLowerCase() + '): ' + k(d.iq3) + ' | iq4 (' + t('lblPais').toLowerCase() + '): ' + k(d.iq4) + ' | iq5 (' + t('lblAnio').toLowerCase() + '): ' + k(d.iq5),
+      'iq6 (' + t('lblMaquina').toLowerCase() + '): —',
       'iq7: ' + k(d.iq7) + ' | iq8 (' + t('lblProyecto').toLowerCase() + '): ' + k(d.iq8) + ' | iq9: ' + k(d.iq9),
       t('descripcion') + ': ' + k(d.desc),
       t('fecha').toLowerCase() + ': ' + k(d.fecha) + ' · ' + t('mensajes').toLowerCase() + ': ' + k(d.mc) + ' · posts: ' + k(d.posts),
@@ -2538,13 +2541,13 @@ function App({ ctx }) {
         h('div', null, 'iq2 · ' + t('lblFamilia')),
         h('div', null, h('span', { className: 'pill iq2' }, d.iq2 || '—')),
         h('div', null, 'iq3 · ' + t('lblPilar')),
-        h('div', null, h('span', { className: 'pill iq3' }, d.pilar || d.iq3 || '—')),
+        h('div', null, h('span', { className: 'pill iq3' }, d.iq3 || '—')),
         h('div', null, 'iq4 · ' + t('lblPais')),
-        h('div', null, d.pais || d.iq4 ? h('span', { className: 'pill iq4' }, d.pais || d.iq4) : '—'),
+        h('div', null, d.iq4 ? h('span', { className: 'pill iq4' }, d.iq4) : '—'),
         h('div', null, 'iq5 · ' + t('lblAnio')),
-        h('div', null, d.anio || d.iq5 ? h('span', { className: 'pill iq5' }, d.anio || d.iq5) : '—'),
+        h('div', null, d.iq5 ? h('span', { className: 'pill iq5' }, d.iq5) : '—'),
         h('div', null, 'iq6 · ' + t('lblMaquina')),
-        h('div', null, h('span', { className: 'pill iq6' }, d.iq6 || '—')),
+        h('div', null, '—'),
         h('div', null, 'iq7 · ' + t('lblLibre')),
         h('div', null, d.iq7 || '—'),
         h('div', null, 'iq8 · ' + t('lblProyecto')),
@@ -2951,6 +2954,11 @@ function App({ ctx }) {
       // se restaura igual (es lo que pidió el usuario) pero se cuenta aparte, porque
       // puede ser un cambio suyo o un renombrado anterior al registro.
       const esperado = escritoPorNosotros.get(id)
+      if (escritoPorNosotros.has(id) && esperado && actual !== esperado) {
+        // Alguien lo cambió después de nuestro commit (el usuario en Hermes u otro agente):
+        // se respeta el cambio posterior y no se toca.
+        continue
+      }
       try {
         const r = await callRpc(ctx, 'session.resume', { session_id: id, lazy: true, omit_messages: true })
         const sid = (r && r.session_id) || id

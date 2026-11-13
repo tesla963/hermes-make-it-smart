@@ -165,18 +165,28 @@ def build(with_messages: bool = True) -> dict:
             # deja renombrar (las del modo Bot, por ejemplo) ya viene clasificada en
             # facets.json. Descartar ese dato dejaba la sesion sin sujeto ni marca.
             ex = extra.get(rec.id, {})
+            raw_iq5 = str(ex.get("iq5", "")).strip()
+            val_iq2 = (g["iq2"] or "").strip() or (ex.get("iq2") or "").strip()
+            if re.match(r"^(19|20)\d{2}$", raw_iq5):
+                val_iq5 = raw_iq5
+            else:
+                if raw_iq5 and not val_iq2:
+                    val_iq2 = raw_iq5
+                fecha_str = str(rec.created_at or "").strip()
+                m_anio = re.match(r"^(19|20)\d{2}", fecha_str)
+                val_iq5 = m_anio.group(0) if m_anio else ""
             rows.append(
                 {
                     "n": int(g["nnn"]),
                     "mmm": int(g["mmm"]),
                     "sujeto": g["subject"].strip() or (ex.get("sujeto") or "").strip(),
                     "iq1": (g["iq1"] or "").strip() or (ex.get("iq1") or "").strip(),
-                    "iq2": (g["iq2"] or "").strip() or (ex.get("iq2") or "").strip(),
+                    "iq2": val_iq2,
                     # Nine slots always, empty when unused: gaining an axis later
                     # must not cost a migration of every record.
                     "iq3": _normalizar_intencion(str(extra.get(rec.id, {}).get("iq3", ""))),
                     "iq4": extra.get(rec.id, {}).get("iq4", ""),
-                    "iq5": extra.get(rec.id, {}).get("iq5", ""),
+                    "iq5": val_iq5,
                     "iq6": "",
                     "iq7": extra.get(rec.id, {}).get("iq7", ""),
                     "iq8": extra.get(rec.id, {}).get("iq8", ""),
