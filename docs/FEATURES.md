@@ -1,5 +1,7 @@
 # Features — Hermes, Make it Smart!
 
+Companion documents: [`VOCABULARY.md`](VOCABULARY.md) (what a term is), [`BRAND-CONTEXT.md`](BRAND-CONTEXT.md) (which context each brand produces), [`OBSOLETE.md`](OBSOLETE.md) (what no longer applies).
+
 ## 1 · What it really is
 
 A plugin that renames sessions does what everyone already does: paste the subject in. This one
@@ -67,7 +69,7 @@ What each one actually contains, from the live index:
 |---|---|
 | iq1 | `CyberPanel` 77 · `Apple` 62 · `AMD` 62 · `Mac mini M4` 38 · `Panamá` 25 |
 | iq2 | `Mac mini M4` 97 · `Panamá` 33 · `VPS` 25 · `Teléfono` 19 · `Amazon` 13 |
-| iq3 | `Investigar` 261 · `Troubleshooting` 146 · `Comparar` 50 · `Testear` 39 · `Compatibilidad` 34 |
+| iq3 | **before migration**: `Investigar` 261 · `Troubleshooting` 146 · `Comparar` 50 · `Testear` 39 · `Compatibilidad` 34 — 424 values still carry the retired names |
 | iq4 | `IT Manager` 252 · `Hardware` 141 · `IA Bot` 83 · `Data Mining` 62 · `Derecho` 58 |
 | iq5 | `Panamá` 10 · `1972` 3 · then noise — **this axis is contaminated and must be cleaned** |
 

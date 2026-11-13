@@ -1,0 +1,105 @@
+# Ejemplo de vocabulario personal — copiar a ~/.hermes/plugin-data/make-it-smart/vocab.personal.yaml
+#
+# Esto NO es la chuleta de fábrica: es el mundo del usuario. Todo lo de aquí es suyo y
+# nunca viaja al repositorio. Los nombres de este archivo son ficticios a propósito:
+# el plugin solo comparte los TIPOS (Forwarder, Retailer, Laptop), no las marcas de nadie.
+#
+# Las tres reglas que este archivo hace posibles:
+#   1. el modelo nunca va solo   → A55 necesita Samsung y "Celular Android"
+#   2. una idea, un valor        → Portátil, notebook y laptop son Laptop
+#   3. la compañía lleva su giro → un nombre sin oficio es una palabra
+
+version: 1
+actualizado: 2026-11-13
+
+# --------------------------------------------------------------------------- #
+# MARCAS — con su contexto y su lugar en la cadena de preferencia
+# --------------------------------------------------------------------------- #
+marcas:
+  lenovo:
+    nombre: Lenovo
+    contexto: [Laptop, Desktop, Monitor]
+    preferencia: 1          # la primera que mira
+  dell:
+    nombre: Dell
+    contexto: [Laptop, Desktop, Monitor]
+    preferencia: 2          # la alternativa cuando Lenovo no tiene o está caro
+  apple:
+    nombre: Apple
+    contexto: [Desktop, Laptop, iPhone, iPad, Smartwatch]
+    preferencia: 3
+
+# --------------------------------------------------------------------------- #
+# PRODUCTOS — el modelo con su marca y su tipo. Nunca un modelo suelto.
+# --------------------------------------------------------------------------- #
+productos:
+  thinkpad_p53:
+    nombre: ThinkPad P53
+    marca: Lenovo
+    contexto: Laptop
+    parte: Tarjeta Gráfica
+  a55:
+    nombre: A55
+    marca: Samsung
+    contexto: Celular Android
+  avata_360:
+    nombre: Avata 360
+    marca: DJI
+    contexto: Drone
+
+# --------------------------------------------------------------------------- #
+# PREFERENCIAS — el orden y el motivo de cambiarlo
+# --------------------------------------------------------------------------- #
+preferencias:
+  laptops:
+    orden: [Lenovo, Dell, Apple]
+    motivo_cambio: >
+      cuando el precio del Lenovo es alto se busca la misma parte (Tarjeta Gráfica)
+      en otra marca; si aparece más barata, la sesión es sobre la parte, no sobre
+      la laptop.
+
+# --------------------------------------------------------------------------- #
+# COMPAÑÍAS — con su tipo y su contexto. El tipo es lo que se comparte.
+# --------------------------------------------------------------------------- #
+companias:
+  mi_forwarder:
+    nombre: "(tu proveedor)"
+    tipo: Forwarder
+    contexto: Miami
+  mi_hosting:
+    nombre: "(tu hosting)"
+    tipo: Hosting
+    contexto: VPS
+
+# --------------------------------------------------------------------------- #
+# PERSONAS, LUGARES, EVENTOS
+# --------------------------------------------------------------------------- #
+personas:
+  pareja:
+    nombre: "(nombre)"
+    relacion: pareja
+
+lugares:
+  panama:
+    nombre: Panamá
+    tipo: país
+
+eventos:
+  hackaton_2026:
+    nombre: Nous Hackaton 2026
+    tipo: hackathon
+    año: 2026
+
+# --------------------------------------------------------------------------- #
+# SINÓNIMOS FORZADOS — una idea, un solo valor de filtro
+# --------------------------------------------------------------------------- #
+sinonimos:
+  portatil: Laptop
+  portátil: Laptop
+  notebook: Laptop
+  gpu: Tarjeta Gráfica
+  tarjeta de video: Tarjeta Gráfica
+  dron: Drone
+  celular: Celular Android
+  telefono: Celular Android
+  escritorio: Desktop

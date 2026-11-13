@@ -36,7 +36,7 @@ You were right to be suspicious. Measured:
 ```
 Automation: 98 sessions
   ├─ 67 are cron          (the user did not ask for them: they were scheduled beforehand)
-  └─ 31 are "turn on the gateway", "configure the bot"  → Instalar / Administrar
+  └─ 31 are "turn on the gateway", "configure the bot"  → Configuration
 ```
 
 **Automation describes the absence of intent**, not an intent. An automatic task
@@ -171,7 +171,7 @@ is the right one — but the field changes place.
 
 **`intent-is-what-the-user-did`**
 > Iq3 is an infinitive verb that the user would recognize as their own. If it does not
-> exist in the list of 13, `Investigar` is used — a new one is never invented.
+> exist in the seven, `Web Search` is used — a new one is never invented.
 
 **`automation-is-not-an-intent`**
 > A scheduled task does not express what the user wanted: it expresses what they already
@@ -185,7 +185,7 @@ is the right one — but the field changes place.
 
 **`productos-vs-compras`** — the distinction disappears. `Productos` becomes the
 subcategory `Hardware`, and `Compras` stops being a topic: buying is an
-**intent** (`Cotizar`) plus a **place** (`Amazon`).
+**intent** (`Quote`) plus a **store** (`Amazon`).
 
 **`one-series-one-topic`** — it stays in substance, but is renamed to
 `one-series-one-theme`: the series shares **iq5**, not a topic.

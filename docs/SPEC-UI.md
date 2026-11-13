@@ -64,7 +64,7 @@ placeholders, the detail card, plurals — and persists in `localStorage`.
 
 What it does **not** change: the classifier reads Spanish and English always
 (bilingual dictionary, Spanglish when the base language is Spanish). A window in
-English still understands «Cotizar» and «Temas Varios».
+English still understands the legacy «Cotizar» alias and the topic «Temas Varios».
 
 ## 4 · Filters: three is the ceiling, not a wall
 

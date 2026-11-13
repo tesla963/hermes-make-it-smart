@@ -835,3 +835,63 @@
     - { company: "Miami Express", trade: "Freight Forwarder", context: "Miami" }
     - { company: "ORICO", trade: "storage and enclosures", context: "" }
   control_question: "What does this company do, and where does it operate?"
+
+# --------------------------------------------------------------------------- #
+# FOUR BLIND SPOTS CLOSED (review 2026-11-13, adapted)
+# --------------------------------------------------------------------------- #
+
+- id: acronyms-are-not-subjects
+  taught: 2026-11-13
+  rule: >
+    A generic technical acronym of two or three letters is never the subject on
+    its own: UI, API, IP, DB, PR, CLI, DNS, RAM, SSD. Alone it is noise in the
+    catalogue; it only becomes a subject when it names its object — "API REST",
+    "Dirección IP", "CLI Hermes", "Panel DNS". If it appears alone, it is an
+    attribute of the description, not the thing the session is about.
+  examples:
+    - { right: "Panel DNS", wrong: "DNS" }
+    - { right: "API REST", wrong: "API" }
+    - { right: "—", wrong: "UI" }
+  control_question: "Does the acronym name a thing, or is it the abbreviation of a thing named elsewhere?"
+
+- id: file-names-are-not-subjects
+  taught: 2026-11-13
+  rule: >
+    A file name with a technical extension is an implementation detail, never the
+    subject: plugin.js, state.db, docker-compose.yml, config.yaml. The subject is
+    the component that contains it — "Desktop Plugin", "State DB", "Compose" — and
+    the file name belongs in the description where it can be searched literally.
+  examples:
+    - { right: "Desktop Plugin", wrong: "plugin.js" }
+    - { right: "State DB", wrong: "state.db" }
+  control_question: "If I search in six months, would I type the file name or the component?"
+
+- id: compare-keeps-the-closest
+  taught: 2026-11-13
+  rule: >
+    In a session whose intention is Compare with two candidates of the same rank,
+    iq0 takes the candidate CLOSEST TO THE USER — the one he already owns or is
+    about to use — and the other goes to the description intact. Only when neither
+    is his does the first-mentioned take iq0. The pair may be condensed into one
+    subject only if it fits in three words ("Mac mini M4 vs P53"); otherwise the
+    second name never enters iq0.
+    This keeps an older rule that outranks it: the subject is the item he holds,
+    not the candidate being evaluated.
+  examples:
+    - { right: "ThinkPad P53 · Lenovo · Compare", note: "he owns the P53; the M4 is the candidate", wrong: "Mac mini M4 · Apple · Compare" }
+    - { right: "Mac mini M4 vs P53", note: "both are candidates, they fit in three words" }
+  control_question: "Which of the two is already in his hands? That one is iq0."
+
+- id: open-source-needs-an-ecosystem-not-an-author
+  taught: 2026-11-13
+  rule: >
+    A program in iq0 normally puts its company or author in iq1. For community
+    open-source with no commercial parent — curl, ffmpeg, htop, ripgrep, aria2 —
+    iq1 carries the ecosystem ("Open Source", "CLI Tool") rather than the name of
+    an obscure maintainer, because a personal name nobody recognises is a filter
+    that filters nothing. If the project does have a foundation or a company
+    (Mozilla, Apache Foundation, Nous Research), that name wins.
+  examples:
+    - { right: "curl · Open Source", wrong: "curl · Daniel Stenberg" }
+    - { right: "Firefox · Mozilla", wrong: "Firefox · Open Source" }
+  control_question: "Is there a company or foundation behind it? If there is, use it; if not, the ecosystem."

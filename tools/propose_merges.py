@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import collections
 import difflib
+import html
 import json
 import pathlib
 import re
@@ -197,43 +198,115 @@ def main() -> None:
         bloques.append(f"<h2>{titulo} <span class='note'>({len(grupo)})</span></h2>"
                        "<table><thead><tr><th>From</th><th></th><th>To</th><th>Why</th>"
                        f"<th>Evidence</th></tr></thead><tbody>{cuerpo}</tbody></table>")
-    filas_html = "".join(
-        f"<tr><td>{p['de']}</td><td class='arrow'>→</td><td><b>{p['a']}</b></td>"
-        f"<td>{p['motivo']}</td><td class='{p['confianza']}'>{p['confianza']}</td>"
-        f"<td class='num'>{p['evidencia']}</td></tr>" for p in finales)
+    # ── agrupado por TIPO DE COSA, que es como se decide, no por confianza
+    def grupo_de(p: dict) -> str:
+        c = cat.get(p["de"], "")
+        if p["tipo"] == "promote":
+            return "El modelo de algún producto necesita su Marca"
+        if p["tipo"] == "split":
+            return "Fields glued together"
+        if p["tipo"] == "family":
+            return "One name, several spellings"
+        if "brand" in c:
+            return "Brands"
+        if "company" in c:
+            return "Companies"
+        if "person" in c:
+            return "People"
+        if "place" in c:
+            return "Places"
+        if "event" in c:
+            return "Events"
+        if "machine" in c:
+            return "Machines"
+        if "intent" in c:
+            return "Intentions"
+        return "Spelling and synonyms"
 
-    page = f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
+    grupos: dict[str, list[dict]] = collections.defaultdict(list)
+    for pr in finales:
+        grupos[grupo_de(pr)].append(pr)
+
+    orden_grupos = ["Fields glued together", "One name, several spellings",
+                    "El modelo de algún producto necesita su Marca", "Brands", "Companies", "Machines",
+                    "Places", "Events", "People", "Intentions", "Spelling and synonyms"]
+    bloques = []
+    for nombre in orden_grupos:
+        items = grupos.get(nombre, [])
+        if not items:
+            continue
+        filas_html = "".join(
+            f"<tr><td class='term'>{html.escape(p['de'])}</td>"
+            f"<td class='arrow'>→</td><td class='target'>{html.escape(p['a'])}</td>"
+            f"<td class='why'>{html.escape(p['motivo'])}</td>"
+            f"<td class='num'>{html.escape(p['evidencia'])}</td>"
+            f"<td class='pick'><span class='box'>sí</span><span class='box'>no</span></td></tr>"
+            for p in items)
+        que = {
+            "Fields glued together": "una palabra que son dos campos: se separa, no se fusiona",
+            "One name, several spellings": "un nombre canónico y sus alias",
+            "El modelo de algún producto necesita su Marca": "un modelo solo no es vocabulario: exige su marca (iq1) y su tipo (iq2)",
+            "Brands": "una marca, una forma de escribirla",
+            "Companies": "la compañía con su giro",
+            "Machines": "la máquina, con su nombre completo",
+            "Places": "el lugar, sin variantes",
+            "Events": "el evento con su año",
+            "People": "la persona por su nombre",
+            "Intentions": "la intención, de las siete que existen",
+            "Spelling and synonyms": "lo que se escribe distinto y significa lo mismo",
+        }[nombre]
+        bloques.append(
+            f"<h2>{nombre} <span class='cnt'>{len(items)}</span></h2>"
+            f"<p class='que'>{que}</p>"
+            "<table><thead><tr><th>Término</th><th></th><th>Quedaría como</th>"
+            "<th>Por qué</th><th>Evidencia</th><th>Decisión</th></tr></thead>"
+            f"<tbody>{filas_html}</tbody></table>")
+
+    altas = sum(1 for p in finales if p["confianza"] == "alta")
+    dudosas = [p for p in finales if p["confianza"] == "baja"]
+
+    page = f"""<!doctype html><html lang="es"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Merge proposals</title><style>
+<title>Propuestas de fusión — archivo personal</title><style>
 :root{{--bg:#0e0c11;--card:#17141b;--line:#2a2431;--tx:#e9e4ee;--tx2:#b9b0c4;--tx3:#8d8399;--gold:#c9a227;--green:#3f9e6a;--red:#d98a8a}}
-*{{box-sizing:border-box}}body{{margin:0;background:var(--bg);color:var(--tx);font:15px/1.6 -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif}}
-.wrap{{max-width:1100px;margin:0 auto;padding:32px 24px 70px}}
-h1{{font-size:26px;margin:0 0 4px}}h2{{font-size:17px;margin:26px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--line)}}
-.sub{{color:var(--tx3);font-size:13px;margin:0 0 18px}}
-table{{border-collapse:collapse;width:100%;margin:10px 0;font-size:13px}}
-th,td{{border:1px solid var(--line);padding:6px 9px;text-align:left;vertical-align:top}}
-th{{background:#221d29;color:var(--tx2);font-size:11.4px;text-transform:uppercase;letter-spacing:.05em}}
-tr:nth-child(even) td{{background:#131017}}.num{{text-align:right;white-space:nowrap}}
-.arrow{{color:var(--gold);text-align:center}}.alta{{color:var(--green)}}.media{{color:var(--gold)}}.baja{{color:var(--red)}}
-.note{{color:var(--tx3);font-size:12.8px}}code{{background:#241f2b;border:1px solid var(--line);border-radius:4px;padding:1px 5px;color:#e7d9ff}}
-.grid{{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin:14px 0}}
-.card{{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px}}
-.card b{{display:block;font-size:11.4px;color:var(--tx3);text-transform:uppercase;letter-spacing:.05em}}
-.big{{font-size:26px;font-weight:700;color:var(--gold)}}
+*{{box-sizing:border-box}}body{{margin:0;background:var(--bg);color:var(--tx);font:15px/1.65 -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif}}
+.wrap{{max-width:1120px;margin:0 auto;padding:34px 26px 80px}}
+h1{{font-size:25px;margin:0 0 3px;letter-spacing:-.01em}}
+h2{{font-size:16px;margin:30px 0 2px;padding-bottom:7px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:9px}}
+.cnt{{font-size:11px;color:var(--gold);border:1px solid var(--line);border-radius:20px;padding:1px 8px;font-weight:400}}
+.sub{{color:var(--tx3);font-size:12.6px;margin:0 0 6px}}
+.privado{{background:#2a1f24;border:1px solid #4a2f38;border-radius:8px;padding:9px 13px;font-size:12.6px;color:#e7c7cf;margin:14px 0 20px}}
+.que{{color:var(--tx3);font-size:12.4px;margin:5px 0 9px}}
+table{{border-collapse:collapse;width:100%;margin:0 0 6px;font-size:12.8px}}
+th,td{{border:1px solid var(--line);padding:6px 9px;text-align:left;vertical-align:middle}}
+th{{background:#221d29;color:var(--tx2);font-size:10.8px;text-transform:uppercase;letter-spacing:.06em;font-weight:600}}
+tr:nth-child(even) td{{background:#131017}}
+.term{{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.2px;color:#cfc7da}}
+.arrow{{color:var(--gold);text-align:center;width:22px}}
+.target{{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.2px;color:#e7d9ff;font-weight:600}}
+.why{{color:var(--tx2);font-size:12.2px}}.num{{text-align:right;white-space:nowrap;color:var(--tx3);font-size:11.8px}}
+.pick{{white-space:nowrap;text-align:center}}.box{{display:inline-block;border:1px solid var(--line);border-radius:4px;padding:0 6px;margin:0 2px;font-size:10.6px;color:var(--tx3)}}
+.grid{{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:16px 0 4px}}
+.card{{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:11px 14px}}
+.card b{{display:block;font-size:10.8px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px}}
+.big{{font-size:24px;font-weight:700;color:var(--gold);line-height:1.1}}
+.note{{color:var(--tx3);font-size:12.2px;margin-top:26px;border-top:1px solid var(--line);padding-top:12px}}
+code{{background:#241f2b;border:1px solid var(--line);border-radius:4px;padding:1px 5px;color:#e7d9ff;font-size:11.8px}}
 </style></head><body><div class="wrap">
-<h1>Merge proposals — the same thing written twice</h1>
-<p class="sub">{len(finales)} proposals from {len(filas)} vocabulary terms. Nothing is applied:
-each row is a recommendation with its reason and its evidence.</p>
+<h1>Propuestas de fusión del vocabulario</h1>
+<p class="sub">{len(finales)} propuestas sobre {len(filas)} términos · generadas el 12-nov-2026 · nada aplicado</p>
+<div class="privado"><b>Archivo personal.</b> Este documento y el vocabulario que lo alimenta son datos
+tuyos: no viajan al repositorio ni a la chuleta de fábrica. Vive en
+<code>~/Desktop/hermes-make-it-smart-work/reportes/</code>.</div>
 <div class="grid">
-<div class="card"><b>merge</b><div class="big">{por_tipo.get('merge',0)}</div></div>
-<div class="card"><b>promote</b><div class="big">{por_tipo.get('promote',0)}</div></div>
-<div class="card"><b>family</b><div class="big">{por_tipo.get('family',0)}</div></div>
-<div class="card"><b>split</b><div class="big">{por_tipo.get('split',0)}</div></div>
+<div class="card"><b>Listas para aceptar</b><div class="big">{altas}</div></div>
+<div class="card"><b>Necesitan tu criterio</b><div class="big">{len(dudosas)}</div></div>
+<div class="card"><b>Tipos de cosa</b><div class="big">{len(grupos)}</div></div>
 </div>
-{filas_html}
-<p class="note">merge = one thing written two ways · promote = a fragment that needs its brand and
-context · family = aliases that must answer to one canonical name · split = two fields glued into
-one word.</p>
+{''.join(bloques)}
+<p class="note">Agrupadas por tipo de cosa porque así se decide: primero los campos que están
+pegados, después los nombres, después las variantes. Cada fila lleva el motivo, la evidencia
+(cuántas veces aparece cada forma) y una casilla para marcar sí o no a mano.</p>
 </div></body></html>"""
     (OUT / "11-merge-proposals.html").write_text(page, encoding="utf-8")
 

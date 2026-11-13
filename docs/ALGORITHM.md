@@ -115,7 +115,7 @@ intention tells you which**.
 
 | iq3 (intention) | Program is… | iq0 | iq1 |
 |---|---|---|---|
-| `Troubleshooting`, `Configurar`, `Instalar` | the **container** of the work | the part that broke: `Protocol` | the whole: `Hermes Gateway` |
+| `Troubleshooting`, `Configuration` | the **container** of the work | the part that broke: `Protocol` | the whole: `Hermes Gateway` |
 | `Web Search`, `Compare`, `Quote`, `Buy` | the **object** of the work | the program: `Firefox` | **its company or author**: `Mozilla` |
 | `Testear`, `Compatibilidad` | the **object**, under test | the program: `Antigravity` | its maker: `Google` |
 

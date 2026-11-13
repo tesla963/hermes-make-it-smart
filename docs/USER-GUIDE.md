@@ -204,9 +204,9 @@ proposed changes with their reason:
 ```
 propuestas: 89 · sin cambio: 795
 
-    2  iq2: IA → Instalar
-       - 002 [Hermes Desktop] 001 [Hermes Agent] [IA] Instalar la app…
-       + 002 [Hermes Desktop] 001 [Hermes Agent] [Instalar] Instalar la app…
+    2  iq3: Web Search → Configuration
+       - 002 [Hermes Desktop] 001 [Hermes Agent] [Web Search] Configurar la app…
+       + 002 [Hermes Desktop] 001 [Hermes Agent] [Configuration] Configurar la app…
 ```
 
 If you don't like something, you don't apply it and you adjust the rule.
@@ -238,7 +238,7 @@ fixes the next hundred before they exist.
 ### The sign that it's trained
 
 - There are **few sessions in "Temas Varios"** and the ones there are recent.
-- The **Iq2 are verbs** (`Instalar`, `Testear`, `Cotizar`), not shelves
+- The **intentions are verbs** (`Troubleshooting`, `Configuration`, `Quote`), and they live in iq3, not iq2
   (`Electronica`, `IA`).
 - **Adding a new session doesn't require renaming any old one.**
 - A session's subject **doesn't repeat the brand** and carries no verbs.
