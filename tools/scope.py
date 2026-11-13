@@ -32,6 +32,10 @@ HOME = Path.home()
 DATA = HOME / ".hermes/plugin-data/make-it-smart"
 JOURNAL = DATA / "rename-journal.json"
 BACKUPS = DATA / "backups"
+# Criterio principal, y el más simple de todos: si el título NO empieza con el número de
+# sesión, no pasó por el plugin y es virgen. El journal y los respaldos corroboran; el
+# número es la prueba que se ve a simple vista.
+NNN = re.compile(r"^\d{3,4}\b")
 CANON = re.compile(r"^\d{3,4} \[[^\]]+\] \d{3}")
 MAQUINARIA = re.compile(r"^(Subagent|Bot Chat|Cron|Cronjob|Hermes Agent Cron)\b", re.I)
 
@@ -60,12 +64,16 @@ def _backup_ids() -> set[str]:
     return ids
 
 
+def tiene_numero(raw: str) -> bool:
+    """¿El título arranca con NNN? Es la marca visible de que ya lo tocó el plugin."""
+    return bool(NNN.match(str(raw or "").strip()))
+
+
 def ya_renombradas(sesiones: list[dict]) -> set[str]:
-    """Los ids que ya pasaron por un renombrado, por la vía que sea."""
+    """Los ids que ya pasaron por un renombrado. El número manda; lo demás corrobora."""
     listas = _journal_ids() | _backup_ids()
     for s in sesiones:
-        raw = str(s.get("raw") or "").strip()
-        if raw and CANON.match(raw):
+        if tiene_numero(str(s.get("raw") or "")):
             listas.add(str(s.get("id")))
     return listas
 
@@ -78,8 +86,8 @@ def es_auditable(s: dict, renombradas: set[str]) -> tuple[bool, str]:
     """(sí/no, motivo). El motivo se informa; no se descarta en silencio."""
     if es_maquinaria(s):
         return False, "machinery: never renamed, never audited"
-    if str(s.get("id")) not in renombradas:
-        return False, "not renamed yet: rename comes first, the audit comes after"
+    if not tiene_numero(str(s.get("raw") or "")) or str(s.get("id")) not in renombradas:
+        return False, "not renamed yet: no NNN prefix, so the rename comes first"
     return True, ""
 
 
