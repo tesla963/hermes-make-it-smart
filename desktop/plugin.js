@@ -732,6 +732,8 @@ const I18N = {
     iqRules: 'Reglas', iqScripts: 'Scripts', iqDocs: 'Documentos',
     iqNoData: 'Generá el inventario con: python3 tools/plugin_iq.py',
     iqRuleOf: 'regla', iqOf: 'de',
+    dlgApplyTitle: 'Procesar todas las sesiones',
+    dlgApplyBody: 'Se van a revisar las {n} sesiones, una por una.\n\n· {c} tienen cambios propuestos y se van a renombrar\n· el resto ya está bien y NO se toca\n· {m} son de maquinaria (bots, subagentes, cron) y nunca se renombran\n\nAntes de escribir nada se guarda un respaldo de los títulos actuales. Si algo sale mal, Revert lo devuelve exacto.\n\n¿Procedo?',
     newRulesIdle: 'Sin propuesta. Generala con: python3 tools/propose_rename.py',
     newRulesApply: 'Procesar todas las sesiones ({n})',
     newRulesApplyTitle: 'Escribe un respaldo de la base de títulos y después aplica los cambios',
@@ -928,6 +930,8 @@ const I18N = {
     iqRules: 'Rules', iqScripts: 'Scripts', iqDocs: 'Documents',
     iqNoData: 'Build the inventory with: python3 tools/plugin_iq.py',
     iqRuleOf: 'rule', iqOf: 'of',
+    dlgApplyTitle: 'Process every session',
+    dlgApplyBody: 'All {n} sessions will be reviewed, one by one.\n\n· {c} have proposed changes and will be renamed\n· the rest are already fine and will NOT be touched\n· {m} are machinery (bots, subagents, cron) and are never renamed\n\nA backup of the current titles is written before anything changes. If something goes wrong, Revert puts it back exactly.\n\nProceed?',
     newRulesIdle: 'No proposal. Generate it with: python3 tools/propose_rename.py',
     newRulesApply: 'Procesar todas las sesiones ({n})',
     newRulesApplyTitle: 'Writes a backup of the title database, then applies the changes',
@@ -3961,7 +3965,12 @@ function App({ ctx }) {
                     {
                       key: 'apply', className: 'procbtn', id: 'btnApplyNewRules',
                       disabled: isCommitting || isReverting,
-                      onClick: aplicarPropuesta,
+                      onClick: () => setDialogo({
+                        kind: 'applynewrules',
+                        n: sessions.length,
+                        c: (prop && prop.changes && prop.changes.length) || 0,
+                        m: sessions.filter(esIntocable).length,
+                      }),
                       title: t('newRulesApplyTitle'),
                     },
                     t('newRulesApply', { n: sessions.length })
@@ -4629,11 +4638,14 @@ function App({ ctx }) {
             'div',
             { className: 'box' },
             h('h4', { style: { fontSize: '12px', marginBottom: '8px' } },
-              t(dialogo.kind === 'restore' ? 'dlgRestTitle' : 'dlgProcTitle')),
+              t(dialogo.kind === 'restore' ? 'dlgRestTitle'
+                : dialogo.kind === 'applynewrules' ? 'dlgApplyTitle' : 'dlgProcTitle')),
             h('p', { className: 'hint' },
               dialogo.kind === 'restore' && !dialogo.n
                 ? t('dlgRestNone')
-                : t(dialogo.kind === 'restore' ? 'dlgRestBody' : 'dlgProcBody', { n: dialogo.n })),
+                : t(dialogo.kind === 'restore' ? 'dlgRestBody'
+                    : dialogo.kind === 'applynewrules' ? 'dlgApplyBody' : 'dlgProcBody',
+                    { n: dialogo.n, c: dialogo.c, m: dialogo.m })),
             h(
               'div',
               { className: 'row' },
@@ -4649,6 +4661,7 @@ function App({ ctx }) {
                     setDialogo(null)
                     if (d.kind === 'restore') await restaurarOriginales()
                     else if (d.kind === 'processall') await procesarTodo()
+                    else if (d.kind === 'applynewrules') await aplicarPropuesta()
                     else await handleCommit()
                   },
                 },
