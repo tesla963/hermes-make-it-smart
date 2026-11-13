@@ -1013,7 +1013,11 @@ position:relative;display:flex;flex-direction:column;width:100%;height:100%;min-
 .mmws .actbar .procbtn{font-size:12px;padding:6px 12px}
 .mmws .actbar .footmsg{color:var(--tx3);font-size:11.8px}
 .mmws .footrow.actmode{display:none}
-.mmws .iqpanel .iqhead{display:flex;gap:14px;align-items:center;font-size:12px;color:var(--tx3)}
+.mmws .iqpanel .iqhead{display:flex;gap:14px;align-items:center;justify-content:center;font-size:12px;color:var(--tx3);order:2}
+/* El resumen va DEBAJO de los tabs, centrado: primero se elige, después se lee. */
+.mmws .iqpanel .iqstrip.main{order:1}
+.mmws .iqpanel .iqstrip:not(.main){order:3;justify-content:center}
+.mmws .iqpanel pre{order:4}
 .mmws .iqpanel .iqstrip{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;padding:2px 0 6px}
 .mmws .iqpanel .iqstrip.main .iqbtn{font-size:12px;padding:5px 16px;border-bottom:2px solid transparent}
 .mmws .iqpanel .iqstrip.main .iqbtn.on{border-bottom-color:#3fa8a0}
