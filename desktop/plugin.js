@@ -733,7 +733,7 @@ const I18N = {
     iqNoData: 'Generá el inventario con: python3 tools/plugin_iq.py',
     iqRuleOf: 'regla', iqOf: 'de',
     newRulesIdle: 'Sin propuesta. Generala con: python3 tools/propose_rename.py',
-    newRulesApply: 'Apply New Rules en Session DB ({n})',
+    newRulesApply: 'Procesar todas las sesiones ({n} cambios)',
     newRulesApplyTitle: 'Escribe un respaldo de la base de títulos y después aplica los cambios',
     newRulesReload: 'Recargar propuesta',
     machineryNote: '+{n} de maquinaria (bots, subagentes), no se renombran',
@@ -929,7 +929,7 @@ const I18N = {
     iqNoData: 'Build the inventory with: python3 tools/plugin_iq.py',
     iqRuleOf: 'rule', iqOf: 'of',
     newRulesIdle: 'No proposal. Generate it with: python3 tools/propose_rename.py',
-    newRulesApply: 'Apply New Rules en Session DB ({n})',
+    newRulesApply: 'Procesar todas las sesiones ({n} cambios)',
     newRulesApplyTitle: 'Writes a backup of the title database, then applies the changes',
     newRulesReload: 'Reload proposal',
     machineryNote: '+{n} machinery sessions (bots, subagents) are never renamed',
@@ -2806,8 +2806,22 @@ function App({ ctx }) {
     }
     await syncIndexRaw(updates)
     setSessions((prev) => prev.map((d) => (updates.has(d.id) ? { ...d, raw: updates.get(d.id) } : d)))
+
+    // Barrido completo, una por una: las iguales no se tocaron, las de maquinaria no se tocan nunca.
+    const todas = sessions.length
+    const maquinaria = sessions.filter(esIntocable).length
+    const evaluadas = todas - maquinaria
+    const iguales = Math.max(evaluadas - cambios.length, 0)
+    const reporte = {
+      ts: new Date().toISOString(), origen: 'new-rules',
+      total: todas, evaluadas, cambiadas: ok, iguales, maquinaria, respaldo: fname,
+    }
+    try { await filesApi.writeText('data', 'apply-report.json', JSON.stringify(reporte, null, 2)) } catch (_) {}
     setIsCommitting(false)
-    setPropMsg(`aplicados ${ok} de ${cambios.length} · respaldo ${fname}`)
+    setPropMsg(
+      `${todas} sesiones revisadas · ${ok} renombradas · ${iguales} ya estaban bien · ` +
+      `${maquinaria} de maquinaria sin tocar · respaldo ${fname}`
+    )
   }
 
   const leerPluginIQ = async () => {

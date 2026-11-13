@@ -52,6 +52,45 @@ RELLENO = re.compile(
     r"actualizar|actualiza|revisar|revisa|crear|crea|hacer|haz|verificar|verifica)\b", re.I)
 
 
+def merge_description(cola: str, desc: str) -> str:
+    """Merge words removed from the subject into the description without duplicating."""
+    d = (desc or "").strip()
+    # Strip any accidental title prefix like "024 [Hola DeepSeek...] 001" or "[Brave] ["
+    d = re.sub(r"^\d{3,4}\s*\[[^\]]*\]\s*(\d{3,4})?\s*(?:\[[^\]]*\]\s*)*", "", d).strip()
+    d = re.sub(r"\[[^\]]*$", "", d).strip()
+    d = re.sub(r"^\[[^\]]*\]\s*", "", d).strip()
+    d = d.strip(" [].;:-")
+
+    c = (cola or "").strip()
+    if not c:
+        return d
+    if not d or len(d) < 3:
+        return c
+
+    # Normalize for comparison
+    c_clean = re.sub(r"[^\w\s]", " ", c.lower())
+    d_clean = re.sub(r"[^\w\s]", " ", d.lower())
+    c_words = set(c_clean.split()) - {"de", "del", "la", "el", "los", "las", "un", "una", "y", "o", "a", "en", "con", "por", "para", "al", "que"}
+    d_words = set(d_clean.split())
+
+    # If cola words are already in description, don't duplicate
+    if not c_words or c_words.issubset(d_words) or (len(c_words - d_words) <= 1 and len(c_words) >= 2):
+        return d
+    if d.lower().startswith(c.lower()):
+        return d
+    if c.lower().startswith(d.lower()):
+        return c
+
+    # Filter out individual words already in description
+    new_words = [w for w in c.split() if w.lower().strip(".,;:¡!¿?\"'") not in d_words]
+    if not new_words:
+        return d
+    clean_tail = " ".join(new_words).strip(" ,.;:-")
+    if not clean_tail:
+        return d
+    return f"{d} · {clean_tail}"
+
+
 def derivar_sujeto(raw: str) -> str:
     """A subject out of a free-form title: no model, no invention — the words that are left."""
     t = re.sub(r"^\d{3,4}\s*\[[^\]]*\]\s*\d{0,3}\s*", "", raw or "")
@@ -60,9 +99,7 @@ def derivar_sujeto(raw: str) -> str:
     corto, _cola = shrink_subject(t)
     if corto:
         return corto
-    palabras = [w.strip(".,;:¡!¿?()") for w in t.split()]
-    palabras = [w for w in palabras if len(w) > 2 and not w.isdigit()]
-    return " ".join(palabras[:3]).strip() if palabras else ""
+    return ""
 
 
 def canon_title(s: dict) -> str:
@@ -140,12 +177,22 @@ def main() -> int:
             if corto and corto != sujeto and len(corto.split()) <= 3:
                 campos["sujeto"] = corto
                 if cola:
-                    campos["desc"] = (cola + " " + str(s.get("desc") or "")).strip()[:90]
+                    merged = merge_description(cola, str(s.get("desc") or ""))
+                    if merged:
+                        campos["desc"] = merged[:90]
                 reglas.append("subject-shrunk-to-its-head")
             else:
                 saltadas.append({"id": s.get("id"), "title": raw[:60],
                                  "why": "subject-too-long and no safe head to cut"})
                 continue
+
+        # Re-verificar si el sujeto resultante repite iq1 tras el recorte
+        suj_final = campos.get("sujeto") or sujeto
+        iq1_final = campos.get("iq1", iq1)
+        if iq1_final and suj_final.lower() == iq1_final.lower():
+            if "subject-repeats-iq1" not in reglas:
+                reglas.append("subject-repeats-iq1")
+            campos["iq1"] = ""
 
         if not reglas:
             continue
@@ -165,16 +212,23 @@ def main() -> int:
             "fields": campos,
         })
 
+    total = len(sesiones)
+    saltadas_count = len(saltadas)
+    cambios_count = len(cambios)
+    iguales_count = total - saltadas_count - cambios_count
+
     propuesta = {
         "generated": time.strftime("%Y-%m-%dT%H:%M:%S"),
         "rules_version": "v0.28",
-        "sessions": len(sesiones),
+        "sessions": total,
+        "total": total,
+        "unchanged": iguales_count,
         "changes": cambios,
         "skipped": saltadas,
     }
 
-    print(f"  sesiones: {len(sesiones)} · cambios propuestos: {len(cambios)} · "
-          f"omitidas por maquinaria: {len(saltadas)}")
+    print(f"  sesiones: {total} · cambios propuestos: {cambios_count} · "
+          f"idénticas: {iguales_count} · omitidas: {saltadas_count}")
     for c in cambios[:8]:
         print(f"    {c['before'][:46]:46s} → {c['after'][:46]}")
     if args.dry_run:

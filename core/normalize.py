@@ -168,69 +168,164 @@ def strip_spec(subject: str) -> tuple[str, str]:
     return rest, m.group(0).strip()
 
 
-ESTADO = ("inusual", "trancado", "trabado", "colgado", "roto", "rota", "lento",
-          "lenta", "raro", "rara", "extraño", "fallando", "inestable", "con error",
-          "sin respuesta", "no abre", "no arranca", "no responde", "se cuelga")
-CONECTOR = ("de", "del", "la", "el", "los", "las", "un", "una", "y", "o", "a", "en",
-            "con", "por", "para", "al", "que", "este", "esta", "estos", "estas")
-# Verbos y arranques de frase: en un sujeto no hay acciones, hay cosas.
-ACCION = re.compile(r"\b\w*(?:ar|er|ir|ando|iendo|ado|ido|aba|aste|iste)\b", re.I)
-SALUDO = {"hola", "buenas", "hey", "consultar", "consulta", "explicar", "explica",
-          "explicame", "decir", "dime", "mostrar", "mostrame", "navegador"}
-CONJUGADO = {"esta", "estan", "estaba", "puede", "puedo", "puedes", "tiene", "tengo",
-             "hace", "hacer", "investiga", "abriendo", "funcionando", "se", "no", "si"}
+DANG_WORDS = frozenset({
+    "de", "del", "la", "el", "los", "las", "un", "una", "unos", "unas",
+    "y", "o", "u", "a", "en", "con", "por", "para", "al", "que",
+    "este", "esta", "estos", "estas", "su", "sus", "mi", "mis", "tu", "tus",
+    "se", "si", "no", "desd", "co", "ma"
+})
+
+ACTION_VERBS = frozenset({
+    "crear", "hacer", "instalar", "configurar", "recuperar", "eliminar",
+    "listar", "abrir", "verificar", "explicar", "consultar", "revisar",
+    "analizar", "comparar", "arreglar", "renombrar", "borrar", "actualizar",
+    "modificar", "rename", "use", "testear", "buscar", "comprar", "cotizar"
+})
+
+QUESTION_WORDS = frozenset({
+    "qué", "que", "cómo", "como", "cuál", "cual", "quién", "quien",
+    "dónde", "donde", "cuándo", "cuando", "esto", "eso", "aquello"
+})
+
+KNOWN_ENTITIES = {
+    "deepseek": "DeepSeek",
+    "brave": "Brave",
+    "handbrake": "Handbrake",
+    "antigravity": "Antigravity",
+    "nous": "Nous",
+    "logseq": "Logseq",
+    "firefox": "Firefox",
+    "apple": "Apple",
+    "google": "Google",
+    "hermes": "Hermes",
+    "gemini": "Gemini",
+    "macmini": "Mac mini",
+    "steren": "Steren",
+}
+
+
+def _is_mutilated(w: str) -> bool:
+    """True when a word was sliced mid-word by an earlier naive length cut."""
+    low = w.lower().strip(".,;:¡!¿?()\"'")
+    if not low:
+        return False
+    if low in {"perdid", "proyect", "desd", "co", "ma"}:
+        return True
+    if low.endswith("sd"):
+        return True
+    if low.endswith("ct") and low not in {
+        "aspect", "compact", "contact", "correct", "direct", "distinct", "exact",
+        "impact", "inspect", "object", "perfect", "product", "project", "protect",
+        "react", "respect", "select", "strict", "struct"
+    }:
+        return True
+    if len(low) > 4 and low.endswith("did") and low not in {"madrid", "candid", "sordid", "ardid"}:
+        return True
+    return False
+
+
+def _is_clean_head(head: str, limit: int = 3) -> bool:
+    """Enforces nominal invariants: 1-3 words, no verbs, no hanging prepositions, no sliced words."""
+    words = head.split()
+    if not (1 <= len(words) <= limit):
+        return False
+    if words[0].lower() in DANG_WORDS or words[-1].lower() in DANG_WORDS:
+        return False
+    if any(_is_mutilated(w) for w in words):
+        return False
+    if any(w.lower() in ACTION_VERBS for w in words):
+        return False
+    if any(w.lower() in QUESTION_WORDS for w in words):
+        return False
+    for w in words:
+        if len(w) < 2:
+            return False
+        if len(w) == 2 and w.lower() not in {"dr", "ai", "ui", "os", "ip", "id"}:
+            return False
+    return True
 
 
 def shrink_subject(subject: str, limit: int = 3) -> tuple[str, str]:
-    """Cut a long subject down to its head, and return what was taken out.
+    """Cut a long subject down to a clean nominal head, and return the remaining words.
 
-    El sujeto es el bloque, no la frase. En este orden: fuera saludos y arranques de frase,
-    fuera verbos y conjugaciones, fuera adjetivos de estado y conectores. Si quedan nombres
-    propios, esos son el sujeto; si no, las primeras palabras con sustancia. Nunca se deja
-    un conector colgando y nunca se devuelve algo sin letras.
+    El sujeto es el bloque o entidad, no la frase (1–3 palabras, sin verbo ni conectores
+    colgando). Si se detectan palabras mutiladas o no se puede derivar un núcleo limpio,
+    devuelve ('', '') para que la sesión no sea tocada ni contaminada.
 
-    («brave no esta abriendo»)          → («Brave», «no abre»)
-    («Hola DeepSeek estás funcionando») → («DeepSeek», «funcionando»)
-    («Educación Estatal o Particular»)  → («Educación Estatal Particular», «»)
+    («brave no esta abriendo»)          → («Brave», «no esta abriendo»)
+    («Hola DeepSeek estás funcionando») → («DeepSeek», «Hola estás funcionando»)
+    («Crear proyecto Nous Hackaton 2026 en») → («Nous Hackaton», «Crear proyecto 2026 en»)
+    («Recuperar ventanas y pestañas perdid») → («», «»)  # mutilada, no tocar
     """
     texto = (subject or "").strip()
     if not texto:
         return "", ""
-    palabras = [w.strip(".,;:¡!¿?()") for w in texto.split()]
+    palabras = [w.strip(".,;:¡!¿?()\"'") for w in texto.split()]
     palabras = [w for w in palabras if w]
     if not palabras:
         return "", ""
 
-    resto: list[str] = []
-    nucleo: list[str] = []
+    # 1. Entidad conocida en cualquier posición (DeepSeek, Brave, Nous...)
     for i, w in enumerate(palabras):
-        bajo = w.lower()
-        primera = i == 0
-        if (primera and bajo in SALUDO) or bajo in CONJUGADO or bajo in ESTADO or bajo in CONECTOR:
-            resto.append(w)
-            continue
-        # un infinitivo abre la frase, no la nombra: "Recuperar", "Configurar" se van
-        if ACCION.search(w) and (not w[:1].isupper() or (primera and w.lower().endswith(("ar", "er", "ir")))):
-            resto.append(w)
-            continue
-        nucleo.append(w)
+        low = w.lower()
+        if low in KNOWN_ENTITIES:
+            head_words = [KNOWN_ENTITIES[low]]
+            if i + 1 < len(palabras):
+                next_w = palabras[i + 1]
+                if (next_w[:1].isupper() and next_w.lower() not in ACTION_VERBS
+                        and next_w.lower() not in DANG_WORDS and not _is_mutilated(next_w)):
+                    head_words.append(next_w)
+            head = " ".join(head_words)
+            if _is_clean_head(head, limit):
+                cola_words = [cw for j, cw in enumerate(palabras)
+                              if not (i <= j < i + len(head_words)) and not _is_mutilated(cw)]
+                cola = " ".join(cola_words).strip(" ,.;:-")
+                return head, cola
 
-    if not nucleo:
-        nucleo, resto = palabras[:limit], palabras[limit:]
+    # 2. Bloque contiguo de nombres propios (sin arrancar con verbos o conectores)
+    proper_spans = []
+    current_span = []
+    for w in palabras:
+        if (w[:1].isupper() and w.lower() not in ACTION_VERBS
+                and w.lower() not in DANG_WORDS and not _is_mutilated(w)):
+            current_span.append(w)
+        else:
+            if current_span:
+                proper_spans.append(current_span)
+                current_span = []
+    if current_span:
+        proper_spans.append(current_span)
 
-    # los nombres propios manda: si hay, el sujeto sale de ahí
-    propios = [w for w in nucleo if w[:1].isupper()]
-    fuente = propios if len(propios) >= 1 else nucleo
-    cabeza = fuente[:limit]
-    sobra = [w for w in nucleo if w not in cabeza] + resto
+    if proper_spans:
+        best_span = max(proper_spans, key=len)[:limit]
+        # Debe ser una entidad real o al menos 2 nombres propios contiguos (no una palabra genérica en pos 0)
+        is_real = (len(best_span) >= 2
+                   or best_span[0].lower() in KNOWN_ENTITIES
+                   or any(c.isupper() for c in best_span[0][1:]))
+        if is_real:
+            head = " ".join(best_span)
+            if _is_clean_head(head, limit):
+                cola_words = [cw for cw in palabras if cw not in best_span and not _is_mutilated(cw)]
+                sub_cola = [
+                    cw for cw in cola_words
+                    if cw[:1].isupper() and cw.lower() not in ACTION_VERBS and cw.lower() not in {"hola", "buenas", "hey"}
+                ]
+                if sub_cola:
+                    return "", ""
+                cola = " ".join(cola_words).strip(" ,.;:-")
+                return head, cola
 
-    nuevo = " ".join(cabeza).strip(" ,.;:-")
-    cola = " ".join(dict.fromkeys(sobra)).strip(" ,.;:-")
-    if len(nuevo) < 3 or not any(c.isalpha() for c in nuevo):
+    # 3. Si contiene palabras mutiladas o no tiene entidad y supera el límite: descartar
+    if any(_is_mutilated(w) for w in palabras):
+        return "", ""
+    if len(palabras) > limit:
+        return "", ""
+
+    # 4. Si tiene <= limit palabras y es un núcleo limpio completo:
+    if _is_clean_head(texto, limit):
         return texto, ""
-    if nuevo[:1].islower():
-        nuevo = nuevo[0].upper() + nuevo[1:]
-    return nuevo, cola
+
+    return "", ""
 
 
 def slug_key(subject: str) -> str:
@@ -315,6 +410,7 @@ __all__ = [
     "fit_description",
     "core_subject",
     "strip_spec",
+    "shrink_subject",
     "slug_key",
     "render",
     "validate",

@@ -13,7 +13,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from core.normalize import Facets, core_subject, fit_description, render, short_date, validate  # noqa: E402
+from core.normalize import Facets, core_subject, fit_description, render, short_date, shrink_subject, validate  # noqa: E402
 from core.taxonomy import normalize_platform, normalize_pillar, normalize_verb  # noqa: E402
 
 
@@ -126,6 +126,31 @@ def test_short_date() -> None:
     assert short_date("2026-08-19") == "19ago"
     assert short_date("2026-11-07") == "07nov"
     assert short_date("") == ""
+
+
+def test_shrink_subject_nous_hackaton() -> None:
+    head, cola = shrink_subject("Crear proyecto Nous Hackaton 2026 en")
+    assert head == "Nous Hackaton"
+    assert "Crear" in cola and "proyecto" in cola
+
+
+def test_shrink_subject_mutilated_is_skipped() -> None:
+    assert shrink_subject("Recuperar ventanas y pestañas perdid") == ("", "")
+    assert shrink_subject("Listar dominios en folder de proyect") == ("", "")
+    assert shrink_subject("Eliminar línea gris en tabs verde y") == ("", "")
+
+
+def test_shrink_subject_known_entities() -> None:
+    assert shrink_subject("brave no esta abriendo")[0] == "Brave"
+    assert shrink_subject("Hola DeepSeek estás funcionando")[0] == "DeepSeek"
+    assert shrink_subject("Handbrake url investiga este")[0] == "Handbrake"
+    assert shrink_subject("Instalar y configurar Antigravity co")[0] == "Antigravity"
+
+
+def test_shrink_subject_coordinate_titles_not_amputated() -> None:
+    assert shrink_subject("Educación Estatal o Particular") == ("", "")
+    assert shrink_subject("Base Naval de Bahréin") == ("", "")
+    assert shrink_subject("Puertos Balboa y Cristóbal") == ("", "")
 
 
 # --------------------------------------------------------------------------- #
