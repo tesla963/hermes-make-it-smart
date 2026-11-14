@@ -2131,8 +2131,12 @@ function App({ ctx }) {
   const [canRevert, setCanRevert] = useState(false)
   const [isCommitting, setIsCommitting] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
-  const [byo, setByo] = useState({ motor: 'deepseek', modelo: '', base_url: '', api_key: '',
-    max_tokens: 120, timeout: 60, tiene_key: false })
+  // Arranca completo con DeepSeek: el dueño sólo pega la clave. Los campos se pueden cambiar,
+  // pero el caso normal es "pego la key y guardo".
+  const [byo, setByo] = useState({ motor: 'deepseek',
+    modelo: (BYO_MOTORES.deepseek || {}).modelo || 'deepseek-flash',
+    base_url: (BYO_MOTORES.deepseek || {}).base_url || 'https://api.deepseek.com',
+    api_key: '', max_tokens: 120, timeout: 60, tiene_key: false })
   const [byoMsg, setByoMsg] = useState('')
 
   const leerByo = async () => {
@@ -2141,7 +2145,9 @@ function App({ ctx }) {
       const r = await filesApi.readText('data', 'byo-ai.json')
       if (r && r.ok && r.text) {
         const d = JSON.parse(r.text) || {}
-        setByo({ motor: d.motor || 'deepseek', modelo: d.modelo || '', base_url: d.base_url || '',
+        const mm = d.motor || 'deepseek'
+        const def = BYO_MOTORES[mm] || BYO_MOTORES.deepseek
+        setByo({ motor: mm, modelo: d.modelo || def.modelo || '', base_url: d.base_url || def.base_url || '',
           api_key: '', max_tokens: d.max_tokens || 120, timeout: d.timeout || 60,
           tiene_key: Boolean(d.api_key), guardada: d.api_key ? String(d.api_key).slice(-4) : '' })
         setByoMsg(d.api_key ? t('byoTest', { m: d.motor || '—', mo: d.modelo || '—' }) : t('byoNone'))
