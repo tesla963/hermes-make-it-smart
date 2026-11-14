@@ -117,6 +117,25 @@ def main() -> int:
                 f.write_text(json.dumps(d, ensure_ascii=False, indent=1), encoding="utf-8")
                 print("     escrito")
 
+    # Tercera dirección: filas del índice cuya sesión ya no existe en la base. Si se borró una
+    # sesión (o era un descartable de prueba), el índice no puede seguir contándola.
+    podadas = 0
+    for base in (DATA, ESPEJO):
+        f = base / "index.json"
+        if not f.exists():
+            continue
+        d = json.loads(f.read_text(encoding="utf-8"))
+        antes = d.get("sessions") or []
+        vivas = [s for s in antes if str(s.get("id")) in vivos]
+        if len(vivas) != len(antes):
+            podadas += len(antes) - len(vivas)
+            d["sessions"] = vivas
+            d["total"] = len(vivas)
+            print(f"  {str(f)[-42:]}: -{len(antes)-len(vivas)} fila(s) huérfanas del índice")
+            if args.apply:
+                (base / f"index-backup-{time.strftime('%Y%m%d_%H%M')}.json").write_bytes(f.read_bytes())
+                f.write_text(json.dumps(d, ensure_ascii=False, indent=1), encoding="utf-8")
+
     if informe:
         print("\n  ejemplos (índice → base):")
         for n, antes, ahora in informe:
