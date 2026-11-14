@@ -7,6 +7,15 @@ browsable, faceted catalog — and gives every session a name that actually mean
 
 ---
 
+
+### Bring your own AI
+
+The plugin's housekeeping can run on its own engine with its own key, separate from the agent:
+tab **5 · BYO AI** takes the engine, model, endpoint and key, stores them in the plugin's data
+directory with mode `600`, and never shows the key back. Anything leaving the machine is redacted
+first. With nothing configured the batch refuses to run rather than spending the agent's budget.
+See [docs/FEATURES.md](docs/FEATURES.md#13--bring-your-own-ai--the-plugins-own-engine).
+
 ## The problem
 
 After a few months of daily work, a Hermes install accumulates hundreds of sessions.

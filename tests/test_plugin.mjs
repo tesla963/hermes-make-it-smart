@@ -251,7 +251,7 @@ if (typeof tieneNumero === 'function' && typeof esMaquinaria === 'function') {
 
   // Simulación de carga de catálogo con sesión virgen #975 (sin mc, sin claves, con nueva: true)
   const mockSessions = [
-    { id: 'canon-1', n: 1, raw: '001 [Lisa] 001 Test', mc: 10, claves: ['test'] },
+    { id: 'canon-1', n: 1, raw: '001 [Assistant] 001 Test', mc: 10, claves: ['test'] },
     { id: 'bot-1', n: 958, raw: 'Bot Chat', mc: 0, claves: [] },
     { id: 'sub-1', n: 962, raw: 'Subagent: Traducir al inglés', mc: 0, claves: [] },
     {

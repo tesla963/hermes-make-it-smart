@@ -1,6 +1,6 @@
 # Cómo trabajamos dos agentes en el mismo repositorio
 
-Dos agentes (Lisa y Antigravity) editan el mismo código para el mismo dueño. Sin reglas, uno
+Dos agentes (el asistente y Antigravity) editan el mismo código para el mismo dueño. Sin reglas, uno
 pisa el trabajo del otro y el dueño paga el costo. Estas son las reglas, y son verificables.
 
 ---

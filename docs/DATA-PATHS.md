@@ -11,7 +11,7 @@
 
 | Root | Absolute path (macOS) | Content | Who writes | Who reads |
 |---|---|---|---|---|
-| **Canonical (Tools / Python)** | `~/.hermes/plugin-data/make-it-smart/` | `index.json`, `facets.json`, `pending_index.json`, `data.db`, `corrections.yaml`, `cheat_sheet.personal.yaml`, `backups/`, `exports/` | `tools/cellar_tools.py`, `tools/build_index.py` | Cellar tools, Python classifiers |
+| **Canonical (Tools / Python)** | `~/.hermes/plugin-data/make-it-smart/` | `index.json`, `facets.json`, `pending_index.json`, `data.db`, `corrections.yaml`, `cheat_sheet.personal.yaml`, `backups/`, `exports/`, `byo-ai.json` (mode 600) | `tools/cellar_tools.py`, `tools/build_index.py` | Cellar tools, Python classifiers |
 | **UI mirror (Desktop)** | `~/Library/Application Support/Hermes/plugin-files/data/make-it-smart/` | `index.json`, `facets.json`, `pending_index.json` | Automatic pipeline (`build_index.py`, `cellar_index op=rebuild`) | `desktop/plugin.js` via `ctx.files.readText('data', ...)` |
 | **Plugin code** | `~/.hermes/desktop-plugins/make-it-smart/` | `plugin.js` | Installer / deployment | Hermes Desktop host |
 | **Package (objective Cheat-Sheet)** | `<repo>/core/cheat_sheet.yaml` | Taxonomy, intents, brands, objective platforms | Version control (repo) | `core/cheat_sheet.py`, classifier |

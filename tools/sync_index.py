@@ -71,10 +71,6 @@ def main() -> int:
                     informe.append((s.get("n"), str(s.get("raw"))[:44], vivo[:52]))
                 s["raw"] = vivo
                 locales += 1
-            # el sujeto y los ejes salen del propio título canónico cuando existe
-            if vivo.startswith(tuple("0123456789")):
-                if s.get("sujeto") and str(s.get("sujeto")) not in vivo:
-                    pass  # no se toca: el campo puede ser correcto aunque el título cambie
         cambiados += locales
         print(f"  {str(f)[-42:]}: {locales} título(s) desalineado(s) de {len(sesiones)}")
         if args.apply and locales:

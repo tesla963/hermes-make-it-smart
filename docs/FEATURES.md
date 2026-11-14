@@ -271,3 +271,42 @@ Implementation notes that matter:
 - **Where the user sees it:** the *esta versión* dialog that opens from the version badge now
   carries a «BUSCAR DESDE FUERA DEL PLUGIN» block with the three paths (ES/EN).
 
+## 13 · Bring Your Own AI — the plugin's own engine
+
+Housekeeping is not the conversation. Writing one-line descriptions for 887 sessions should not
+run on the assistant's model, with the assistant's key, on the assistant's budget — and it must
+not leave a single trace in the session database.
+
+Until now the answer was wrong in the cheapest possible way: each description was requested with
+`hermes -z "<prompt>"`. That works, and every call **creates a session**. A hundred and six
+throwaway sessions appeared in the owner's database this way, titled after the prompts they
+carried, and the panel dutifully listed them as work pending a rename. The script reported
+"50 of 50, no failures" while quietly filling the database with garbage.
+
+**BYO AI** is the fix, and it is a feature rather than a workaround:
+
+| Piece | What it does |
+|---|---|
+| `core/byo_ai.py` | Reads engine, model, endpoint and key from the plugin's own data directory and makes the call. Nothing else in the plugin talks to a model. |
+| Tab **5 · BYO AI** | A form: engine, model, base URL, API key, token ceiling. Save writes `byo-ai.json`. |
+| Masked key | The panel never receives the key back. It sees `…3456` and a boolean. |
+| Mode `600` | The file is written with owner-only permissions, atomically. |
+| Redaction at the boundary | Every text that leaves the machine goes through `redact_sensitive_text(..., force=True)`, which masks secrets even when global redaction is off. |
+| 429 is not a failure | The call backs off and retries; a batch stops instead of losing what it already did. |
+| No silent fallback | Unconfigured, the generator **fails** with a message. It never spends the agent's tokens without being told to. |
+
+Engines listed: `deepseek`, `openrouter`, `kimi`, `google`, `openai`, and `custom` — anything
+OpenAI-compatible, which covers Ollama, vLLM, LM Studio and a private proxy.
+
+### Relationship with the official lane
+
+Hermes documents its own way for a plugin to reach a model: `ctx.llm.complete()` routed through
+a task registered with `ctx.register_auxiliary_task()`, with the operator pointing
+`auxiliary.<task>` at a provider and model. In that lane **the host owns the credential and the
+plugin never sees a token** — the safest option, and the one to prefer when the plugin has a
+Python half loaded by Hermes.
+
+BYO AI covers the other case: the plugin is a **Desktop** plugin, its frontend cannot call a
+model, and the owner wants a key that is the plugin's own — a separate budget line, a different
+engine, no change to the agent's configuration. The key lives in the plugin's data directory,
+never in the repository, and never in `.env` next to the agent's credentials.

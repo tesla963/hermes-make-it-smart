@@ -51,3 +51,7 @@ vocab.personal.yaml
 *.personal.yaml
 .plugin-under-test.mjs
 reports/
+# The BYO AI key is the plugin's own secret: never in the repo.
+byo-ai.json
+# Delivery sheet baseline: local bookkeeping, not part of the plugin.
+.delivery-baseline.json

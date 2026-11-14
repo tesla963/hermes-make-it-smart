@@ -181,7 +181,11 @@ def validar_titulo_ensamblado(titulo: str, sujeto: str, desc: str, categoria: st
             return False, "redundant-description-not-amplified"
 
     # 6. Fuga del nombre del asistente del dueño en sesiones ajenas
-    if "lisa" in titulo.lower() and sujeto.lower() != "lisa":
+    # El nombre del asistente no se escribe en el código: es un dato del dueño. Si está en el
+    # entorno se usa para la regla; si no, la regla se salta sin ruido.
+    import os as _os
+    _nombre = (_os.environ.get("MMS_ASSISTANT_NAME") or "").strip().lower()
+    if _nombre and _nombre in titulo.lower() and sujeto.lower() != _nombre:
         return False, "assistant-name-leaked"
 
     # 7. Sujeto no debe repetir iq1

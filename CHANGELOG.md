@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.29.0 — 13-nov-2026 · the plugin brings its own AI
+
+Housekeeping no longer borrows the assistant's model. The panel gains a fifth tab, **5 · BYO AI**,
+where the owner enters engine, model, endpoint and key; the key is stored in the plugin's data
+directory with mode `600`, masked in the UI, and every text that leaves the machine is redacted
+first.
+
+This replaces `hermes -z` for descriptions. That call created a session per invocation: 106
+throwaway sessions landed in the owner's database, were listed by Process as work pending a
+rename, and the batch reported success the whole time. Descriptions now go straight to the
+configured engine, and an unconfigured batch refuses to run instead of spending the agent's
+tokens.
+
+- `core/byo_ai.py` — engine resolution, masked config, redaction, 429 backoff, hard failure when
+  unconfigured.
+- Tab **5 · BYO AI** with save and a probe command (`python3 core/byo_ai.py probar`).
+- `tools/batch_describe.py` refuses to run without configuration.
+- Tabs are numbered 1-4 (plus 5) in the label itself.
+
 ## 0.28.0 — 13-nov-2026 · two doors into the catalogue (⌘K and ⌘⌥S)
 
 Searching the catalogue no longer requires walking the sidebar. The plugin now contributes both

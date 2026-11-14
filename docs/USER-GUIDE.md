@@ -319,3 +319,32 @@ processed; a journaled id is skipped forever. To reprocess one on purpose, remov
 that do not parse, subjects longer than three words or starting with a verb, subjects repeated
 in another field, descriptions that repeat the name, and anything containing a blocked term.
 Rejected proposals are reported with their reason instead of being applied.
+
+## Bring Your Own AI (tab 5)
+
+The plugin's housekeeping — the one-line descriptions — can run on its own engine and its own
+key, separate from Hermes Agent.
+
+1. Open the panel and go to **5 · BYO AI**.
+2. Pick the engine (`deepseek`, `openrouter`, `kimi`, `google`, `openai`, `custom`).
+   Model and base URL fill themselves; with `custom` you type them.
+3. Paste the API key and save. The field shows `…3456` afterwards: the panel never gets the key
+   back.
+4. Verify from a terminal:
+
+```bash
+python3 core/byo_ai.py estado      # engine, model and whether a key is set (masked)
+python3 core/byo_ai.py probar      # one minimal call; prints ok or the exact error
+```
+
+Then the batch runs without touching the agent and without creating a session:
+
+```bash
+python3 tools/batch_describe.py --limit 50
+```
+
+**Without configuration the batch refuses to run.** It does not fall back to the agent's model:
+spending someone else's budget silently is worse than not writing the description.
+
+The key is stored in `~/.hermes/plugin-data/make-it-smart/byo-ai.json`, mode `600`, never in the
+repository and never in `~/.hermes/.env`.
