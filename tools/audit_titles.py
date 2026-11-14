@@ -377,28 +377,14 @@ def auditar_sesion(s: dict, ren: set[str], journal_ids: set[str], live_title: st
     }
 
     # --- 5. DESCRIPCIÓN ---
-    desc_verd = "ok"
-    desc_regla = "none"
-    desc_evid = "Amplifica el objetivo correctamente."
-    desc_doc = True
-
-    s_words = set(re.findall(r"[a-záéíóúñ]{3,}", sujeto.lower()))
-    d_words = set(re.findall(r"[a-záéíóúñ]{3,}", desc.lower()))
-    if s_words and d_words:
-        overlap = len(s_words & d_words) / len(d_words)
-        if overlap >= 0.6:
-            desc_verd = "ajustar"
-            desc_regla = "redundant-description"
-            desc_evid = f"La descripción repite el {int(overlap*100)}% de los términos del sujeto."
-            reglas.append(desc_regla)
-            es_correccion = True
-
+    # La descripción la escribe el modelo leyendo el post inicial (manejado por el script renombrador).
+    # En las propuestas de auditoría se deja vacía con desc_pendiente = True.
     audit_fields["descripcion"] = {
-        "valor": desc,
-        "veredicto": desc_verd,
-        "regla": desc_regla,
-        "evidencia": desc_evid,
-        "documented": desc_doc,
+        "valor": "",
+        "veredicto": "ok",
+        "regla": "none",
+        "evidencia": "Descripción delegada al modelo leyendo el post inicial (desc_pendiente).",
+        "documented": True,
     }
 
     # --- 6. ENSAMBLADO Y VALIDACIÓN ESTRICTA ---
@@ -408,7 +394,8 @@ def auditar_sesion(s: dict, ren: set[str], journal_ids: set[str], live_title: st
         "iq1": cambios.get("iq1", iq1),
         "iq2": iq2,
         "iq3": cambios.get("iq3", act_iq3),
-        "desc": desc,
+        "desc": "",
+        "desc_pendiente": True,
     }
     nuevo_titulo = canon_title(campos_finales)
 
@@ -456,6 +443,7 @@ def auditar_sesion(s: dict, ren: set[str], journal_ids: set[str], live_title: st
         "already_processed": already_processed,
         "veredicto": veredicto,
         "rules": reglas,
+        "desc_pendiente": True,
         "fields": campos_finales,
         "audit": audit_fields,
     }
