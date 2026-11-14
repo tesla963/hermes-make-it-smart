@@ -136,12 +136,16 @@ def descripcion_llm(ident: str, sujeto: str, max_reintentos: int = 1) -> tuple[s
         "que no podés es copiar el título.\n\nPedido:\n{primero}\n\n"
         "Respondé solo la frase."
     ).format(primero=primero)
+    from core.byo_ai import completar  # noqa: PLC0415
     for _ in range(max_reintentos + 1):
         try:
-            r = subprocess.run(["hermes", "-z", instruccion], capture_output=True, text=True, timeout=120)
-        except subprocess.TimeoutExpired:
+            frase = " ".join((completar(instruccion) or "").strip().split())
+        except Exception:
+            # Sin BYO AI configurado no hay descripción: se informa y se deja el campo vacío.
+            # Prohibido caer a `hermes -z`: cada llamada de esas crea una sesión en la base.
+            return "", "sin-byo-ai"
+        if not frase:
             continue
-        frase = " ".join((r.stdout or "").strip().split())
         frase = frase.strip('"\'`*· ')
         palabras = frase.split()
         if not frase:

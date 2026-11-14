@@ -45,7 +45,14 @@ def main() -> int:
     ap.add_argument("--pausa", type=float, default=1.0, help="segundos entre llamadas")
     args = ap.parse_args()
 
+    from core.byo_ai import configurado, enmascarar, _leer  # noqa: PLC0415
     from tools.rename_sessions import descripcion_llm  # noqa: PLC0415
+
+    if not configurado():
+        print("  BYO AI sin configurar: abrí la pestaña 5 · BYO AI en el panel y cargá motor, "
+              "modelo, base URL y API key.")
+        print("  Sin eso no se generan descripciones: no se usa el motor del agente en silencio.")
+        return 3
 
     from tools.scope import es_maquinaria, tiene_numero  # noqa: PLC0415
     idx = json.loads((DATA / "index.json").read_text(encoding="utf-8"))["sessions"]

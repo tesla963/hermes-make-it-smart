@@ -920,6 +920,24 @@ const I18N = {
     procAll: 'Procesar toda la base ({n})',
     procAllTitle: 'Reescribir el título de todas las sesiones con la forma canónica: respalda, aplica y reporta qué quedó igual',
     tabIq: '4 · Plugin IQ',
+    tabByo: '5 · BYO AI',
+    tabByoTitle: 'Motor de IA propio para el housekeeping del plugin (clave separada del agente)',
+    byoIntro: 'El housekeeping del plugin (descripciones de sesiones) puede usar su propio motor y su propia clave, separada de la de Hermes Agent. Así el gasto no se mezcla y podés cambiar de motor sin tocar el agente.',
+    byoMotor: 'Motor',
+    byoModelo: 'Modelo',
+    byoBase: 'Base URL',
+    byoKey: 'API key',
+    byoKeyHint: 'Se guarda en ~/.hermes/plugin-data/make-it-smart/byo-ai.json con permisos 600. El panel nunca la muestra completa.',
+    byoMax: 'Máx. tokens',
+    byoProbar: 'Probar conexión',
+    byoGuardar: 'Guardar',
+    byoSaved: 'Guardado: {m} · {k}',
+    byoProbe: 'Probando…',
+    byoOk: 'Conexión OK · respuesta {r}',
+    byoFail: 'Falló: {e}',
+    byoMissing: 'Faltan datos: motor, modelo, base URL y API key',
+    byoTest: 'El housekeeping usará este motor: {m} / {mo}',
+    byoNone: 'Sin configurar. El housekeeping no corre hasta que cargues el motor y la clave.',
     tabIqTitle: 'Las reglas del algoritmo, los scripts y los documentos del plugin',
     iqRules: 'Reglas', iqScripts: 'Scripts', iqDocs: 'Documentos',
     iqNoData: 'Generá el inventario con: python3 tools/plugin_iq.py',
@@ -1122,6 +1140,24 @@ const I18N = {
     procAll: 'Process the whole database ({n})',
     procAllTitle: 'Rewrite every session title in canonical form: backs up, applies and reports what came out the same',
     tabIq: '4 · Plugin IQ',
+    tabByo: '5 · BYO AI',
+    tabByoTitle: 'Motor de IA propio para el housekeeping del plugin (clave separada del agente)',
+    byoIntro: 'El housekeeping del plugin (descripciones de sesiones) puede usar su propio motor y su propia clave, separada de la de Hermes Agent. Así el gasto no se mezcla y podés cambiar de motor sin tocar el agente.',
+    byoMotor: 'Motor',
+    byoModelo: 'Modelo',
+    byoBase: 'Base URL',
+    byoKey: 'API key',
+    byoKeyHint: 'Se guarda en ~/.hermes/plugin-data/make-it-smart/byo-ai.json con permisos 600. El panel nunca la muestra completa.',
+    byoMax: 'Máx. tokens',
+    byoProbar: 'Probar conexión',
+    byoGuardar: 'Guardar',
+    byoSaved: 'Guardado: {m} · {k}',
+    byoProbe: 'Probando…',
+    byoOk: 'Conexión OK · respuesta {r}',
+    byoFail: 'Falló: {e}',
+    byoMissing: 'Faltan datos: motor, modelo, base URL y API key',
+    byoTest: 'El housekeeping usará este motor: {m} / {mo}',
+    byoNone: 'Sin configurar. El housekeeping no corre hasta que cargues el motor y la clave.',
     tabIqTitle: 'The algorithm rules, the scripts and the documents of this plugin',
     iqRules: 'Rules', iqScripts: 'Scripts', iqDocs: 'Documents',
     iqNoData: 'Build the inventory with: python3 tools/plugin_iq.py',
@@ -1203,6 +1239,10 @@ position:relative;display:flex;flex-direction:column;width:100%;height:100%;min-
 .mmws .headtab.tabprocess{--accent:var(--gold)}
 .mmws .headtab.newruletab{--accent:#8b5cf6}
 .mmws .headtab.iqtab{--accent:#3fa8a0}
+.mmws .headtab.byotab{--accent:#e0609a}
+.mmws .byoform{display:grid;grid-template-columns:repeat(2,minmax(220px,1fr));gap:10px 18px;max-width:760px;margin-top:10px}
+.mmws .byoform label{display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:.04em}
+.mmws .byoform input,.mmws .byoform select{background:#15121a;border:1px solid var(--border);border-radius:6px;color:var(--tx);padding:6px 8px;font-size:12px;font-family:inherit}
 /* Inactiva: atenuada pero completa, con su color de identidad en los laterales. */
 .mmws .headtab:not(.on){color:var(--tx3);opacity:.7}
 .mmws .headtab:not(.on)::before,.mmws .headtab:not(.on)::after{opacity:.3}
@@ -1972,6 +2012,40 @@ function App({ ctx }) {
   const [canRevert, setCanRevert] = useState(false)
   const [isCommitting, setIsCommitting] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [byo, setByo] = useState({ motor: 'deepseek', modelo: '', base_url: '', api_key: '',
+    max_tokens: 120, timeout: 60, tiene_key: false })
+  const [byoMsg, setByoMsg] = useState('')
+
+  const leerByo = async () => {
+    const filesApi = (ctx && ctx.files) || (host && host.files)
+    try {
+      const r = await filesApi.readText('data', 'byo-ai.json')
+      if (r && r.ok && r.text) {
+        const d = JSON.parse(r.text) || {}
+        setByo({ motor: d.motor || 'deepseek', modelo: d.modelo || '', base_url: d.base_url || '',
+          api_key: '', max_tokens: d.max_tokens || 120, timeout: d.timeout || 60,
+          tiene_key: Boolean(d.api_key), guardada: d.api_key ? String(d.api_key).slice(-4) : '' })
+        setByoMsg(d.api_key ? t('byoTest', { m: d.motor || '—', mo: d.modelo || '—' }) : t('byoNone'))
+      } else {
+        setByoMsg(t('byoNone'))
+      }
+    } catch (_) { setByoMsg(t('byoNone')) }
+  }
+
+  const guardarByo = async () => {
+    const filesApi = (ctx && ctx.files) || (host && host.files)
+    if (!byo.motor || !byo.modelo || !byo.base_url || (!byo.api_key && !byo.tiene_key)) {
+      setByoMsg(t('byoMissing')); return
+    }
+    const actual = JSON.parse((await filesApi.readText('data', 'byo-ai.json').catch(() => ({})))?.text || '{}')
+    const payload = { motor: byo.motor, modelo: byo.modelo, base_url: byo.base_url,
+      api_key: byo.api_key || actual.api_key || '', max_tokens: byo.max_tokens, timeout: byo.timeout }
+    try {
+      await filesApi.writeText('data', 'byo-ai.json', JSON.stringify(payload, null, 1))
+      setByoMsg(t('byoSaved', { m: payload.motor, k: payload.api_key ? 'key ✓' : 'sin key' }))
+      await leerByo()
+    } catch (e) { setByoMsg(t('byoFail', { e: String((e && e.message) || e) })) }
+  }
   const [isReverting, setIsReverting] = useState(false)
   const [staleNotice, setStaleNotice] = useState('')
   const [esqViejo, setEsqViejo] = useState(false)
@@ -3147,6 +3221,10 @@ function App({ ctx }) {
     setShowCron(false)
     setShowBots(false)
     setActiveTab(tab)
+    if (tab === 'byo') {
+      await leerByo()
+      return
+    }
     if (tab === 'tabiq') {
       await leerPluginIQ()
       return
@@ -4064,6 +4142,16 @@ function App({ ctx }) {
               title: t('tabIqTitle'),
             },
             t('tabIq')
+          ),
+          h(
+            'button',
+            {
+              role: 'tab',
+              className: 'headtab byotab' + (activeTab === 'byo' ? ' on' : ''),
+              onClick: () => switchTab('byo'),
+              title: t('tabByoTitle'),
+            },
+            t('tabByo')
           )
         ),
         h(
@@ -4276,7 +4364,7 @@ function App({ ctx }) {
 
     h(
       'div',
-      { className: 'bodywrap' + (activeTab === 'testing' || activeTab === 'newrules' || activeTab === 'tabiq' ? ' nofilters' : '') + (activeTab === 'tabiq' ? ' iqmode' : '') },
+      { className: 'bodywrap' + (activeTab === 'testing' || activeTab === 'newrules' || activeTab === 'tabiq' || activeTab === 'byo' ? ' nofilters' : '') + (activeTab === 'tabiq' ? ' iqmode' : '') },
 
       /* Left Filters Aside */
       h(
@@ -4498,6 +4586,41 @@ function App({ ctx }) {
           h('p', { className: 'hint' }, t('hintUnica'))
         )
       ),
+
+      /* BYO AI: el motor propio del plugin, con su propia clave */
+      activeTab === 'byo'
+        ? h(
+            'div',
+            { className: 'iqpanel' },
+            h('div', { className: 'iqhead' }, h('b', null, t('tabByo'))),
+            h('p', { className: 'hint', style: { maxWidth: '760px' } }, t('byoIntro')),
+            h('div', { className: 'byoform' },
+              h('label', null, t('byoMotor'),
+                h('select', {
+                  id: 'byoMotor', value: byo.motor,
+                  onChange: (e) => setByo((p) => ({ ...p, motor: e.target.value })),
+                }, ['deepseek', 'openrouter', 'kimi', 'google', 'openai', 'custom'].map((m) =>
+                  h('option', { key: m, value: m }, m)))),
+              h('label', null, t('byoModelo'),
+                h('input', { id: 'byoModelo', value: byo.modelo, placeholder: 'deepseek-chat',
+                  onChange: (e) => setByo((p) => ({ ...p, modelo: e.target.value })) })),
+              h('label', null, t('byoBase'),
+                h('input', { id: 'byoBase', value: byo.base_url, placeholder: 'https://api.deepseek.com/v1',
+                  onChange: (e) => setByo((p) => ({ ...p, base_url: e.target.value })) })),
+              h('label', null, t('byoKey'),
+                h('input', { id: 'byoKey', type: 'password', value: byo.api_key,
+                  placeholder: byo.tiene_key ? `guardada …${byo.guardada || ''}` : 'sk-…',
+                  onChange: (e) => setByo((p) => ({ ...p, api_key: e.target.value })) })),
+              h('label', null, t('byoMax'),
+                h('input', { id: 'byoMax', type: 'number', value: byo.max_tokens,
+                  onChange: (e) => setByo((p) => ({ ...p, max_tokens: Number(e.target.value) || 120 })) })),
+              h('div', { className: 'row' },
+                h('button', { id: 'btnByoSave', className: 'openbtn', onClick: guardarByo }, t('byoGuardar'))),
+              h('p', { className: 'hint' }, t('byoKeyHint')),
+              byoMsg ? h('p', { className: 'hint', id: 'byoMsg', style: { whiteSpace: 'pre-line' } }, byoMsg) : null
+            )
+          )
+        : null,
 
       /* Plugin IQ: the inventory of the plugin, with one sub-tab per document */
       activeTab === 'tabiq'
