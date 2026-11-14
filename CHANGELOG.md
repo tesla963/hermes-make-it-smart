@@ -1,5 +1,37 @@
 # Changelog
 
+## 0.28.0 — 13-nov-2026 · two doors into the catalogue (⌘K and ⌘⌥S)
+
+Searching the catalogue no longer requires walking the sidebar. The plugin now contributes both
+entry points itself, through documented SDK surfaces — no Hermes core code is patched, so they
+survive app updates.
+
+### Added
+- **⌘K row: *Search in Make It Smart*.** A `palette` contribution that opens `/smart` with the
+  cursor in the search box. It declares `action: 'make-it-smart.searchSelection'`, so the palette
+  paints the live combo as its hint.
+- **⌘⌥S: search the selection.** A `keybinds` contribution (`navigation` category, default
+  `mod+alt+s`, rebindable in Settings) that reads whatever text is selected — focused field first,
+  page selection second — and opens `/smart?q=<encoded>`. With nothing selected it only opens and
+  focuses.
+- **Deep link with a query.** `#/smart?q=CyberPanel` mounts the page already searching;
+  `#/smart?focus=1` opens without one. Works because the router strips the query before routing
+  and the plugin reads it from `window.location.hash`.
+- **The *esta versión* dialog documents the three paths** (ES/EN), so the feature is discoverable
+  from inside the plugin.
+
+### Notes
+- One door for every path: `irABuscarSmart(texto)` picks between `host.navigate()` and an in-place
+  `setQ` (the `aplicarQEnPagina` bridge) when the page is already mounted and the hash would not
+  change.
+- Hermes' own session search box is deliberately untouched. The SDK has no search-provider area
+  and the sidebar does not forward `onKeyDown`, so Enter in that box reaching a plugin would be an
+  upstream core change, not a plugin feature. Documented in `docs/FEATURES.md` §17 and
+  `docs/USER-GUIDE.md`.
+- `tests/test_plugin.mjs` covers the four contributions, the hash parser, the selection reader and
+  both handlers (115 assertions). The SDK stand-in grew `PALETTE_AREA`, `KEYBINDS_AREA` and
+  `host.navigate`.
+
 ## 0.27.4 — 12-nov-2026 · what the code review found, and what it cost us
 
 The migration and restore paths went through an independent code review (Antigravity, now

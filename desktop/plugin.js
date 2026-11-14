@@ -13,14 +13,14 @@
  * `react/jsx-runtime` are imported.
  */
 
-import { host, ROUTES_AREA, SIDEBAR_NAV_AREA } from '@hermes/plugin-sdk'
+import { host, KEYBINDS_AREA, PALETTE_AREA, ROUTES_AREA, SIDEBAR_NAV_AREA } from '@hermes/plugin-sdk'
 import { jsx, jsxs } from 'react/jsx-runtime'
 import { useState, useEffect, useMemo, useRef } from 'react'
 
 const ID = 'make-it-smart'
 const NAME = 'Hermes, Make it Smart!'
 const APP_TITLE = 'Make It Smart'
-const VERSION = '0.27.4'
+const VERSION = '0.28.0'
 const ROUTE = '/smart'
 
 /** jsx-runtime helper: keeps uncompiled React code compact and readable. */
@@ -41,6 +41,73 @@ const norm = (s) =>
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
+
+/* ------------------------------------------------------------------ */
+/* «Buscar en Make It Smart» — atajo, paleta y enlace profundo         */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Consulta que trae la dirección: `#/smart?q=CyberPanel` → 'CyberPanel'.
+ * '' cuando no hay consulta, y también fuera del navegador (tests).
+ */
+function leerConsultaHash() {
+  if (typeof window === 'undefined' || !window.location) return ''
+
+  const hash = String(window.location.hash || '')
+  const cut = hash.indexOf('?')
+
+  if (cut === -1) return ''
+
+  try {
+    return String(new URLSearchParams(hash.slice(cut + 1)).get('q') || '').trim()
+  } catch (e) {
+    return ''
+  }
+}
+
+/** Lo seleccionado ahora: primero en el campo con foco, luego en la página. */
+function textoSeleccionado() {
+  try {
+    const el = typeof document !== 'undefined' ? document.activeElement : null
+
+    if (el && typeof el.selectionStart === 'number' && typeof el.value === 'string') {
+      const trozo = el.value.slice(el.selectionStart, el.selectionEnd)
+
+      if (trozo && trozo.trim()) return trozo.trim()
+    }
+
+    if (typeof window !== 'undefined' && window.getSelection) {
+      return String(window.getSelection() || '').trim()
+    }
+  } catch (e) {
+    /* sin selección legible: la página se abre con el foco en la caja */
+  }
+
+  return ''
+}
+
+// La página (App) deja aquí su setQ: con /smart ya abierto, el atajo aplica en
+// caliente incluso cuando la dirección no cambia y no habría `hashchange`.
+let aplicarQEnPagina = null
+
+/**
+ * Única puerta para atajo, paleta y enlace profundo: abre el catálogo
+ * buscando `texto`. Sin texto, solo abre y pone el foco en la caja.
+ */
+function irABuscarSmart(texto) {
+  const q = String(texto || '').trim()
+  const destino = ROUTE + (q ? '?q=' + encodeURIComponent(q) : '?focus=1')
+  const yaEstamos =
+    typeof window !== 'undefined' && String(window.location.hash || '').indexOf('#' + ROUTE) === 0
+
+  if (yaEstamos && aplicarQEnPagina) {
+    aplicarQEnPagina(q)
+    if (typeof window !== 'undefined') window.location.hash = destino
+    return
+  }
+
+  host.navigate(destino)
+}
 
 const fmtC = (v) =>
   (v || 0) >= 1 ? '$' + Number(v).toFixed(2) : Math.round((v || 0) * 100) + '¢'
@@ -186,12 +253,6 @@ const QUESTION_WORDS = new Set([
 
 const VERBO_INF_RE = /^(compare|comparar|recuperar|restaurar|reparar|arreglar|instalar|install|configurar|configure|setup|investigar|buscar|search|consultar|cotizar|comprar|buy|verificar|check|revisar|eliminar|delete|crear|create|listar|list|explicar|explain|mostrar|show|activar|activate|desactivar|deactivate|migrar|migrate|actualizar|update|corregir|fix|limpiar|clean|resolver|solve|monitorear|monitor|vigilar)\b/i
 
-const VERBOS_COMPUESTOS = [
-  { re: /^(?:instalar\s+y\s+configurar|configurar\s+e\s+instalar)\b/i, verb: 'Instalar' },
-  { re: /^(?:revisar\s+y\s+corregir|corregir\s+y\s+revisar)\b/i, verb: 'Revisar' },
-  { re: /^(?:buscar\s+y\s+comparar|comparar\s+y\s+evaluar)\b/i, verb: 'Comparar' },
-]
-
 const ADJ_ESTADO = new Set([
   'perdida', 'perdidas', 'perdido', 'perdidos', 'gris', 'roto', 'rota',
   'lento', 'lenta', 'viejo', 'vieja', 'nuevo', 'nueva', 'raro', 'rara',
@@ -252,21 +313,11 @@ const derivarCampos = (rawTitle) => {
   }
 
   let verb = ''
-  for (const cv of VERBOS_COMPUESTOS) {
-    const m = t.match(cv.re)
-    if (m) {
-      verb = cv.verb
-      t = t.slice(m[0].length).trim()
-      break
-    }
-  }
-  if (!verb) {
-    const mV = t.match(VERBO_INF_RE)
-    if (mV) {
-      verb = mV[1][0].toUpperCase() + mV[1].slice(1).toLowerCase()
-      if (mV[1].toLowerCase() === 'compare') verb = 'Compare'
-      t = t.slice(mV[0].length).trim()
-    }
+  const mV = t.match(VERBO_INF_RE)
+  if (mV) {
+    verb = mV[1][0].toUpperCase() + mV[1].slice(1).toLowerCase()
+    if (mV[1].toLowerCase() === 'compare') verb = 'Compare'
+    t = t.slice(mV[0].length).trim()
   }
 
   t = t.replace(/^(?:de|del|la|el|los|las|un|una|para|sobre)\s+/i, '').trim()
@@ -275,7 +326,12 @@ const derivarCampos = (rawTitle) => {
   while (words.length && CONNECTORS.has(words[words.length - 1].toLowerCase())) words.pop()
   if (words.length === 0) return null
 
-  const sujeto = words.map((w, idx) => (idx === 0 ? w[0].toUpperCase() + w.slice(1) : capWord(w))).join(' ')
+  const sFirst = words[0][0].toUpperCase() + words[0].slice(1)
+  const remaining = words.slice(1).map((w) => {
+    if (w.slice(1).toLowerCase() !== w.slice(1)) return w
+    return w.toLowerCase()
+  })
+  const sujeto = [sFirst, ...remaining].join(' ')
   if (!isCleanHead(sujeto, 3)) return null
 
   return {
@@ -894,7 +950,7 @@ const I18N = {
       'Tengo {n} sesiones vacías de cron (source=cron sin ningún mensaje). Bórralas y dime qué cron jobs tengo activos para pausarlos o pasarlos a modo no_agent.',
     vIntro:
       'Catálogo navegable de tus sesiones: las indexa de las 12 bases, les pone nombre canónico y las deja filtrar por plataforma, familia y pilar. La ventana del plugin solo pinta — el clasificador es Python puro y no sabe que existe Hermes.',
-    vSub: 'v0.25 · plugin nativo',
+    vSub: 'v0.28 · plugin nativo',
     vVer: 'ESTA VERSIÓN',
     vReg: 'REGLAS QUE APRENDIÓ',
     vCerrar: 'Cerrar',
@@ -908,6 +964,15 @@ const I18N = {
     v7: 'Mostrar/ocultar borradas y sesiones de cron',
     v8: 'Switch ES/EN — no cambia lo que el clasificador entiende',
     v9: 'La serie se unifica: <span class="mono">DNS + Correo</span> son 50 sesiones, no 24 chips',
+    vBuscar: 'BUSCAR DESDE FUERA DEL PLUGIN',
+    vBuscar1:
+      '<b>⌘K</b> → «Buscar en Make It Smart»: abre el catálogo con el cursor puesto en la caja.',
+    vBuscar2:
+      '<b>⌘⌥S</b>: busca el texto que tengas seleccionado, donde sea que esté seleccionado. Se reasigna en Ajustes → Atajos → Navegación.',
+    vBuscar3:
+      'Enlace directo: <span class="mono">#/smart?q=tu texto</span> entra buscando; <span class="mono">#/smart?focus=1</span> solo abre y enfoca.',
+    vBuscarNota:
+      'La caja de búsqueda de Hermes (la de sesiones, en la barra lateral) no se toca: sigue buscando lo suyo.',
     r1: 'Un calificador estrecha, no nombra — el dominio va a la descripción',
     r2: 'La marca y el producto son dos cosas: USPS + Ground Advantage',
     r3: 'El sujeto es el paciente, no quien sostiene la ficha',
@@ -1113,7 +1178,7 @@ const I18N = {
       'I have {n} empty cron sessions (source=cron with no messages). Delete them and tell me which cron jobs are active so I can pause them or move them to no_agent mode.',
     vIntro:
       'A browsable catalogue of your sessions: it indexes them from the 12 databases, gives each a canonical name and lets you filter by platform, family and pillar. The plugin window only paints — the classifier is pure Python and does not know Hermes exists.',
-    vSub: 'v0.25 · native plugin',
+    vSub: 'v0.28 · native plugin',
     vVer: 'THIS VERSION',
     vReg: 'REGLAS QUE APRENDIÓ',
     vCerrar: 'Close',
@@ -1128,6 +1193,14 @@ const I18N = {
     v7: 'Show/hide deleted sessions and cron sessions',
     v8: 'ES/EN switch — it never changes what the classifier understands',
     v9: 'The series unifies: <span class="mono">DNS + Correo</span> is 50 sessions, not 24 chips',
+    vBuscar: 'SEARCHING FROM OUTSIDE THE PLUGIN',
+    vBuscar1: '<b>⌘K</b> → “Search in Make It Smart”: opens the catalogue with the cursor in the box.',
+    vBuscar2:
+      '<b>⌘⌥S</b>: searches whatever text you have selected, wherever it is selected. Rebindable in Settings → Keybinds → Navigation.',
+    vBuscar3:
+      'Direct link: <span class="mono">#/smart?q=your text</span> opens already searching; <span class="mono">#/smart?focus=1</span> only opens and focuses.',
+    vBuscarNota:
+      'Hermes’ own search box (the sessions one, in the sidebar) is untouched: it keeps searching its own thing.',
     r1: 'A qualifier narrows, it does not name — the domain goes in the description',
     r2: 'The brand and the product are two things: USPS + Ground Advantage',
     r3: 'The subject is the patient, not whoever holds the file',
@@ -1972,7 +2045,41 @@ function App({ ctx }) {
   const [pendAttr, setPendAttr] = useState(null)
   const [expandSujetos, setExpandSujetos] = useState(false)
   const [openOrphans, setOpenOrphans] = useState(false)
-  const [q, setQ] = useState('')
+  const [q, setQ] = useState(() => leerConsultaHash())
+
+  // Enlace profundo (`#/smart?q=…`) y atajo con la página ya abierta: la consulta
+  // entra en la caja y el foco queda puesto. `hashchange` cubre la navegación
+  // entre dos búsquedas distintas; el puente `aplicarQEnPagina` cubre la misma.
+  useEffect(() => {
+    aplicarQEnPagina = (v) => setQ(v)
+
+    const enfocar = () => {
+      const caja = typeof document !== 'undefined' ? document.getElementById('q') : null
+      if (caja && typeof caja.focus === 'function') caja.focus()
+    }
+
+    const onHash = () => {
+      const v = leerConsultaHash()
+      if (v) setQ(v)
+      enfocar()
+    }
+
+    if (typeof window !== 'undefined' && window.addEventListener) {
+      window.addEventListener('hashchange', onHash)
+    }
+
+    const dirigido =
+      typeof window !== 'undefined' && String(window.location.hash || '').indexOf('#' + ROUTE + '?') === 0
+    if (dirigido) enfocar()
+
+    return () => {
+      aplicarQEnPagina = null
+      if (typeof window !== 'undefined' && window.removeEventListener) {
+        window.removeEventListener('hashchange', onHash)
+      }
+    }
+  }, [])
+
   const [f, setF] = useState({
     iq1: null,
     iq2: null,
@@ -5152,7 +5259,35 @@ function App({ ctx }) {
                   h('li', { key: k, dangerouslySetInnerHTML: { __html: t(k) } })
                 )
               ),
-              h('div', { className: 'mono', style: { fontSize: '9.5px', letterSpacing: '.1em', color: 'var(--tx3)', marginBottom: '6px' } }, t('vReg')),
+            h(
+              'div',
+              { style: { marginBottom: '12px' } },
+              h(
+                'div',
+                {
+                  className: 'mono',
+                  style: { fontSize: '9.5px', letterSpacing: '.1em', color: 'var(--tx3)', marginBottom: '6px' },
+                },
+                t('vBuscar')
+              ),
+              h(
+                'ul',
+                {
+                  style: {
+                    fontSize: '11.5px',
+                    lineHeight: 1.65,
+                    margin: '0 0 6px',
+                    paddingLeft: '18px',
+                    color: 'var(--tx2)',
+                  },
+                },
+                ['vBuscar1', 'vBuscar2', 'vBuscar3'].map((k) =>
+                  h('li', { key: k, dangerouslySetInnerHTML: { __html: t(k) } })
+                )
+              ),
+              h('p', { className: 'hint', style: { margin: 0, fontSize: '11px' } }, t('vBuscarNota'))
+            ),
+              h('div', { className: 'mono', style: { fontSize: '9.5px', letterSpacing: '.1em', color: 'var(--tx3)', marginBottom: '6px', borderTop: '1px solid var(--line)', paddingTop: '10px' } }, t('vReg')),
               h(
                 'ul',
                 { style: { fontSize: '11.5px', lineHeight: 1.65, margin: 0, paddingLeft: '18px', color: 'var(--tx2)' } },
@@ -5173,7 +5308,7 @@ function App({ ctx }) {
 // Named exports so tests/test_plugin.mjs can exercise the pure helpers without React.
 export { numSel, fmtC, fmtH, fmtN, loadCatalogue, canonicalTitle, jerarquia, isChildRow,
   esEsquemaViejo, migrarEjes, contarEjes, ESQUEMA_ACTUAL, tieneNumero, esMaquinaria,
-  esPendiente, esSujetoInvalido, esDescClonada, derivarCampos
+  esPendiente, esSujetoInvalido, esDescClonada, derivarCampos, leerConsultaHash, textoSeleccionado
 }
 
 export default {
@@ -5188,6 +5323,32 @@ export default {
         id: 'nav',
         area: SIDEBAR_NAV_AREA,
         data: { path: ROUTE, label: 'Make It Smart', codicon: 'archive' },
+      },
+      {
+        // ⌘K → «Buscar en Make It Smart»: abre el catálogo con el foco en la caja.
+        id: 'palette-search',
+        area: PALETTE_AREA,
+        data: {
+          id: 'make-it-smart.search',
+          label: 'Buscar en Make It Smart',
+          keywords: ['smart', 'buscar', 'search', 'sesiones', 'catalogo', 'catalogue'],
+          // Enlaza el atajo: la paleta pinta su combo real como pista.
+          action: 'make-it-smart.searchSelection',
+          run: () => irABuscarSmart(''),
+        },
+      },
+      {
+        // Atajo: busca el texto seleccionado donde sea que esté seleccionado.
+        // `defaults` es solo el punto de partida; el usuario lo reasigna en Ajustes.
+        id: 'keybind-search-selection',
+        area: KEYBINDS_AREA,
+        data: {
+          id: 'make-it-smart.searchSelection',
+          label: 'Buscar la selección en Make It Smart',
+          category: 'navigation',
+          defaults: ['mod+alt+s'],
+          run: () => irABuscarSmart(textoSeleccionado()),
+        },
       },
     ])
   },

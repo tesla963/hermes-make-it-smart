@@ -36,6 +36,21 @@ An agent that forgets the shape of your work is an agent you have to re-brief ev
 5. **Unifies** historical sessions that share a subject, so the `MMM` ordinal tells you
    at a glance that eleven sessions were one continuous piece of work.
 
+## Getting in without the mouse
+
+The catalogue is one **⌘K** away, and it can be fed the text you are already looking at:
+
+| Path | What it does |
+|---|---|
+| **⌘K** → *Search in Make It Smart* | Opens the catalogue with the cursor already in the search box. It shows the live keybind as its hint. |
+| **⌘⌥S** (`mod+alt+s`) | Searches **the selected text**, wherever it is selected — the chat transcript, a report, a mail. With nothing selected it just opens and focuses. Rebindable in *Settings → Keybinds → Navigation*. |
+| `#/smart?q=CyberPanel` | Deep link: the page mounts already searching that term. `#/smart?focus=1` opens without a query. |
+
+Both entry points are plugin-side contributions (`palette` and `keybinds` areas): no Hermes core
+code is patched, so they survive app updates. Hermes' own session search box is deliberately
+**not** touched — it keeps searching sessions; the plugin searches its catalogue (nine axes,
+facet counts, cost and hours).
+
 ## The paper trail
 
 Everything the project produced while the algorithm was being decided — plans,

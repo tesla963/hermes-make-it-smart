@@ -39,6 +39,35 @@ alone**: your backup is the one you know where it is.
 
 ---
 
+## Getting there: the two doors into the catalogue
+
+You do not have to walk the sidebar to search. Since **0.28.0** the catalogue can be opened
+already searching, straight from wherever you are:
+
+| Door | Keys | What happens |
+|---|---|---|
+| The palette | **⌘K** → *Search in Make It Smart* → Enter | The page opens with the cursor already in the search box. The row also shows the keybind hint. |
+| The keybind | **⌘⌥S** (`mod+alt+s`) | Searches **the text you have selected**. Select `mail.amaspro.com` in a report and the catalogue opens filtered by it. With nothing selected, it only opens and focuses. |
+| A deep link | `#/smart?q=CyberPanel` | Same thing from a link, a bookmark or another tool. `#/smart?focus=1` opens without a query. |
+
+**Rebinding.** ⌘⌥S is only a default. *Settings → Keybinds → Navigation* → *Buscar la selección
+en Make It Smart*. Contributed keybinds are first-class: they persist and conflict-check like the
+app's own.
+
+**If the row or the keybind does not appear:** Hermes Desktop scans `desktop-plugins/` **only at
+launch**, so a freshly copied `plugin.js` needs a full quit (⌘Q) and reopen. If it appears but
+does nothing, check that the page path is still `/smart` — the deep link depends on it.
+
+**What this does not do.** It does not change Hermes' own search box (the sessions one in the
+sidebar). That box is core code owned by the host: it filters the session list as you type and
+calls the backend's FTS endpoint. A plugin cannot subscribe to it — there is no `search` area in
+the plugin SDK, and the field's `onKeyDown` is not passed through. Two searches, two purposes:
+
+| You want | Use |
+|---|---|
+| *that session called something about DNS* | Hermes' sidebar box (title/FTS) |
+| *everything about CyberPanel, by facet, with cost and hours* | this plugin, via ⌘K / ⌘⌥S |
+
 ## Step 1 · Look before writing: the dry run
 
 Nothing is written until you ask for it. The panel has a **Testing** tab that shows the

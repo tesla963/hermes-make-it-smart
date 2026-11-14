@@ -244,3 +244,30 @@ The workflow separates pending intake from database-wide rule re-evaluations:
 | **New Rules Tab** | Entire database (all sessions) | Reads `proposed-index.json`. Evaluates all sessions against updated rules. Displays the sweep counter (`N reviewed · X renamed · Y already correct · Z machinery`) and applies proposed changes with automated snapshot backup. |
 | **`tools/propose_rename.py`** | Offline proposal generation & evaluation | Generates `proposed-index.json` without writing to live state. Supports `--teacher` (asserting 100% exact reproduction of reference titles) and `--eval` (measuring agreement % and rule improvements). |
 
+## 17 · Search entry points — the two doors (0.28.0)
+
+The catalogue is reachable without the sidebar, and it accepts the text you are already
+looking at. All three paths are **plugin-side contributions**; no Hermes core code is patched.
+
+| Surface | Contribution | Behaviour |
+|---|---|---|
+| `palette` | id `make-it-smart.search`, label *Buscar en Make It Smart* | Opens `/smart`, focuses the search box. Declares `action: 'make-it-smart.searchSelection'` so the palette renders the live keybind as its hint. |
+| `keybinds` | id `make-it-smart.searchSelection`, category `navigation`, default `mod+alt+s` | Reads the selection (focused field first, page selection second) and opens `/smart?q=<encoded>`. Empty selection → `/smart?focus=1`. |
+| Route query | `#/smart?q=…` / `#/smart?focus=1` | `routePathname()` strips the query before routing, so the page mounts normally and the query is read from `window.location.hash`. |
+
+Implementation notes that matter:
+
+- **One door for all three paths:** `irABuscarSmart(texto)`. It decides between
+  `host.navigate(destino)` (page not mounted) and an in-place `setQ` through the
+  `aplicarQEnPagina` bridge (page already mounted and `host.navigate` to the same hash would
+  fire no `hashchange`).
+- **No `window` assumptions:** `leerConsultaHash()` and `textoSeleccionado()` return `''` outside
+  a browser, which is what keeps `tests/test_plugin.mjs` able to load the module in Node.
+- **Hermes' own search box is out of reach by design.** The `SearchField` accepts `onKeyDown`,
+  but the sidebar does not pass one (the box filters on `onChange` and calls
+  `/api/sessions/search`); the SDK exposes no search-provider area. Making Enter in that box reach
+  a plugin would need a core change (a `search.providers` area plus forwarding `onKeyDown`), i.e.
+  an upstream PR, not a plugin feature.
+- **Where the user sees it:** the *esta versión* dialog that opens from the version badge now
+  carries a «BUSCAR DESDE FUERA DEL PLUGIN» block with the three paths (ES/EN).
+

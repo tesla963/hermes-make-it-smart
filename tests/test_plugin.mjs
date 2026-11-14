@@ -56,9 +56,78 @@ plugin.register({
   files: { readText: async () => ({ ok: false }), writeText: async () => ({ ok: false }) },
   os: {},
 })
-ok(seen.length === 2, `declares 2 entries (got ${seen.length})`)
+ok(seen.length === 4, `declares 4 entries (got ${seen.length})`)
 ok(seen.some((x) => x.render), 'one entry renders a component')
 ok(seen.some((x) => x.data && x.data.path), 'one entry carries a route path')
+
+console.log('\n§ buscar en el plugin (paleta + atajo)')
+const paletteRow = seen.find((x) => x.area === 'palette')
+ok(Boolean(paletteRow), 'offers a palette row (⌘K)')
+ok(paletteRow && /Smart/.test(paletteRow.data.label), 'the palette row names the plugin')
+ok(paletteRow && typeof paletteRow.data.run === 'function', 'the palette row has a handler')
+
+const atajo = seen.find((x) => x.area === 'keybinds')
+ok(Boolean(atajo), 'offers a keybind')
+ok(atajo && atajo.data.defaults && atajo.data.defaults.length === 1, 'the keybind ships a default combo')
+ok(atajo && atajo.data.defaults[0] === 'mod+alt+s', 'the default combo is mod+alt+s')
+ok(atajo && atajo.data.category === 'navigation', 'the keybind sits in the navigation section')
+
+const sdkMock = await import(asUrl(join(here, 'mocks', 'plugin-sdk.js')))
+if (paletteRow) {
+  paletteRow.data.run()
+  ok(sdkMock.host.__navigated === '/smart?focus=1', 'the palette row opens the page with the focus flag')
+}
+if (atajo) {
+  sdkMock.host.__navigated = null
+  atajo.data.run()
+  ok(sdkMock.host.__navigated === '/smart?focus=1', 'the keybind without a selection only opens and focuses')
+}
+
+console.log('\n§ enlace profundo ?q=')
+globalThis.window = {
+  location: { hash: '#/smart?q=CyberPanel%20VPS' },
+  addEventListener() {},
+  removeEventListener() {},
+  getSelection: () => '',
+}
+if (typeof mod.leerConsultaHash === 'function') {
+  ok(mod.leerConsultaHash() === 'CyberPanel VPS', 'lee la consulta de la dirección')
+  globalThis.window.location.hash = '#/smart?focus=1'
+  ok(mod.leerConsultaHash() === '', 'focus=1 no trae consulta')
+  globalThis.window.location.hash = '#/smart'
+  ok(mod.leerConsultaHash() === '', 'sin consulta no hay búsqueda')
+  globalThis.window.location.hash = '#/smart?q=%20%20'
+  ok(mod.leerConsultaHash() === '', 'espacios en blanco no cuentan como consulta')
+} else ok(false, 'leerConsultaHash se exporta')
+
+if (typeof mod.textoSeleccionado === 'function') {
+  globalThis.window.getSelection = () => '  Kiteworks  '
+  ok(mod.textoSeleccionado() === 'Kiteworks', 'toma la selección de la página y la recorta')
+  globalThis.window.getSelection = () => ''
+  ok(mod.textoSeleccionado() === '', 'sin selección devuelve cadena vacía')
+} else ok(false, 'textoSeleccionado se exporta')
+
+delete globalThis.window
+if (typeof mod.leerConsultaHash === 'function') {
+  ok(mod.leerConsultaHash() === '', 'fuera del navegador devuelve vacío (no rompe los tests)')
+}
+
+// El atajo con selección real debe llevar el texto a la dirección.
+globalThis.window = {
+  location: { hash: '#/smart' },
+  addEventListener() {},
+  removeEventListener() {},
+  getSelection: () => 'Avata 360',
+}
+if (atajo) {
+  sdkMock.host.__navigated = null
+  atajo.data.run()
+  ok(
+    sdkMock.host.__navigated === '/smart?q=Avata%20360',
+    `el atajo codifica la selección (${sdkMock.host.__navigated})`
+  )
+}
+delete globalThis.window
 
 console.log('\n§ primer render')
 const { renderToStaticMarkup } = await import(asUrl(join(HERMES, 'react-dom', 'server.js')))
@@ -326,17 +395,19 @@ if (
   ok(d975Bad && d975Bad.context === 'Fedora', 'deriva contexto Fedora desde título malo')
   ok(d975Bad && d975Bad.verb === 'Compare', 'deriva verbo Compare desde título malo')
 
-  // 2. Frases verbales típicas
+  // 2. Frases verbales típicas y guarda nominal
   const dBrave = derivarCampos('Recuperar ventas y pestañas perdidas en Brave')
-  ok(dBrave && dBrave.sujeto === 'Ventas y Pestañas', 'deriva sujeto nominal (Ventas y Pestañas)')
+  ok(dBrave && dBrave.sujeto === 'Ventas y pestañas', 'deriva sujeto nominal (Ventas y pestañas)')
   ok(dBrave && dBrave.context === 'Brave', 'deriva contexto Brave')
   ok(dBrave && dBrave.verb === 'Recuperar', 'deriva verbo Recuperar')
 
+  // Caso 3 solicitado por el dueño: "Instalar y configurar Antigravity"
+  // Al quitar el verbo "Instalar", el remanente "y configurar Antigravity" contiene otro verbo
+  // y conector colgante: NO es sintagma nominal limpio -> guardia activa, NO emite título.
   const dAnti = derivarCampos('Instalar y configurar Antigravity')
-  ok(dAnti && dAnti.sujeto === 'Antigravity', 'deriva sujeto Antigravity')
-  ok(dAnti && dAnti.verb === 'Instalar', 'deriva verbo Instalar para verbo compuesto')
+  ok(dAnti === null, 'guardia rechaza "Instalar y configurar Antigravity" al no quedar sintagma nominal limpio')
 
-  // 3. Guardia: si después de quitar el verbo no queda un sintagma nominal de 1-3 palabras, null
+  // 3. Guardia en frases largas o cláusulas verbales
   const dMonster = derivarCampos('Investigar por qué el servidor de producción se cayó tres veces anoche')
   ok(dMonster === null, 'guardia rechaza frase verbal larga que no es sintagma nominal limpio')
 
@@ -356,11 +427,11 @@ if (
 
   // Caso Brave
   const tBrave = canonicalTitle({ n: 50, mmm: 1, raw: 'Recuperar ventas y pestañas perdidas en Brave' })
-  ok(tBrave === '050 [Ventas y Pestañas] 001 [Brave] · Recuperar', `frase Brave genera: ${tBrave}`)
+  ok(tBrave === '050 [Ventas y pestañas] 001 [Brave] · Recuperar', `frase Brave genera: ${tBrave}`)
 
-  // Caso Antigravity
+  // Caso Antigravity: guardia en canonicalTitle devuelve d.raw sin emitir título canónico
   const tAnti = canonicalTitle({ n: 10, mmm: 1, raw: 'Instalar y configurar Antigravity' })
-  ok(tAnti === '010 [Antigravity] 001 · Instalar', `caso Antigravity genera: ${tAnti}`)
+  ok(tAnti === 'Instalar y configurar Antigravity', `caso Antigravity NO emite título canónico y devuelve raw: ${tAnti}`)
 
   // Guardia en canonicalTitle: devuelve d.raw si no se puede derivar sujeto limpio
   const tMonster = canonicalTitle({ n: 99, mmm: 1, raw: 'Investigar por qué el servidor de producción se cayó tres veces anoche' })
