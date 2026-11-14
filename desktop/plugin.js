@@ -1965,7 +1965,9 @@ async function loadCatalogue(ctx) {
       vacia: Boolean(
         idx.vacia != null
           ? idx.vacia
-          : idx.nueva || (!tieneNumero(rawTitle) && !esMaquinaria({ raw: rawTitle, id, prof, esCron: idx.esCron, esBot: idx.esBot }))
+          // Ojo: NO se usa ninguna bandera de "fila nueva". Una sesión con título real y sin
+          // número no está vacía: está sin renombrar, y Process tiene que verla.
+          : (!tieneNumero(rawTitle) && !esMaquinaria({ raw: rawTitle, id, prof, esCron: idx.esCron, esBot: idx.esBot }))
             ? false
             : !rawTitle || /^\s*(\[?sesi[oó]n vac[ií]a\]?|sin t[ií]tulo)\s*$/i.test(rawTitle)
               ? mc <= 0 && (!claves || claves.length === 0)

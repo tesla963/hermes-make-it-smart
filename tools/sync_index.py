@@ -97,7 +97,7 @@ def main() -> int:
             nuevas.append({
                 "id": sid, "n": siguiente, "mmm": 1, "prof": "default",
                 "raw": titulo, "date": "", "sujeto": "", "iq0": "", "iq1": "",
-                "iq2": "", "iq3": "", "desc": "", "verb": "", "nueva": True,
+                "iq2": "", "iq3": "", "desc": "", "verb": "", "added_from_db": True,
             })
             siguiente += 1
         if nuevas:
