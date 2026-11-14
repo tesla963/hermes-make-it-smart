@@ -35,8 +35,8 @@ RUTA = HOME / ".hermes/plugin-data/make-it-smart/byo-ai.json"
 # Motores conocidos: base_url y modelo por defecto. `custom` acepta cualquier endpoint
 # compatible con OpenAI (Ollama, vLLM, LM Studio, un proxy propio).
 MOTORES = {
-    "deepseek": {"base_url": "https://api.deepseek.com/v1", "modelo": "deepseek-chat"},
-    "openrouter": {"base_url": "https://openrouter.ai/api/v1", "modelo": "deepseek/deepseek-chat"},
+    "deepseek": {"base_url": "https://api.deepseek.com", "modelo": "deepseek-flash"},
+    "openrouter": {"base_url": "https://openrouter.ai/api/v1", "modelo": "deepseek/deepseek-v4-flash"},
     "kimi": {"base_url": "https://api.moonshot.ai/v1", "modelo": "kimi-k2-0905-preview"},
     "google": {"base_url": "https://generativelanguage.googleapis.com/v1beta/openai",
                "modelo": "gemini-2.5-flash"},
@@ -180,5 +180,19 @@ if __name__ == "__main__":
         print(json.dumps(enmascarar(_leer()), ensure_ascii=False, indent=1))
     elif len(sys.argv) > 1 and sys.argv[1] == "probar":
         print(probar())
+    elif len(sys.argv) > 1 and sys.argv[1] == "modelos":
+        c = _leer()
+        if not c.get("api_key"):
+            print("  falta la api_key: cargala en la pestaña 5 · BYO AI")
+            raise SystemExit(2)
+        req = urllib.request.Request(f"{c['base_url'].rstrip('/')}/models",
+                                     headers={"Authorization": f"Bearer {c['api_key']}"})
+        try:
+            with urllib.request.urlopen(req, timeout=int(c.get("timeout") or 30)) as r:
+                d = json.loads(r.read().decode("utf-8"))
+            for m in d.get("data", []):
+                print("  ", m.get("id"))
+        except Exception as e:  # noqa: BLE001
+            print(f"  error: {e}")
     else:
         print(__doc__)
