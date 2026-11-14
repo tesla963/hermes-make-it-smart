@@ -107,7 +107,7 @@ The full rules live in [`docs/ALGORITHM.md`](docs/ALGORITHM.md).
 
 ## Install
 
-[`docs/GUIA-DE-USO.md`](docs/GUIA-DE-USO.md) — the order that matters: back up,
+[`docs/USER-GUIDE.md`](docs/USER-GUIDE.md) — the order that matters: back up,
 define the topics, feed the cheat sheet, run a dry run, correct,
 apply. The plugin is worth exactly what the names you have taught it are worth.
 
