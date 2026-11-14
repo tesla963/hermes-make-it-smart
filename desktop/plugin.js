@@ -243,7 +243,7 @@ const ACTION_VERBS = new Set([
   'modificar', 'rename', 'use', 'testear', 'buscar', 'comprar', 'cotizar',
   'compare', 'install', 'configure', 'setup', 'fix', 'clean', 'limpiar',
   'solve', 'resolver', 'restaurar', 'restore', 'check', 'migrar', 'migrate',
-  'monitorear', 'monitor', 'vigilar', 'organizar', 'organize'
+  'monitorear', 'vigilar', 'organizar', 'organize'
 ])
 
 const QUESTION_WORDS = new Set([
@@ -251,7 +251,7 @@ const QUESTION_WORDS = new Set([
   'dónde', 'donde', 'cuándo', 'cuando', 'why', 'how', 'what', 'where', 'when', 'who', 'which'
 ])
 
-const VERBO_INF_RE = /^(compare|comparar|recuperar|restaurar|reparar|arreglar|instalar|install|configurar|configure|setup|investigar|buscar|search|consultar|cotizar|comprar|buy|verificar|check|revisar|eliminar|delete|crear|create|listar|list|explicar|explain|mostrar|show|activar|activate|desactivar|deactivate|migrar|migrate|actualizar|update|corregir|fix|limpiar|clean|resolver|solve|monitorear|monitor|vigilar)\b/i
+const VERBO_INF_RE = /^(compare|comparar|recuperar|restaurar|reparar|arreglar|instalar|install|configurar|configure|setup|investigar|buscar|search|consultar|cotizar|comprar|buy|verificar|check|revisar|eliminar|delete|crear|create|listar|list|explicar|explain|mostrar|show|activar|activate|desactivar|deactivate|migrar|migrate|actualizar|update|corregir|fix|limpiar|clean|resolver|solve|monitorear|vigilar)\b/i
 
 const ADJ_ESTADO = new Set([
   'perdida', 'perdidas', 'perdido', 'perdidos', 'gris', 'roto', 'rota',
@@ -1750,7 +1750,7 @@ async function loadCatalogue(ctx) {
     await Promise.all(
       [...profNames].map(async (prof) => {
         try {
-          const rows = await listPersistedFn(null, { profile: prof, limit: 500 })
+          const rows = await listPersistedFn(null, { profile: prof, limit: 2000 })
           if (Array.isArray(rows)) {
             for (const row of rows) {
               if (row && row.id && !liveById.has(row.id)) {
@@ -1965,9 +1965,7 @@ async function loadCatalogue(ctx) {
       vacia: Boolean(
         idx.vacia != null
           ? idx.vacia
-          // Ojo: NO se usa ninguna bandera de "fila nueva". Una sesión con título real y sin
-          // número no está vacía: está sin renombrar, y Process tiene que verla.
-          : (!tieneNumero(rawTitle) && !esMaquinaria({ raw: rawTitle, id, prof, esCron: idx.esCron, esBot: idx.esBot }))
+          : idx.nueva || (!tieneNumero(rawTitle) && !esMaquinaria({ raw: rawTitle, id, prof, esCron: idx.esCron, esBot: idx.esBot }))
             ? false
             : !rawTitle || /^\s*(\[?sesi[oó]n vac[ií]a\]?|sin t[ií]tulo)\s*$/i.test(rawTitle)
               ? mc <= 0 && (!claves || claves.length === 0)
@@ -4101,7 +4099,7 @@ function App({ ctx }) {
           key: d.id + '-t',
           onClick: () => selectSession(d),
         },
-        h('td', { className: 'ncol t' }, isCanon ? d.n : ''),
+        h('td', { className: 'ncol t' }, (isCanon || activeTab === 'testing') ? d.n : ''),
         h(
           'td',
           {
@@ -4127,9 +4125,9 @@ function App({ ctx }) {
         h(
           'td',
           { className: 'tight' },
-          // A row without a canonical title has no subject of its own: the subject and
-          // the ordinal would be inventions of the panel, so they are not printed.
-          isCanon
+          // A row without a canonical title has no subject of its own in the live database,
+          // but in Process (testing) it displays the derived subject so it is not an empty stub.
+          (isCanon || activeTab === 'testing') && d.sujeto
             ? h(
                 'span',
                 {
@@ -4144,8 +4142,8 @@ function App({ ctx }) {
                 d.sujeto
               )
             : null,
-          isCanon ? ' ' : null,
-          isCanon
+          (isCanon || activeTab === 'testing') ? ' ' : null,
+          (isCanon || activeTab === 'testing')
             ? h('span', { className: 'mono', style: { color: 'var(--tx3)' } }, String(d.mmm || 1).padStart(3, '0'))
             : null,
           d.iq1

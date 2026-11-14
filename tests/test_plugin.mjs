@@ -235,7 +235,7 @@ if (typeof esEsquemaViejo === 'function') {
 } else ok(false, 'esEsquemaViejo se exporta')
 
 console.log('\n§ sesiones vírgenes y maquinaria (bug #975)')
-const { tieneNumero, esMaquinaria, loadCatalogue } = mod
+const { tieneNumero, esMaquinaria, loadCatalogue, esPendiente, esSujetoInvalido } = mod
 if (typeof tieneNumero === 'function' && typeof esMaquinaria === 'function') {
   ok(tieneNumero('973 [Layout teclado] 001 [Steren]'), 'tieneNumero reconoce prefijo canónico NNN')
   ok(tieneNumero('024 [DeepSeek] 001'), 'tieneNumero reconoce prefijo con ceros')
@@ -309,6 +309,56 @@ if (typeof tieneNumero === 'function' && typeof esMaquinaria === 'function') {
   const cat2 = await loadCatalogue(mockCtx2)
   const s976 = (cat2.sessions || [])[0]
   ok(s976 && s976.vacia === false, 'sesión con campos en blanco pero título real no es vacia (vacia === false)')
+
+  // Verificación de sesión virgen real (caso local-068a24... 'Verificar saldo de $5 en API de Claude')
+  const mockVirginClaude = [
+    {
+      id: 'local-068a241393b79d89c93c72bc27389db0089e6e616dc90c64d753e8725b367960',
+      n: 1003, mmm: 1, prof: 'default',
+      raw: 'Verificar saldo de $5 en API de Claude',
+      date: '', sujeto: '', iq0: '', iq1: '', iq2: '', iq3: '', desc: '', verb: '',
+      nueva: true,
+    },
+    {
+      id: '20261007_123848_a5c355',
+      n: 657, mmm: 1, prof: 'default',
+      raw: '657 [Monitor Portátil Doble] 001 VisionOwl $332 vs MagicRaven: nits, HDMI, DisplayLink, consumo',
+      sujeto: 'Monitor Portátil Doble',
+      date: '2026-10-07', iq1: '', iq2: '', iq3: 'Compare', desc: 'VisionOwl $332 vs MagicRaven: nits, HDMI, DisplayLink, consumo',
+      verb: '',
+    },
+  ]
+  const mockCtxVirgin = {
+    files: {
+      readText: async (dir, file) => {
+        if (file === 'index.json') return { ok: true, text: JSON.stringify({ sessions: mockVirginClaude }) }
+        return { ok: false }
+      },
+    },
+    host: {
+      listPersistedSessions: async () => [
+        {
+          id: 'local-068a241393b79d89c93c72bc27389db0089e6e616dc90c64d753e8725b367960',
+          title: 'Verificar saldo de $5 en API de Claude',
+          source: 'oneshot',
+          parent_session_id: null,
+          profile_name: 'default',
+          message_count: 16,
+        },
+      ],
+      profiles: { list: async () => [{ name: 'default' }] },
+    },
+  }
+  const catVirgin = await loadCatalogue(mockCtxVirgin)
+  const rowsVirgin = catVirgin.sessions || []
+  const sClaude = rowsVirgin.find((r) => r.id === 'local-068a241393b79d89c93c72bc27389db0089e6e616dc90c64d753e8725b367960')
+  const sMonitor = rowsVirgin.find((r) => r.n === 657)
+
+  ok(Boolean(sClaude), 'sesión virgen local-068a24... presente en el catálogo')
+  ok(sClaude && sClaude.vacia === false, 'sesión virgen con 16 mensajes no está vacía')
+  ok(sClaude && esPendiente(sClaude), 'sesión virgen entra a pendingRows (esPendiente === true)')
+  ok(sMonitor && !esPendiente(sMonitor), 'sesión 657 [Monitor Portátil Doble] NO entra a pendingRows (no es verbo de acción)')
+  ok(sMonitor && !esSujetoInvalido(sMonitor.raw), 'sujeto [Monitor Portátil Doble] es sustantivo válido (no verbo)')
 } else ok(false, 'tieneNumero y esMaquinaria se exportan')
 
 console.log('\n§ ramas del diálogo de confirmación (bug del botón Process)')
@@ -374,7 +424,7 @@ if (dlgMatch) {
 }
 
 console.log('\n§ derivación de campos y títulos canónicos (bug títulos kilométricos #975)')
-const { derivarCampos, canonicalTitle, esSujetoInvalido, esDescClonada, esPendiente } = mod
+const { derivarCampos, canonicalTitle, esDescClonada } = mod
 if (
   typeof derivarCampos === 'function' &&
   typeof canonicalTitle === 'function' &&
