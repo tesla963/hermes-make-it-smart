@@ -1314,9 +1314,9 @@ position:relative;display:flex;flex-direction:column;width:100%;height:100%;min-
 .mmws .mono{font-family:ui-monospace,Menlo,monospace;font-size:12px}
 .mmws header.top{flex:0 0 auto;z-index:40;background:linear-gradient(180deg,#100d12,#0d0b0e);border-bottom:1px solid var(--line);padding:10px 18px}
 .mmws .brandrow{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.mmws .headtabs{display:inline-flex;align-items:flex-end;gap:2px;background:transparent;border:0;border-bottom:1px solid transparent;border-radius:0;padding:0;margin-left:10px}
-.mmws .headtab{position:relative;border:0;border-bottom:2px solid transparent;background:transparent;color:var(--tx3);font-size:11.5px;font-weight:600;padding:7px 16px 6px;border-radius:6px 6px 0 0;cursor:pointer;display:inline-flex;align-items:center;gap:6px;margin-bottom:-1px;white-space:nowrap;opacity:.72;transition:opacity .12s,color .12s,background .12s,border-color .12s}
-.mmws .headtab::before,.mmws .headtab::after{content:'';position:absolute;top:6px;bottom:-1px;width:2px;border-radius:1px;opacity:.3;transition:opacity .12s;background:var(--accent,#8d8399)}
+.mmws .headtabs{display:inline-flex;align-items:flex-end;gap:2px;flex-wrap:nowrap;overflow:visible;max-width:none;background:transparent;border:0;border-bottom:1px solid transparent;border-radius:0;padding:0;margin-left:10px}
+.mmws .headtab{position:relative;border:0;border-bottom:2px solid transparent;background:transparent;color:var(--tx3);font-size:11.5px;font-weight:600;padding:7px 12px 6px;border-radius:6px 6px 0 0;cursor:pointer;display:inline-flex;align-items:center;gap:6px;margin-bottom:-1px;white-space:nowrap;opacity:.72;transition:opacity .12s,color .12s,background .12s,border-color .12s}
+.mmws .headtab::before,.mmws .headtab::after{content:'';position:absolute;top:6px;bottom:-1px;width:2px;border-radius:1px;opacity:.42;transition:opacity .12s;background:var(--accent,#8d8399)}
 .mmws .headtab::before{left:0}
 .mmws .headtab::after{right:0}
 /* La identidad va por NOMBRE de pestaña, nunca por posición: así añadir una no repinta las otras. */
@@ -1324,7 +1324,7 @@ position:relative;display:flex;flex-direction:column;width:100%;height:100%;min-
 .mmws .headtab.tabprocess{--accent:var(--gold)}
 .mmws .headtab.newruletab{--accent:#8b5cf6}
 .mmws .headtab.iqtab{--accent:#3fa8a0}
-.mmws .headtab.byotab{--accent:#e0609a}
+.mmws .headtab.byotab{--accent:#ff6fae}
 /* BYO AI no lista sesiones: la tabla y su cabecera no tienen nada que hacer ahí. */
 .mmws.byomode #tb{display:none}
 .mmws .byoform{display:grid;grid-template-columns:repeat(2,minmax(220px,1fr));gap:10px 18px;max-width:760px;margin-top:10px}
