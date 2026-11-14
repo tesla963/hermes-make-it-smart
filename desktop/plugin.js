@@ -1325,6 +1325,8 @@ position:relative;display:flex;flex-direction:column;width:100%;height:100%;min-
 .mmws .headtab.newruletab{--accent:#8b5cf6}
 .mmws .headtab.iqtab{--accent:#3fa8a0}
 .mmws .headtab.byotab{--accent:#e0609a}
+/* BYO AI no lista sesiones: la tabla y su cabecera no tienen nada que hacer ahí. */
+.mmws.byomode #tb{display:none}
 .mmws .byoform{display:grid;grid-template-columns:repeat(2,minmax(220px,1fr));gap:10px 18px;max-width:760px;margin-top:10px}
 .mmws .byoform label{display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:.04em}
 .mmws .byoform input,.mmws .byoform select{background:#15121a;border:1px solid var(--border);border-radius:6px;color:var(--tx);padding:6px 8px;font-size:12px;font-family:inherit}
@@ -4203,7 +4205,7 @@ function App({ ctx }) {
 
   return h(
     'div',
-    { className: 'mmws' },
+    { className: 'mmws' + (activeTab === 'byo' ? ' byomode' : '') },
     h('style', null, CSS),
 
     /* ---------- Header ---------- */
@@ -4492,7 +4494,7 @@ function App({ ctx }) {
 
     h(
       'div',
-      { className: 'bodywrap' + (activeTab === 'testing' || activeTab === 'newrules' || activeTab === 'tabiq' || activeTab === 'byo' ? ' nofilters' : '') + (activeTab === 'tabiq' ? ' iqmode' : '') },
+      { className: 'bodywrap' + (activeTab === 'testing' || activeTab === 'newrules' || activeTab === 'tabiq' || activeTab === 'byo' ? ' nofilters' : '') + (activeTab === 'tabiq' ? ' iqmode' : '') + (activeTab === 'byo' ? ' byomode' : '') },
 
       /* Left Filters Aside */
       h(
