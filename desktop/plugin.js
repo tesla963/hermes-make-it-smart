@@ -2475,9 +2475,12 @@ function App({ ctx }) {
   // In the Process (testing) tab unrenamed / virgin sessions and sessions with
   // malformed titles (verbal / oversized subject) that can be corrected are listed.
   // Machinery (bots, cron, subagents) is excluded.
+  // Lo que se acaba de renombrar no puede desaparecer sin dejar rastro: se muestra un rato,
+  // marcado, para que el dueño vea qué se hizo. Después se va solo.
+  const [recienCambiadas, setRecienCambiadas] = useState({})
   const pendingRows = useMemo(
-    () => sessions.filter((d) => esPendiente(d)),
-    [sessions]
+    () => sessions.filter((d) => esPendiente(d) || Object.prototype.hasOwnProperty.call(recienCambiadas, d.id)),
+    [sessions, recienCambiadas]
   )
 
   // Machinery (bots, subagents, cron) is never renamed, but the user sees those rows in the
@@ -3595,6 +3598,13 @@ function App({ ctx }) {
     // 3 · reporte: qué quedó igual, qué cambió y con qué respaldo revertir
     const reporte = { ts: new Date().toISOString(), total: elegibles.length, iguales, cambiados, fallos, backup: fname }
     try { await filesApi.writeText('data', 'apply-report.json', JSON.stringify(reporte, null, 2)) } catch (_) {}
+    // Se quedan visibles 60 s con su marca: ver el cambio es parte del resultado.
+    if (updates.size) {
+      const marca = {}
+      for (const [id, titulo] of updates) marca[id] = titulo
+      setRecienCambiadas(marca)
+      setTimeout(() => setRecienCambiadas({}), 60000)
+    }
     setIsCommitting(false)
     setBtnMsg((p) => ({ ...p, commit: `procesadas ${elegibles.length}: ${cambiados} cambiadas · ${iguales} iguales · ${fallos} fallos · respaldo ${fname}` }))
   }
@@ -4109,7 +4119,14 @@ function App({ ctx }) {
           },
           esSub ? h('span', { className: 'tsub', title: t('subSesion') }, '↳ ') : null,
           h('b', { className: 'tfac' }, head),
-          tail ? h('b', { className: 'tdesc' }, ' ' + tail) : null
+          tail ? h('b', { className: 'tdesc' }, ' ' + tail) : null,
+          Object.prototype.hasOwnProperty.call(recienCambiadas, d.id)
+            ? h('span', {
+                className: 'pill iq9',
+                style: { marginLeft: '8px' },
+                title: 'Renombrada en esta corrida: ' + (recienCambiadas[d.id] || ''),
+              }, 'renamed')
+            : null
         )
       ),
       h(
@@ -4426,17 +4443,7 @@ function App({ ctx }) {
             { className: 'actbar' },
             activeTab === 'testing'
               ? [
-                  h(
-                    'button',
-                    {
-                      key: 'updb', className: 'ghost', id: 'btnUpdateDB',
-                      disabled: isCommitting || isReverting || isRefreshing,
-                      title: t('updbTitle'),
-                      onClick: refrescarBase,
-                    },
-                    isRefreshing ? '…' : t('updbBtn')
-                  ),
-                  h(
+                                    h(
                     'button',
                     {
                       key: 'pend', className: 'procbtn', disabled: isCommitting || isReverting || !pendingRows.length,
