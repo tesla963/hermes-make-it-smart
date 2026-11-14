@@ -727,6 +727,18 @@ function withAxes(row) {
   return row
 }
 
+// Valores por defecto por motor: los mismos que core/byo_ai.py. Si el dueño no escribe base URL
+// ni modelo, se completan solos — antes el formulario los dejaba vacíos y el guardado lo trataba
+// como "faltan datos", que era un callejón sin salida.
+const BYO_MOTORES = {
+  deepseek: { base_url: 'https://api.deepseek.com', modelo: 'deepseek-flash' },
+  openrouter: { base_url: 'https://openrouter.ai/api/v1', modelo: 'deepseek/deepseek-v4-flash' },
+  kimi: { base_url: 'https://api.moonshot.ai/v1', modelo: 'kimi-k2-0905-preview' },
+  google: { base_url: 'https://generativelanguage.googleapis.com/v1beta/openai', modelo: 'gemini-2.5-flash' },
+  openai: { base_url: 'https://api.openai.com/v1', modelo: 'gpt-4.1-mini' },
+  custom: { base_url: '', modelo: '' },
+}
+
 function canonicalTitle(d) {
   if (!d) return ''
   if (esIntocable(d)) return d.raw || ''
@@ -2141,11 +2153,14 @@ function App({ ctx }) {
 
   const guardarByo = async () => {
     const filesApi = (ctx && ctx.files) || (host && host.files)
-    if (!byo.motor || !byo.modelo || !byo.base_url || (!byo.api_key && !byo.tiene_key)) {
+    const def = BYO_MOTORES[byo.motor] || { base_url: '', modelo: '' }
+    const modelo = (byo.modelo || def.modelo || '').trim()
+    const baseUrl = (byo.base_url || def.base_url || '').trim()
+    if (!byo.motor || !modelo || !baseUrl || (!byo.api_key && !byo.tiene_key)) {
       setByoMsg(t('byoMissing')); return
     }
     const actual = JSON.parse((await filesApi.readText('data', 'byo-ai.json').catch(() => ({})))?.text || '{}')
-    const payload = { motor: byo.motor, modelo: byo.modelo, base_url: byo.base_url,
+    const payload = { motor: byo.motor, modelo: modelo, base_url: baseUrl,
       api_key: byo.api_key || actual.api_key || '', max_tokens: byo.max_tokens, timeout: byo.timeout }
     try {
       await filesApi.writeText('data', 'byo-ai.json', JSON.stringify(payload, null, 1))
@@ -4705,7 +4720,9 @@ function App({ ctx }) {
               h('label', null, t('byoMotor'),
                 h('select', {
                   id: 'byoMotor', value: byo.motor,
-                  onChange: (e) => setByo((p) => ({ ...p, motor: e.target.value })),
+                  onChange: (e) => setByo((p) => ({ ...p, motor: e.target.value,
+                    base_url: BYO_MOTORES[e.target.value]?.base_url || '',
+                    modelo: BYO_MOTORES[e.target.value]?.modelo || '' })),
                 }, ['deepseek', 'openrouter', 'kimi', 'google', 'openai', 'custom'].map((m) =>
                   h('option', { key: m, value: m }, m)))),
               h('label', null, t('byoModelo'),
