@@ -59,7 +59,7 @@ REJECT = [
     (r"^<user>$", "personal identifier — never vocabulary"),
 ]
 EVENT_HINTS = ("hackaton", "hackathon", "congreso", "feria", "curso", "taller",
-               "conferencia", "summit", "apedé", "apede", "expo")
+               "conferencia", "summit", "expo")
 
 PLACE_HINTS = ("panamá", "panama", "balboa", "cristóbal", "cristobal", "bahréin", "bahrein",
                "colón", "colon", "españa", "espana", "eeuu", "miami", "china", "alemania")

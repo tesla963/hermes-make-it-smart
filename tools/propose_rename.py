@@ -97,8 +97,8 @@ def merge_description(cola: str, desc: str) -> str:
 
 def _marcas_conocidas() -> set[str]:
     """Marcas del cheat sheet en minúsculas: sirven para no poner una marca como sujeto."""
-    import yaml
     try:
+        import yaml
         d = yaml.safe_load((REPO / "core/cheat_sheet.yaml").read_text(encoding="utf-8")) or {}
         return {str(k).lower() for k in list((d.get("marcas") or {})) + list((d.get("programas") or {}))}
     except Exception:

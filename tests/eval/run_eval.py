@@ -89,16 +89,27 @@ def norm(field: str, value: str | None) -> str:
     return " ".join(v.lower().split())
 
 
-def get_key() -> str:
-    auth = Path(os.path.expanduser("~/.hermes/auth.json"))
-    data = json.loads(auth.read_text(encoding="utf-8"))
-    return data["credential_pool"]["deepseek"][0]["access_token"]
+def get_byo_config(model_override: str = "") -> ClassifyConfig:
+    from core.byo_ai import _leer, consentimiento_activo  # noqa: PLC0415
+
+    if not consentimiento_activo():
+        raise SystemExit(
+            "BYO AI no está activo: configurá motor, modelo, base_url, api_key y allow_send_excerpts=true en byo-ai.json"
+        )
+    c = _leer()
+    base = str(c.get("base_url") or "").strip().rstrip("/")
+    endpoint = base if base.endswith("/chat/completions") else f"{base}/chat/completions"
+    return ClassifyConfig(
+        api_key=str(c["api_key"]),
+        endpoint=endpoint,
+        model=model_override or str(c["modelo"]),
+    )
 
 
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--labels", required=True, help="labelled set (local, not committed)")
-    ap.add_argument("--model", default="deepseek-flash")
+    ap.add_argument("--model", default="")
     ap.add_argument("--baseline", help="previous report; regressions fail the run")
     ap.add_argument("--save", help="write this run's report here")
     ap.add_argument("--only", type=int, help="run a single case number")
@@ -106,7 +117,7 @@ def main() -> int:
 
     labels = json.loads(Path(args.labels).read_text(encoding="utf-8"))
     index = load_index()
-    cfg = ClassifyConfig(api_key=get_key(), model=args.model)
+    cfg = get_byo_config(model_override=args.model)
 
     per_field_ok: dict[str, int] = defaultdict(int)
     per_field_total: dict[str, int] = defaultdict(int)

@@ -258,13 +258,21 @@ reports `already-current`.
 
 ## Disclosure
 
-- **Reads** every profile's `state.db` in read-only mode to build its index. It does not
-  modify anything while indexing.
-- **Sends** short excerpts of each session (sampled user turns, cleaned of attachments
-  and URLs) to the chat model you configure, to classify them. Nothing else leaves the
-  machine.
-- **Writes** session titles only when you press Rename, through `SessionDB`, with a
-  timestamped backup taken first.
+- **Reads** every profile's `state.db` in read-only mode (`mode=ro`) to build its index. It never
+  reads `~/.hermes/auth.json` or any host credential store, and it does not modify anything while
+  indexing.
+- **Classifies locally by default (zero network calls).** `cellar_index(op="classify")` runs the
+  deterministic local protocol (`core/actors.py` + `core/intent.py` + `fallback_facets`) with
+  `use_llm=false` by default.
+- **Sends redacted excerpts only with explicit opt-in.** No session text ever leaves the machine
+  unless you (1) configure your own endpoint, model and API key in tab **5 · BYO AI**
+  (`~/.hermes/plugin-data/make-it-smart/byo-ai.json`, mode `600`), (2) explicitly check the
+  consent box (`allow_send_excerpts: true`, off by default), and (3) request LLM classification
+  (`use_llm=true`) or run `tools/batch_describe.py`. When enabled, sampled user turns (up to 600
+  chars per turn, cleaned of attachments and URLs, and passed through `redact_sensitive_text`) are
+  sent solely to the endpoint `base_url` you configured in `byo-ai.json`.
+- **Writes** session titles only when you press Rename (or confirm `cellar_rename` / `cellar_tag`),
+  through `SessionDB`, with a timestamped backup taken first.
 - **Never** edits `config.yaml`, never disables the host's own title generator, and leaves
   no state behind if removed.
 

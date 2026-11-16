@@ -147,3 +147,49 @@ def export_filename(count: int, when, sessions: int) -> str:
     """
     stamp = when.strftime("%Y%m%d_%H%M")
     return f"[{count:04d}] {stamp}_{sessions}sesiones.csv"
+
+
+# --------------------------------------------------------------------------- #
+# UI Mirror Synchronization
+# --------------------------------------------------------------------------- #
+
+
+def _schema_of(path: Path) -> int:
+    """Schema version declared by a JSON artefact (`schema` key, or 1 if absent)."""
+    try:
+        data = json.loads(Path(path).read_text(encoding="utf-8"))
+    except Exception:  # noqa: BLE001
+        return 0
+    if isinstance(data, dict) and isinstance(data.get("schema"), int):
+        return int(data["schema"])
+    return 1
+
+
+def can_overwrite_mirror(canonico: Path, espejo: Path) -> bool:
+    """True when `canonico` is on the same or newer schema than `espejo`."""
+    if not Path(espejo).exists():
+        return True
+    return _schema_of(canonico) >= _schema_of(espejo)
+
+
+def sync_ui_mirror(plugin: str = PLUGIN) -> None:
+    """Synchronize `index.json`, `facets.json` and `pending_index.json` to `ui_data_dir()`."""
+    try:
+        canon_dir = data_dir(plugin)
+        mirror_dir = ui_data_dir(plugin)
+        if canon_dir.resolve() == mirror_dir.resolve():
+            return
+        mirror_dir.mkdir(parents=True, exist_ok=True)
+        for fname in ("index.json", "facets.json"):
+            c_file = canon_dir / fname
+            m_file = mirror_dir / fname
+            if c_file.exists() and can_overwrite_mirror(c_file, m_file):
+                m_file.write_text(c_file.read_text(encoding="utf-8"), encoding="utf-8")
+        c_pend = canon_dir / "pending_index.json"
+        m_pend = mirror_dir / "pending_index.json"
+        if c_pend.exists() and not m_pend.exists():
+            m_pend.write_text(c_pend.read_text(encoding="utf-8"), encoding="utf-8")
+        elif m_pend.exists() and not c_pend.exists():
+            c_pend.write_text(m_pend.read_text(encoding="utf-8"), encoding="utf-8")
+    except Exception:  # noqa: BLE001
+        pass

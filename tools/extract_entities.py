@@ -33,9 +33,8 @@ PLACES = ("panamá", "panama", "colón", "balboa", "cristóbal", "david", "chitr
           "miami", "estados unidos", "eeuu", "españa", "china", "alemania", "méxico",
           "colombia", "bahrein", "bahréin", "dubái", "dubai")
 EVENT_HINTS = ("hackaton", "hackathon", "congreso", "feria", "expo", "cumbre", "summit",
-               "conferencia", "taller", "curso", "seminario", "apedé", "apede")
-PEOPLE = ("the owner", "pareja", "ivett", "sofía", "sofia", "mamá", "papá",
-          "hermano", "hermana", "cliente", "autor")
+               "conferencia", "taller", "curso", "seminario")
+PEOPLE = ("the owner", "pareja", "mamá", "papá", "hermano", "hermana", "cliente", "autor")
 MACHINE_LABELS = {"iphone": "iPhone", "ipad": "iPad", "iwatch": "Apple Watch",
                   "apple watch": "Smartwatch", "mac mini": "Mac mini", "mac studio": "Mac Studio",
                   "macbook": "Laptop", "thinkpad": "Laptop", "imac": "Desktop", "vps": "VPS",

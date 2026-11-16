@@ -21,6 +21,7 @@ import urllib.request
 from dataclasses import dataclass, field
 from typing import Any, Callable, Iterable, Sequence
 
+from .byo_ai import redactar
 from .normalize import Facets, core_subject, strip_spec
 from .prompt import build_messages
 from .cheat_sheet import load_cheat_sheet, strip_brand
@@ -37,9 +38,6 @@ from .taxonomy import (
     normalize_verb,
 )
 
-DEFAULT_ENDPOINT = "https://api.deepseek.com/v1/chat/completions"
-DEFAULT_MODEL = "deepseek-flash"
-
 REQUIRED_KEYS = ("subject", "iq1", "iq2", "pillar", "description", "verb")
 
 
@@ -51,8 +49,8 @@ REQUIRED_KEYS = ("subject", "iq1", "iq2", "pillar", "description", "verb")
 @dataclass(frozen=True)
 class ClassifyConfig:
     api_key: str
-    endpoint: str = DEFAULT_ENDPOINT
-    model: str = DEFAULT_MODEL
+    endpoint: str = ""
+    model: str = ""
     temperature: float = 0.0   # reproducible: the eval set must not move between runs
     max_tokens: int = 1200   # the model spends part of this reasoning; below ~1000 the answer comes back empty
     timeout: int = 60
@@ -77,7 +75,17 @@ class ModelError(RuntimeError):
 
 
 def _post(config: ClassifyConfig, payload: dict[str, Any]) -> str:
-    body = json.dumps(payload).encode("utf-8")
+    if not config.endpoint or not config.model or not config.api_key:
+        raise ModelError("missing endpoint, model or api_key in ClassifyConfig")
+    redacted_payload = dict(payload)
+    if isinstance(redacted_payload.get("messages"), list):
+        redacted_payload["messages"] = [
+            {**m, "content": redactar(str(m.get("content") or ""))}
+            if isinstance(m, dict) and m.get("role") == "user"
+            else m
+            for m in redacted_payload["messages"]
+        ]
+    body = json.dumps(redacted_payload).encode("utf-8")
     req = urllib.request.Request(
         config.endpoint,
         data=body,
@@ -315,10 +323,12 @@ def classify_one(
     """Classify one session. Retries once, then falls back deterministically."""
     caller = call_model or _post
     sheet = cheat_sheet if cheat_sheet is not None else load_cheat_sheet()
+    safe_messages = [redactar(m) for m in (messages or [])]
+    safe_title = redactar(current_title) if current_title else ""
     payload_messages = build_messages(
-        messages=messages,
+        messages=safe_messages,
         date=date,
-        current_title=current_title,
+        current_title=safe_title,
         channel=channel,
         corrections=corrections,
         agent_name=config.agent_name,

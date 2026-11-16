@@ -96,7 +96,9 @@ def main() -> int:
         print("(dry-run: nada escrito. Usa --apply.)")
         return 0
 
-    dest = Path("/Volumes/1TB_HD/Backups-the assistant")
+    from core.paths import data_dir
+
+    dest = data_dir() / "backups"
     print("backup…")
     bdir = backup_databases(dest, "pre-no-date")
     print(f"  {bdir}")

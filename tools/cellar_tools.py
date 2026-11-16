@@ -24,7 +24,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-import yaml
+try:
+    import yaml
+except ImportError:  # pragma: no cover — fallback defensivo si PyYAML no está instalado
+    yaml = None  # type: ignore[assignment]
 
 try:
     from ..adapters.hermes import (
@@ -35,8 +38,11 @@ try:
         read_sessions,
         sha256_of,
     )
+    from ..core.actors import describe
+    from ..core.byo_ai import _leer as _leer_byo, consentimiento_activo, redactar
     from ..core.cheat_sheet import CHEAT_SHEET_PATH, load_cheat_sheet
     from ..core.classify import ClassifyConfig, classify_one, fallback_facets
+    from ..core.intent import classify_intent
     from ..core.normalize import (
         MAX_TITLE_LENGTH,
         Facets,
@@ -70,8 +76,11 @@ except ImportError:
         read_sessions,
         sha256_of,
     )
+    from core.actors import describe
+    from core.byo_ai import _leer as _leer_byo, consentimiento_activo, redactar
     from core.cheat_sheet import CHEAT_SHEET_PATH, load_cheat_sheet
     from core.classify import ClassifyConfig, classify_one, fallback_facets
+    from core.intent import classify_intent
     from core.normalize import (
         MAX_TITLE_LENGTH,
         Facets,
@@ -122,6 +131,19 @@ def _plugin_dir() -> Path:
         except Exception:
             from plugins.plugin_storage import plugin_data_dir
             return plugin_data_dir(PLUGIN_NAME)
+
+
+def _sync_mirror() -> None:
+    """Synchronize canonical `index.json` and `facets.json` to the UI mirror."""
+    try:
+        from core.paths import sync_ui_mirror
+        sync_ui_mirror(PLUGIN_NAME)
+    except ImportError:
+        try:
+            from ..core.paths import sync_ui_mirror
+            sync_ui_mirror(PLUGIN_NAME)
+        except Exception:
+            pass
 
 
 def _ui_dir() -> Path:
@@ -512,7 +534,8 @@ def _append_correction(
     existing: list[dict[str, Any]] = []
     if path.exists():
         try:
-            loaded = yaml.safe_load(path.read_text(encoding="utf-8"))
+            raw_text = path.read_text(encoding="utf-8")
+            loaded = yaml.safe_load(raw_text) if yaml is not None else json.loads(raw_text)
             if isinstance(loaded, list):
                 existing = loaded
         except Exception:
@@ -528,7 +551,9 @@ def _append_correction(
         entry["rule"] = str(rule)
     existing.append(entry)
     path.write_text(
-        yaml.safe_dump(existing, allow_unicode=True, sort_keys=False),
+        yaml.safe_dump(existing, allow_unicode=True, sort_keys=False)
+        if yaml is not None
+        else json.dumps(existing, indent=2, ensure_ascii=False),
         encoding="utf-8",
     )
     return path
@@ -824,19 +849,32 @@ def handle_cellar_series(args: dict[str, Any], **_kwargs: Any) -> str:
 # --------------------------------------------------------------------------- #
 
 
-def _resolve_deepseek_key() -> str:
-    auth_path = Path.home() / ".hermes" / "auth.json"
-    if auth_path.exists():
-        try:
-            data = json.loads(auth_path.read_text(encoding="utf-8"))
-            pool = data.get("credential_pool", {}).get("deepseek") or []
-            for entry in pool:
-                tok = entry.get("access_token") or entry.get("api_key")
-                if tok:
-                    return str(tok)
-        except Exception:
-            pass
-    return ""
+def _deterministic_facets(turns: list[str], title: str, sheet: dict[str, Any]) -> Facets:
+    """Clasificación local sin red: encadena actors.describe() -> intent.classify_intent() -> fallback_facets."""
+    source_turns = turns or ([title] if title else ["Sesión"])
+    blob = " ".join(source_turns)
+    act = describe(blob, sheet)
+    intent_res = classify_intent(blob, focus=(turns[0] if turns else title))
+    fb = fallback_facets(source_turns, ordinal=1)
+
+    subj = str(act.get("subject") or fb.subject or "Sesión").strip()
+    iq1 = str(act.get("brand") or (fb.iq1 if fb.iq1 != "Hermes Agent" else "")).strip()
+    if subj and iq1 and subj.lower() == iq1.lower():
+        iq1 = ""
+    iq2 = str(fb.iq2 or "").strip()
+    iq3 = str(intent_res.name or fb.iq3 or "").strip()
+    iq4 = str(fb.iq4 or "").strip()
+    verb = str(intent_res.name or fb.verb or "").strip()
+    return Facets(
+        subject=subj,
+        subject_ordinal=1,
+        iq1=iq1,
+        iq2=iq2,
+        iq3=iq3,
+        iq4=iq4,
+        description=fb.description,
+        verb=verb,
+    )
 
 
 def _scan_live_sessions() -> list[dict[str, Any]]:
@@ -960,20 +998,7 @@ def handle_cellar_index(args: dict[str, Any], **_kwargs: Any) -> str:
         out_path.parent.mkdir(parents=True, exist_ok=True)
         content = json.dumps(rebuilt, ensure_ascii=False, separators=(",", ":"))
         out_path.write_text(content, encoding="utf-8")
-        try:
-            ui_path = _ui_dir() / "index.json"
-            ui_path.parent.mkdir(parents=True, exist_ok=True)
-            ui_path.write_text(content, encoding="utf-8")
-        except Exception:
-            pass
-        try:
-            can_facets = _facets_path()
-            if can_facets.exists():
-                ui_facets = _ui_dir() / "facets.json"
-                ui_facets.parent.mkdir(parents=True, exist_ok=True)
-                ui_facets.write_text(can_facets.read_text(encoding="utf-8"), encoding="utf-8")
-        except Exception:
-            pass
+        _sync_mirror()
         rebuilt_rows = rebuilt.get("sessions") or []
         untitled_after = sum(1 for r in rebuilt_rows if not parse_title(str(r.get("raw") or "")))
         return _json(
@@ -999,8 +1024,22 @@ def handle_cellar_index(args: dict[str, Any], **_kwargs: Any) -> str:
     except (TypeError, ValueError):
         lim = 25
 
-    key = _resolve_deepseek_key()
-    cfg = ClassifyConfig(api_key=key or "offline", model="deepseek-chat", temperature=0.0, language="es")
+    use_llm = bool(args.get("use_llm", False))
+    llm_allowed = use_llm and consentimiento_activo()
+    cfg: ClassifyConfig | None = None
+    if llm_allowed:
+        byo_cfg = _leer_byo()
+        base_url = str(byo_cfg.get("base_url") or "").strip().rstrip("/")
+        endpoint = base_url if base_url.endswith("/chat/completions") else f"{base_url}/chat/completions"
+        cfg = ClassifyConfig(
+            api_key=str(byo_cfg.get("api_key") or ""),
+            endpoint=endpoint,
+            model=str(byo_cfg.get("modelo") or ""),
+            temperature=0.0,
+            language="es",
+        )
+
+    sheet = load_cheat_sheet()
     max_n = max((int(r.get("n") or 0) for r in indexed_rows), default=0)
     subj_counts: Counter[str] = Counter(
         slug_key(str(r.get("sujeto") or ""))
@@ -1015,22 +1054,26 @@ def handle_cellar_index(args: dict[str, Any], **_kwargs: Any) -> str:
         prev_row = idx_by_id.get(item["id"])
         n_assigned = int(prev_row["n"]) if prev_row and prev_row.get("n") else (max_n + idx_u)
 
-        if key and turns:
+        if llm_allowed and cfg is not None and turns:
+            redacted_turns = [redactar(t) for t in turns]
             res = classify_one(
-                messages=turns,
+                messages=redacted_turns,
                 config=cfg,
                 date=item["fecha"],
-                current_title=item["title"],
+                current_title=redactar(item["title"]),
                 ordinal=1,
+                cheat_sheet=sheet,
             )
-            f = res.facets or fallback_facets(turns, ordinal=1)
+            f = res.facets if (res.ok and res.facets) else _deterministic_facets(turns, item["title"], sheet)
             used_fallback = bool(res.used_fallback or not res.ok)
         else:
-            f = fallback_facets(turns or [item["title"] or "Sesión"], ordinal=1)
+            f = _deterministic_facets(turns, item["title"], sheet)
             used_fallback = True
 
         s_slug = slug_key(f.subject)
         mmm = subj_counts[s_slug] + 1 if s_slug else 1
+        if s_slug:
+            subj_counts[s_slug] += 1
         f_with_mmm = Facets(
             subject=f.subject or "Sesión",
             subject_ordinal=mmm,
@@ -1066,10 +1109,21 @@ def handle_cellar_index(args: dict[str, Any], **_kwargs: Any) -> str:
             }
         )
 
+    note = (
+        "Classified with configured BYO AI model using redacted excerpts."
+        if llm_allowed
+        else (
+            "Classified locally without network calls (deterministic protocol: actors + intent + fallback). "
+            "To classify with an external model, configure Tab 5 · BYO AI, enable allow_send_excerpts, and pass use_llm=true."
+        )
+    )
     return _json(
         {
             "ok": True,
             "op": "classify",
+            "mode": "llm" if llm_allowed else "deterministic_local",
+            "llm_used": llm_allowed,
+            "note": note,
             "counts": {
                 "new": len(new_list),
                 "changed": len(changed_list),
@@ -1407,6 +1461,7 @@ def handle_cellar_rename(args: dict[str, Any], **kwargs: Any) -> str:
         json.dumps(idx_data, ensure_ascii=False, separators=(",", ":")),
         encoding="utf-8",
     )
+    _sync_mirror()
 
     _append_correction(
         session_id=_caller_session_id(kwargs),
@@ -1539,18 +1594,24 @@ def handle_cellar_tag(args: dict[str, Any], **kwargs: Any) -> str:
     if profiles_touched:
         try:
             writer = HermesTitleWriter()
-        except TitleWriteError:
-            writer = None
+        except TitleWriteError as exc:
+            return _json({"ok": False, "error": str(exc), "backup_path": str(backup_dir)})
 
     applied_before: list[dict[str, Any]] = []
     applied_after: list[dict[str, Any]] = []
 
     for c, before_tags, after_tags, new_title in candidates:
-        if new_title is not None and writer is not None:
+        if new_title is not None:
+            if writer is None:
+                rejected.append({"n": c["n"], "id": c["id"], "reason": "title writer unavailable"})
+                continue
             try:
-                writer.rename(c["id"], new_title, db_map.get(c["prof"]))
+                wrote = writer.rename(c["id"], new_title, db_map.get(c["prof"]))
             except Exception as exc:
                 rejected.append({"n": c["n"], "id": c["id"], "reason": str(exc)})
+                continue
+            if not wrote:
+                rejected.append({"n": c["n"], "id": c["id"], "reason": "host refused or session not found in profile db"})
                 continue
 
         ex = facets_map.setdefault(c["id"], {})
@@ -1576,6 +1637,7 @@ def handle_cellar_tag(args: dict[str, Any], **kwargs: Any) -> str:
         json.dumps(idx_data, ensure_ascii=False, separators=(",", ":")),
         encoding="utf-8",
     )
+    _sync_mirror()
 
     _append_correction(
         session_id=_caller_session_id(kwargs),
@@ -1637,7 +1699,8 @@ def _load_personal_cheat_sheet() -> dict[str, Any]:
         else:
             return {"version": 1, "owner": "the owner", "vocabulario": {}, "reglas": {}, "servicios": {}}
     try:
-        data = yaml.safe_load(p.read_text(encoding="utf-8"))
+        raw_text = p.read_text(encoding="utf-8")
+        data = yaml.safe_load(raw_text) if yaml is not None else json.loads(raw_text)
         return data if isinstance(data, dict) else {}
     except Exception:
         return {}
@@ -1796,7 +1859,9 @@ def handle_cellar_cheatsheet(args: dict[str, Any], **kwargs: Any) -> str:
     p_path = _personal_cheat_sheet_path()
     p_path.parent.mkdir(parents=True, exist_ok=True)
     p_path.write_text(
-        yaml.safe_dump(personal, allow_unicode=True, sort_keys=False),
+        yaml.safe_dump(personal, allow_unicode=True, sort_keys=False)
+        if yaml is not None
+        else json.dumps(personal, indent=2, ensure_ascii=False),
         encoding="utf-8",
     )
 
@@ -1889,12 +1954,14 @@ def handle_cellar_export(args: dict[str, Any], **_kwargs: Any) -> str:
         loaded = []
         if c_path.exists():
             try:
-                loaded = yaml.safe_load(c_path.read_text(encoding="utf-8")) or []
+                raw_c = c_path.read_text(encoding="utf-8")
+                loaded = (yaml.safe_load(raw_c) if yaml is not None else json.loads(raw_c)) or []
             except Exception:
                 loaded = []
         if not loaded and CHEAT_SHEET_PATH.with_name("corrections.yaml").exists():
             try:
-                loaded = yaml.safe_load(CHEAT_SHEET_PATH.with_name("corrections.yaml").read_text(encoding="utf-8")) or []
+                raw_repo_c = CHEAT_SHEET_PATH.with_name("corrections.yaml").read_text(encoding="utf-8")
+                loaded = (yaml.safe_load(raw_repo_c) if yaml is not None else json.loads(raw_repo_c)) or []
             except Exception:
                 loaded = []
         payload_rows = loaded if isinstance(loaded, list) else []
@@ -1915,7 +1982,11 @@ def handle_cellar_export(args: dict[str, Any], **_kwargs: Any) -> str:
         text = json.dumps(payload_rows, ensure_ascii=False, indent=2)
         out_path.write_text(text, encoding="utf-8")
     elif fmt == "yaml":
-        text = yaml.safe_dump(payload_rows, allow_unicode=True, sort_keys=False)
+        text = (
+            yaml.safe_dump(payload_rows, allow_unicode=True, sort_keys=False)
+            if yaml is not None
+            else json.dumps(payload_rows, indent=2, ensure_ascii=False)
+        )
         out_path.write_text(text, encoding="utf-8")
     else:  # csv
         buf = io.StringIO()
@@ -2098,7 +2169,7 @@ CELLAR_CHEATSHEET_SCHEMA = _schema(
 
 CELLAR_INDEX_SCHEMA = _schema(
     "cellar_index",
-    "Maintain the derived session index in-process: check status, detect new/changed sessions, rebuild index.json from state.db, or run the Python classifier over untitled sessions to get proposals.",
+    "Maintain the derived session index in-process: check status, detect new/changed sessions, rebuild index.json from state.db, or classify untitled sessions (deterministic local by default; external LLM only when use_llm=true and BYO AI consent is active).",
     {
         "op": {
             "type": "string",
@@ -2106,6 +2177,10 @@ CELLAR_INDEX_SCHEMA = _schema(
             "description": "Index operation (default: 'status').",
         },
         "limit": {"type": "integer", "description": "Max untitled sessions to classify per call (default 25)."},
+        "use_llm": {
+            "type": "boolean",
+            "description": "Send redacted session excerpts to the user-configured BYO AI model (default false; also requires allow_send_excerpts=true in byo-ai.json).",
+        },
     },
 )
 

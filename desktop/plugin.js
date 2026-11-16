@@ -20,7 +20,7 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 const ID = 'make-it-smart'
 const NAME = 'Hermes, Make it Smart!'
 const APP_TITLE = 'Make It Smart'
-const VERSION = '0.28.0'
+const VERSION = '0.29.0'
 const ROUTE = '/smart'
 
 /** jsx-runtime helper: keeps uncompiled React code compact and readable. */
@@ -731,7 +731,7 @@ function withAxes(row) {
 // ni modelo, se completan solos — antes el formulario los dejaba vacíos y el guardado lo trataba
 // como "faltan datos", que era un callejón sin salida.
 const BYO_MOTORES = {
-  deepseek: { base_url: 'https://api.deepseek.com', modelo: 'deepseek-flash' },
+  deepseek: { base_url: 'https://api.deepseek.com', modelo: 'deepseek-chat' },
   openrouter: { base_url: 'https://openrouter.ai/api/v1', modelo: 'deepseek/deepseek-v4-flash' },
   kimi: { base_url: 'https://api.moonshot.ai/v1', modelo: 'kimi-k2-0905-preview' },
   google: { base_url: 'https://generativelanguage.googleapis.com/v1beta/openai', modelo: 'gemini-2.5-flash' },
@@ -962,7 +962,7 @@ const I18N = {
       'Tengo {n} sesiones vacías de cron (source=cron sin ningún mensaje). Bórralas y dime qué cron jobs tengo activos para pausarlos o pasarlos a modo no_agent.',
     vIntro:
       'Catálogo navegable de tus sesiones: las indexa de las 12 bases, les pone nombre canónico y las deja filtrar por plataforma, familia y pilar. La ventana del plugin solo pinta — el clasificador es Python puro y no sabe que existe Hermes.',
-    vSub: 'v0.28 · plugin nativo',
+    vSub: 'v0.29 · plugin nativo',
     vVer: 'ESTA VERSIÓN',
     vReg: 'REGLAS QUE APRENDIÓ',
     vCerrar: 'Cerrar',
@@ -1006,6 +1006,7 @@ const I18N = {
     byoKey: 'API key',
     byoKeyHint: 'Se guarda en ~/.hermes/plugin-data/make-it-smart/byo-ai.json con permisos 600. El panel nunca la muestra completa.',
     byoMax: 'Máx. tokens',
+    byoConsent: 'Autorizo enviar extractos redactados de mis sesiones (máx. 600 caracteres por turno) al endpoint configurado para clasificar títulos y generar descripciones.',
     byoProbar: 'Probar conexión',
     byoGuardar: 'Guardar',
     byoSaved: 'Guardado: {m} · {k}',
@@ -1190,7 +1191,7 @@ const I18N = {
       'I have {n} empty cron sessions (source=cron with no messages). Delete them and tell me which cron jobs are active so I can pause them or move them to no_agent mode.',
     vIntro:
       'A browsable catalogue of your sessions: it indexes them from the 12 databases, gives each a canonical name and lets you filter by platform, family and pillar. The plugin window only paints — the classifier is pure Python and does not know Hermes exists.',
-    vSub: 'v0.28 · native plugin',
+    vSub: 'v0.29 · native plugin',
     vVer: 'THIS VERSION',
     vReg: 'REGLAS QUE APRENDIÓ',
     vCerrar: 'Close',
@@ -1234,6 +1235,7 @@ const I18N = {
     byoKey: 'API key',
     byoKeyHint: 'Se guarda en ~/.hermes/plugin-data/make-it-smart/byo-ai.json con permisos 600. El panel nunca la muestra completa.',
     byoMax: 'Máx. tokens',
+    byoConsent: 'Autorizo enviar extractos redactados de mis sesiones (máx. 600 caracteres por turno) al endpoint configurado para clasificar títulos y generar descripciones.',
     byoProbar: 'Probar conexión',
     byoGuardar: 'Guardar',
     byoSaved: 'Guardado: {m} · {k}',
@@ -2136,9 +2138,9 @@ function App({ ctx }) {
   // Arranca completo con DeepSeek: el dueño sólo pega la clave. Los campos se pueden cambiar,
   // pero el caso normal es "pego la key y guardo".
   const [byo, setByo] = useState({ motor: 'deepseek',
-    modelo: (BYO_MOTORES.deepseek || {}).modelo || 'deepseek-flash',
+    modelo: (BYO_MOTORES.deepseek || {}).modelo || 'deepseek-chat',
     base_url: (BYO_MOTORES.deepseek || {}).base_url || 'https://api.deepseek.com',
-    api_key: '', max_tokens: 120, timeout: 60, tiene_key: false })
+    api_key: '', max_tokens: 120, timeout: 60, tiene_key: false, allow_send_excerpts: false })
   const [byoMsg, setByoMsg] = useState('')
 
   const leerByo = async () => {
@@ -2151,7 +2153,8 @@ function App({ ctx }) {
         const def = BYO_MOTORES[mm] || BYO_MOTORES.deepseek
         setByo({ motor: mm, modelo: d.modelo || def.modelo || '', base_url: d.base_url || def.base_url || '',
           api_key: '', max_tokens: d.max_tokens || 120, timeout: d.timeout || 60,
-          tiene_key: Boolean(d.api_key), guardada: d.api_key ? String(d.api_key).slice(-4) : '' })
+          tiene_key: Boolean(d.api_key), guardada: d.api_key ? String(d.api_key).slice(-4) : '',
+          allow_send_excerpts: Boolean(d.allow_send_excerpts) })
         setByoMsg(d.api_key ? t('byoTest', { m: d.motor || '—', mo: d.modelo || '—' }) : t('byoNone'))
       } else {
         setByoMsg(t('byoNone'))
@@ -2169,7 +2172,8 @@ function App({ ctx }) {
     }
     const actual = JSON.parse((await filesApi.readText('data', 'byo-ai.json').catch(() => ({})))?.text || '{}')
     const payload = { motor: byo.motor, modelo: modelo, base_url: baseUrl,
-      api_key: byo.api_key || actual.api_key || '', max_tokens: byo.max_tokens, timeout: byo.timeout }
+      api_key: byo.api_key || actual.api_key || '', max_tokens: byo.max_tokens, timeout: byo.timeout,
+      allow_send_excerpts: Boolean(byo.allow_send_excerpts) }
     try {
       await filesApi.writeText('data', 'byo-ai.json', JSON.stringify(payload, null, 1))
       setByoMsg(t('byoSaved', { m: payload.motor, k: payload.api_key ? 'key ✓' : 'sin key' }))
@@ -4753,6 +4757,10 @@ function App({ ctx }) {
               h('label', null, t('byoMax'),
                 h('input', { id: 'byoMax', type: 'number', value: byo.max_tokens,
                   onChange: (e) => setByo((p) => ({ ...p, max_tokens: Number(e.target.value) || 120 })) })),
+              h('label', { style: { gridColumn: '1 / -1', flexDirection: 'row', alignItems: 'center', gap: '8px', textTransform: 'none', cursor: 'pointer' } },
+                h('input', { id: 'byoConsent', type: 'checkbox', checked: Boolean(byo.allow_send_excerpts),
+                  onChange: (e) => setByo((p) => ({ ...p, allow_send_excerpts: Boolean(e.target.checked) })) }),
+                h('span', null, t('byoConsent'))),
               h('div', { className: 'row' },
                 h('button', { id: 'btnByoSave', className: 'openbtn', onClick: guardarByo }, t('byoGuardar'))),
               h('p', { className: 'hint' }, t('byoKeyHint')),

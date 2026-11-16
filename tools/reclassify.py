@@ -71,16 +71,25 @@ def human_turns(messages, limit=8) -> list[str]:
     return out
 
 
-def api_key() -> str:
-    """Read the DeepSeek token the app already stores. Never printed."""
-    path = Path.home() / ".hermes" / "auth.json"
-    data = json.loads(path.read_text(encoding="utf-8"))
-    pool = data.get("credential_pool", {}).get("deepseek") or []
-    for entry in pool:
-        tok = entry.get("access_token") or entry.get("api_key")
-        if tok:
-            return tok
-    raise SystemExit("no DeepSeek token in ~/.hermes/auth.json")
+def byo_config() -> ClassifyConfig:
+    """Lee motor, endpoint, modelo y clave desde core.byo_ai."""
+    from core.byo_ai import _leer, consentimiento_activo  # noqa: PLC0415
+
+    if not consentimiento_activo():
+        raise SystemExit(
+            "BYO AI no está activo: configurá motor, modelo, base_url, api_key y allow_send_excerpts=true en byo-ai.json"
+        )
+    c = _leer()
+    base = str(c.get("base_url") or "").strip().rstrip("/")
+    endpoint = base if base.endswith("/chat/completions") else f"{base}/chat/completions"
+    return ClassifyConfig(
+        api_key=str(c["api_key"]),
+        endpoint=endpoint,
+        model=str(c["modelo"]),
+        temperature=0.0,
+        max_tokens=1200,
+        language="es",
+    )
 
 
 def collect() -> list[dict]:
@@ -139,8 +148,7 @@ def main() -> int:
         print(f"{len(rows)} sesiones disponibles. Usa --sample N o --all.")
         return 0
 
-    cfg = ClassifyConfig(api_key=api_key(), model="deepseek-chat",
-                         temperature=0.0, max_tokens=1200, language="es")
+    cfg = byo_config()
     print(f"clasificando {len(rows)} sesiones…")
 
     out = []
@@ -194,8 +202,9 @@ def main() -> int:
         return 0
 
     from adapters.hermes import HermesTitleWriter
+    from core.paths import data_dir
 
-    dest = backup_databases(Path("/Volumes/1TB_HD/Backups-the assistant"), "pre-esquema-2026-11-10")
+    dest = backup_databases(data_dir() / "backups", "pre-esquema-2026-11-10")
     print(f"\nbackup -> {dest}")
     w = HermesTitleWriter()
     ok = 0

@@ -1,5 +1,5 @@
 name: hermes-make-it-smart
-version: 0.28.0
+version: 0.29.0
 description: "Hermes, Make it Smart! — Session categorization, tagging and renaming to access all your sessions — faster than it takes to press 3 clicks."
 author: "the owner"
 license: MIT
@@ -20,6 +20,7 @@ provides_tools:
   - cellar_verify
   - cellar_export
 requires_env: []
+python_dependencies: ["PyYAML>=6,<7"]
 data:
   canonical_dir: "~/.hermes/plugin-data/make-it-smart"
   ui_dir: "~/Library/Application Support/Hermes/plugin-files/data/make-it-smart"

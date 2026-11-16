@@ -29,13 +29,12 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-HOME = Path.home()
-RUTA = HOME / ".hermes/plugin-data/make-it-smart/byo-ai.json"
+from core.paths import data_dir, ui_data_dir
 
 # Motores conocidos: base_url y modelo por defecto. `custom` acepta cualquier endpoint
 # compatible con OpenAI (Ollama, vLLM, LM Studio, un proxy propio).
 MOTORES = {
-    "deepseek": {"base_url": "https://api.deepseek.com", "modelo": "deepseek-flash"},
+    "deepseek": {"base_url": "https://api.deepseek.com", "modelo": "deepseek-chat"},
     "openrouter": {"base_url": "https://openrouter.ai/api/v1", "modelo": "deepseek/deepseek-v4-flash"},
     "kimi": {"base_url": "https://api.moonshot.ai/v1", "modelo": "kimi-k2-0905-preview"},
     "google": {"base_url": "https://generativelanguage.googleapis.com/v1beta/openai",
@@ -45,13 +44,52 @@ MOTORES = {
 }
 
 
-def _leer() -> dict:
-    if not RUTA.exists():
-        return {}
+def ruta_config() -> Path:
+    """Resuelve la ruta canónica de `byo-ai.json` y migra desde el espejo UI si es más reciente."""
+    canon = data_dir() / "byo-ai.json"
     try:
-        return json.loads(RUTA.read_text(encoding="utf-8")) or {}
+        espejo = ui_data_dir() / "byo-ai.json"
+        if espejo.exists() and espejo.resolve() != canon.resolve():
+            if not canon.exists() or espejo.stat().st_mtime > canon.stat().st_mtime:
+                canon.parent.mkdir(parents=True, exist_ok=True)
+                tmp = canon.with_suffix(".tmp")
+                tmp.write_text(espejo.read_text(encoding="utf-8"), encoding="utf-8")
+                os.chmod(tmp, 0o600)
+                tmp.replace(canon)
     except Exception:
-        return {}
+        pass
+    return canon
+
+
+def _leer() -> dict:
+    ruta = ruta_config()
+    d: dict = {}
+    if ruta.exists():
+        try:
+            d = json.loads(ruta.read_text(encoding="utf-8")) or {}
+        except Exception:
+            d = {}
+    if not isinstance(d, dict):
+        d = {}
+    d["allow_send_excerpts"] = bool(d.get("allow_send_excerpts", False))
+
+    env_key = os.environ.get("MMS_API_KEY", "").strip()
+    env_url = os.environ.get("MMS_BASE_URL", "").strip().rstrip("/")
+    env_mod = os.environ.get("MMS_MODEL", "").strip()
+    if env_key:
+        d["api_key"] = env_key
+    if env_url:
+        d["base_url"] = env_url
+    if env_mod:
+        d["modelo"] = env_mod
+    if (env_key or env_url or env_mod) and (not d.get("base_url") or not d.get("modelo")):
+        motor = str(d.get("motor") or "deepseek").strip().lower()
+        base = MOTORES.get(motor, MOTORES["deepseek"])
+        if not d.get("base_url"):
+            d["base_url"] = base.get("base_url", "")
+        if not d.get("modelo"):
+            d["modelo"] = base.get("modelo", "")
+    return d
 
 
 def guardar(cfg: dict) -> dict:
@@ -63,6 +101,7 @@ def guardar(cfg: dict) -> dict:
         "api_key": str(cfg.get("api_key") or "").strip(),
         "max_tokens": int(cfg.get("max_tokens") or 120),
         "timeout": int(cfg.get("timeout") or 60),
+        "allow_send_excerpts": bool(cfg.get("allow_send_excerpts", False)),
         "actualizado": time.strftime("%Y-%m-%dT%H:%M:%S"),
     }
     base = MOTORES.get(limpio["motor"], {})
@@ -70,11 +109,12 @@ def guardar(cfg: dict) -> dict:
         limpio["base_url"] = base.get("base_url", "")
     if not limpio["modelo"]:
         limpio["modelo"] = base.get("modelo", "")
-    RUTA.parent.mkdir(parents=True, exist_ok=True)
-    tmp = RUTA.with_suffix(".tmp")
+    ruta = data_dir() / "byo-ai.json"
+    ruta.parent.mkdir(parents=True, exist_ok=True)
+    tmp = ruta.with_suffix(".tmp")
     tmp.write_text(json.dumps(limpio, ensure_ascii=False, indent=1), encoding="utf-8")
     os.chmod(tmp, 0o600)
-    tmp.replace(RUTA)
+    tmp.replace(ruta)
     return enmascarar(limpio)
 
 
@@ -84,6 +124,7 @@ def enmascarar(cfg: dict) -> dict:
     k = str(c.get("api_key") or "")
     c["api_key"] = ("•" * max(len(k) - 4, 0) + k[-4:]) if len(k) > 4 else ("•" * len(k))
     c["tiene_key"] = bool(k)
+    c["allow_send_excerpts"] = bool(c.get("allow_send_excerpts", False))
     return c
 
 
@@ -92,26 +133,39 @@ def configurado() -> bool:
     return bool(c.get("api_key") and c.get("modelo") and c.get("base_url"))
 
 
+def consentimiento_activo() -> bool:
+    """Exige consentimiento explícito (`allow_send_excerpts is True`) además de motor, modelo y clave."""
+    c = _leer()
+    return bool(
+        c.get("allow_send_excerpts") is True
+        and c.get("api_key")
+        and c.get("modelo")
+        and c.get("base_url")
+    )
+
+
 def redactar(texto: str) -> str:
     """Enmascara lo que no debe salir de la máquina antes de mandar texto a un modelo.
 
-    Usa el redactor de Hermes si está disponible (API pública de plugins); si no, aplica un
-    conjunto mínimo propio. Nunca se manda el texto crudo sin pasar por acá.
+    Pasa primero por el redactor de Hermes (API pública de plugins) y **después** aplica los
+    patrones propios: el de Hermes cubre credenciales pero deja pasar correos y rutas, y el texto
+    que sale de acá son extractos de sesiones. Nunca se manda el texto crudo sin pasar por acá.
     """
+    fuera = texto
     try:
         from agent.redact import redact_sensitive_text  # type: ignore
-        return redact_sensitive_text(texto, force=True)
+        fuera = redact_sensitive_text(texto, force=True)
     except Exception:
-        patrones = [
-            r"(?i)(api[_-]?key|token|password|secret|contrase[ñn]a)\s*[:=]\s*\S+",
-            r"\bsk-[A-Za-z0-9_\-]{12,}\b",
-            r"\b[A-Za-z0-9_\-]{32,}\b",
-            r"[\w.+-]+@[\w-]+\.[\w.]+",
-        ]
         fuera = texto
-        for p in patrones:
-            fuera = re.sub(p, "[REDACTED]", fuera)
-        return fuera
+    patrones = [
+        r"(?i)(api[_-]?key|token|password|secret|contrase[ñn]a)\s*[:=]\s*\S+",
+        r"\bsk-[A-Za-z0-9_\-]{12,}\b",
+        r"\b[A-Za-z0-9_\-]{32,}\b",
+        r"[\w.+-]+@[\w-]+\.[\w.]+",
+    ]
+    for p in patrones:
+        fuera = re.sub(p, "[REDACTED]", fuera)
+    return fuera
 
 
 def probar(cfg: dict | None = None) -> tuple[bool, str]:
@@ -127,12 +181,12 @@ def probar(cfg: dict | None = None) -> tuple[bool, str]:
 
 
 def completar(prompt: str, sistema: str = "", max_tokens: int | None = None) -> str:
-    """Una llamada al motor del plugin. Sin configuración, falla con un mensaje claro."""
+    """Una llamada al motor del plugin. Sin configuración o sin consentimiento, falla con un mensaje claro."""
     c = _leer()
-    if not configurado():
+    if not consentimiento_activo():
         raise RuntimeError(
-            "BYO AI no está configurado: abrí la pestaña 5 · BYO AI en el panel y cargá motor, "
-            "modelo y api_key. El housekeeping no usa el motor del agente sin permiso."
+            "BYO AI no está activo: abrí la pestaña 5 · BYO AI en el panel, cargá motor, "
+            "modelo y api_key, y activá el consentimiento para enviar extractos redactados."
         )
     mensajes = []
     if sistema:

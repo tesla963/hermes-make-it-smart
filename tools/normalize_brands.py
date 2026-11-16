@@ -261,7 +261,9 @@ def main() -> int:
         print("\n(dry-run: nada escrito. Usa --apply tras revisar.)")
         return 0
 
-    dest = Path("/Volumes/1TB_HD/Backups-the assistant")
+    from core.paths import data_dir
+
+    dest = data_dir() / "backups"
     print("\nbackup…")
     bdir = backup_databases(dest, "pre-brand-rules") if dest.exists() else None
     print(f"  {bdir}" if bdir else "  (sin destino de backup — abortado)")

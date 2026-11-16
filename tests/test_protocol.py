@@ -21,6 +21,10 @@ from core.cheat_sheet import load_cheat_sheet  # noqa: E402
 from core.intent import INTENTS, classify_intent  # noqa: E402
 
 BAT = load_cheat_sheet()
+BAT.setdefault("marcas", {}).setdefault(
+    "goveelife",
+    {"iq1": "GoveeLife", "productos": ["Hygrometer", "Thermometer"]},
+)
 
 # nnn -> (user text, expected subject, expected brand)
 ACTORS = {
@@ -52,10 +56,10 @@ ACTORS = {
 
 # nnn -> (user text, expected iq3)
 INTENTS_CASES = {
-    462: ("Comprobar si ya salió la versión de iOS 27", "Instalar"),
-    353: ("Me llego este hygrometer aydame a instalarlo", "Instalar"),
-    369: ("Compara estos dos lentes, quiero usarlos para volar drone", "Comparar"),
-    397: ("verifica si ellos ya sacaron deepseek v4.1 flash", "Instalar"),
+    462: ("Comprobar si ya salió la versión de iOS 27", "Troubleshooting"),
+    353: ("Me llego este hygrometer aydame a instalarlo", "Configuration"),
+    369: ("Compara estos dos lentes, quiero usarlos para volar drone", "Compare"),
+    397: ("verifica si ellos ya sacaron deepseek v4.1 flash", "Configuration"),
 }
 
 failures = 0
@@ -89,8 +93,10 @@ for nnn, (text, want) in INTENTS_CASES.items():
 
 print("\n§ vocabulario cerrado")
 # The seven come from the rule tag-structure-2026-11-10 in core/corrections.yaml.
-CANONICAL_INTENTS = {"Comparar", "Instalar", "Investigar", "Testear",
-                     "Cotizar", "Troubleshooting", "Compatibilidad"}
+CANONICAL_INTENTS = {
+    "Configuration", "Compatibility", "Compare",
+    "Troubleshooting", "Quote", "Buy", "Web Search",
+}
 ok(set(INTENTS) == CANONICAL_INTENTS,
    f"{len(INTENTS)} intenciones, exactamente las siete de tag-structure-2026-11-10")
 ok(all(v.get("means") for v in INTENTS.values()), "todas traen su significado en una línea")

@@ -57,16 +57,107 @@ def _load_packaged() -> dict[str, Any]:
     return _read_yaml(CHEAT_SHEET_PATH)
 
 
+def _parse_inline_list(raw: str) -> list[str]:
+    inner = raw.strip()[1:-1]
+    return [x.strip().strip("\"'") for x in inner.split(",") if x.strip().strip("\"'")]
+
+
+def _fallback_parse_cheat_sheet(text: str) -> dict[str, Any]:
+    """Minimal stdlib parser for `cheat_sheet.yaml` when PyYAML is not installed."""
+    import re
+    out: dict[str, Any] = {}
+    section = ""
+    entry_key = ""
+    sub_section = ""
+    sub_key = ""
+    lines = text.splitlines()
+    i = 0
+    while i < len(lines):
+        raw_line = lines[i]
+        stripped = raw_line.split("#", 1)[0].rstrip() if not raw_line.lstrip().startswith("#") else ""
+        i += 1
+        if not stripped.strip():
+            continue
+        indent = len(stripped) - len(stripped.lstrip(" "))
+        s = stripped.strip()
+        if indent == 0 and ":" in s:
+            k, v = [x.strip() for x in s.split(":", 1)]
+            if not v:
+                section = k
+                out[section] = {}
+                entry_key = ""
+                sub_section = ""
+            else:
+                out[k] = v.strip("\"'")
+        elif indent == 2 and section and ":" in s:
+            k, v = [x.strip() for x in s.split(":", 1)]
+            k = k.strip("\"'")
+            entry_key = k
+            sub_section = ""
+            if v.startswith("{") and v.endswith("}"):
+                obj: dict[str, Any] = {}
+                for part in re.split(r",\s*(?=[a-zA-Z0-9_]+\s*:)", v[1:-1]):
+                    if ":" in part:
+                        pk, pv = [x.strip() for x in part.split(":", 1)]
+                        obj[pk] = _parse_inline_list(pv) if pv.startswith("[") and pv.endswith("]") else pv.strip("\"'")
+                out[section][entry_key] = obj
+            elif v.startswith("[") and v.endswith("]"):
+                out[section][entry_key] = _parse_inline_list(v)
+            elif not v or v == ">":
+                out[section][entry_key] = {}
+            else:
+                out[section][entry_key] = v.strip("\"'")
+        elif indent == 4 and section and entry_key and isinstance(out[section].get(entry_key), dict) and ":" in s:
+            k, v = [x.strip() for x in s.split(":", 1)]
+            k = k.strip("\"'")
+            while v.startswith("[") and not v.endswith("]") and i < len(lines):
+                nxt = lines[i].split("#", 1)[0].strip()
+                v = v + " " + nxt
+                i += 1
+            if v.startswith("[") and v.endswith("]"):
+                out[section][entry_key][k] = _parse_inline_list(v)
+                sub_section = ""
+            elif not v:
+                sub_section = k
+                out[section][entry_key][sub_section] = {}
+            elif v in ("true", "false"):
+                out[section][entry_key][k] = (v == "true")
+                sub_section = ""
+            elif v == ">":
+                out[section][entry_key][k] = ""
+                sub_section = ""
+            else:
+                out[section][entry_key][k] = v.strip("\"'")
+                sub_section = ""
+        elif indent == 6 and section and entry_key and sub_section and ":" in s:
+            k, v = [x.strip() for x in s.split(":", 1)]
+            k = k.strip("\"'")
+            sub_key = k
+            target = out[section][entry_key].get(sub_section)
+            if isinstance(target, dict) and not v:
+                target[sub_key] = {}
+        elif indent == 8 and section and entry_key and sub_section and sub_key and ":" in s:
+            k, v = [x.strip() for x in s.split(":", 1)]
+            target = out[section][entry_key].get(sub_section, {}).get(sub_key)
+            if isinstance(target, dict) and v and v != ">":
+                target[k.strip("\"'")] = v.strip("\"'")
+    return out
+
+
 def _read_yaml(path: Path) -> dict[str, Any]:
-    """Read one YAML cheat_sheet. A missing PyYAML degrades to an empty sheet."""
+    """Read one YAML cheat_sheet. A missing PyYAML falls back to the stdlib parser."""
     if not path.exists():
         return {}
+    text = path.read_text(encoding="utf-8")
     try:
         import yaml  # noqa: PLC0415
     except Exception:  # noqa: BLE001
-        return {}
+        try:
+            return _fallback_parse_cheat_sheet(text)
+        except Exception:  # noqa: BLE001
+            return {}
     try:
-        data = yaml.safe_load(path.read_text(encoding="utf-8"))
+        data = yaml.safe_load(text)
     except Exception:  # noqa: BLE001
         return {}
     return data if isinstance(data, dict) else {}

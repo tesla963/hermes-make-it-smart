@@ -81,16 +81,29 @@ def sample(universe: list[dict], n: int) -> list[dict]:
     return picked
 
 
-def get_key() -> str:
-    data = json.loads(Path(os.path.expanduser("~/.hermes/auth.json")).read_text(encoding="utf-8"))
-    return data["credential_pool"]["deepseek"][0]["access_token"]
+def get_byo_config(model_override: str = "", agent_name: str = "") -> ClassifyConfig:
+    from core.byo_ai import _leer, consentimiento_activo  # noqa: PLC0415
+
+    if not consentimiento_activo():
+        raise SystemExit(
+            "BYO AI no está activo: configurá motor, modelo, base_url, api_key y allow_send_excerpts=true en byo-ai.json"
+        )
+    c = _leer()
+    base = str(c.get("base_url") or "").strip().rstrip("/")
+    endpoint = base if base.endswith("/chat/completions") else f"{base}/chat/completions"
+    return ClassifyConfig(
+        api_key=str(c["api_key"]),
+        endpoint=endpoint,
+        model=model_override or str(c["modelo"]),
+        agent_name=agent_name,
+    )
 
 
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--n", type=int, default=50)
     ap.add_argument("--out", default=str(Path.home() / "Desktop" / "review_eval.html"))
-    ap.add_argument("--model", default="deepseek-flash")
+    ap.add_argument("--model", default="")
     ap.add_argument("--agent", default="", help="the assistant's name")
     ap.add_argument("--no-classify", action="store_true")
     ap.add_argument("--cache", default="/tmp/make_review_cache.json")
@@ -142,7 +155,7 @@ def main() -> int:
             row["titulo"] = render(len(rows) + 1, facets, short_date(s["fecha"]))
             rows.append(row)
     else:
-        cfg = ClassifyConfig(api_key=get_key(), model=args.model, agent_name=args.agent)
+        cfg = get_byo_config(model_override=args.model, agent_name=args.agent)
         for i, s in enumerate(picked, 1):
             res = classify_one(
                 messages=s["msgs"],

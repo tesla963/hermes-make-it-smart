@@ -1,23 +1,29 @@
 # Changelog
 
-## 0.29.0 — 13-nov-2026 · the plugin brings its own AI
+## 0.29.0 — 16-nov-2026 · the plugin brings its own AI (opt-in, zero host credential reads)
 
-Housekeeping no longer borrows the assistant's model. The panel gains a fifth tab, **5 · BYO AI**,
-where the owner enters engine, model, endpoint and key; the key is stored in the plugin's data
+Housekeeping no longer borrows the assistant's model or reads `~/.hermes/auth.json`. The panel gains
+a fifth tab, **5 · BYO AI**, where the owner enters engine, model, endpoint, key and an explicit
+**opt-in consent** (`allow_send_excerpts`, off by default); the key is stored in the plugin's data
 directory with mode `600`, masked in the UI, and every text that leaves the machine is redacted
 first.
 
-This replaces `hermes -z` for descriptions. That call created a session per invocation: 106
-throwaway sessions landed in the owner's database, were listed by Process as work pending a
-rename, and the batch reported success the whole time. Descriptions now go straight to the
-configured engine, and an unconfigured batch refuses to run instead of spending the agent's
-tokens.
+This replaces `hermes -z` for descriptions and removes all direct reads of `~/.hermes/auth.json`
+and hardcoded default endpoints in `core/classify.py`. By default (`use_llm=false` or consent
+unchecked), `cellar_index op=classify` runs 100% locally without network calls using the
+deterministic protocol (`core.actors` + `core.intent` + `fallback_facets`).
 
-- `core/byo_ai.py` — engine resolution, masked config, redaction, 429 backoff, hard failure when
-  unconfigured.
-- Tab **5 · BYO AI** with save and a probe command (`python3 core/byo_ai.py probar`).
-- `tools/batch_describe.py` refuses to run without configuration.
-- Tabs are numbered 1-4 (plus 5) in the label itself.
+- `plugin.yaml` — declares `python_dependencies: ["PyYAML>=6,<7"]`; all `import yaml` sites degrade
+  safely so plugin registration works even in clean environments without PyYAML.
+- `core/byo_ai.py` — resolves `byo-ai.json` via `core.paths.data_dir()`, migrates UI-saved configs
+  from `ui_data_dir()` with mode `0600`, supports `MMS_API_KEY` / `MMS_BASE_URL` / `MMS_MODEL`, and
+  enforces `consentimiento_activo()` (`allow_send_excerpts=True`).
+- `core/classify.py` & `tools/cellar_tools.py` — no default endpoint/model, mandatory redaction via
+  `core.byo_ai.redactar()`, opt-in `use_llm` parameter on `cellar_index`, and fixed `MMM` ordinal
+  counter inside classification batches.
+- `core/paths.py` (`sync_ui_mirror`) — keeps `ui_data_dir()` synchronized across `_on_session_end`,
+  `build_index.py`, `cellar_index`, `cellar_rename` and `cellar_tag`.
+- Tab **5 · BYO AI** with opt-in consent checkbox, save and probe (`python3 core/byo_ai.py probar`).
 
 ## 0.28.0 — 13-nov-2026 · two doors into the catalogue (⌘K and ⌘⌥S)
 

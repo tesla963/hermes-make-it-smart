@@ -12,22 +12,103 @@
  *
  *   node tests/test_plugin.mjs
  */
-import { readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, rmSync, unlinkSync, writeFileSync } from 'node:fs'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const root = resolve(here, '..')
 const pluginPath = join(root, 'desktop', 'plugin.js')
 
-const HERMES = join(process.env.HOME, '.hermes', 'hermes-agent', 'node_modules')
+// React lives in different node_modules depending on how Hermes was built: the
+// repo root in some installs, apps/desktop in others. Try every plausible one
+// before falling back, so the test runs against the real React when it exists.
+const HOME = process.env.HOME || ''
+const REACT_CANDIDATES = [
+  process.env.HERMES_REACT_DIR,
+  join(HOME, '.hermes', 'hermes-agent', 'node_modules'),
+  join(HOME, '.hermes', 'hermes-agent', 'apps', 'desktop', 'node_modules'),
+  join(HOME, '.hermes', 'hermes-agent', 'apps', 'shared', 'node_modules'),
+].filter(Boolean)
+
 const asUrl = (p) => pathToFileURL(p).href
+
+const HERMES = REACT_CANDIDATES.find(
+  (dir) =>
+    existsSync(join(dir, 'react', 'jsx-runtime.js')) &&
+    existsSync(join(dir, 'react', 'index.js')) &&
+    existsSync(join(dir, 'react-dom', 'server.js'))
+)
+
+const hasHermesReact = Boolean(HERMES)
+
+// The fallback modules are written to disk: a data: URL keeps literal quotes and
+// parentheses that break the import when the specifier is single-quoted.
+const fallbackDir = hasHermesReact ? null : mkdtempSync(join(tmpdir(), 'mmws-react-'))
+const writeFallback = (name, code) => {
+  const file = join(fallbackDir, name)
+  writeFileSync(file, code)
+  return asUrl(file)
+}
+
+const REACT_JSX_FALLBACK = hasHermesReact
+  ? null
+  : writeFallback(
+      'jsx-runtime.mjs',
+      `
+    export const jsx = (type, props, key) => ({ $$vnode: true, type, props: props || {}, key });
+    export const jsxs = jsx;
+    export const Fragment = Symbol.for('react.fragment');
+  `
+    )
+
+const REACT_FALLBACK = hasHermesReact
+  ? null
+  : writeFallback(
+      'react.mjs',
+      `
+    export const useState = (init) => [typeof init === 'function' ? init() : init, () => {}];
+    export const useEffect = () => {};
+    export const useMemo = (fn) => fn();
+    export const useRef = (val) => ({ current: val });
+    export const createElement = (type, props, ...children) => ({
+      $$vnode: true,
+      type,
+      props: { ...(props || {}), children: children.length <= 1 ? children[0] : children },
+    });
+    export default { useState, useEffect, useMemo, useRef, createElement };
+  `
+    )
+
+
+function renderFallbackVnode(node) {
+  if (node === null || node === undefined || typeof node === 'boolean') return ''
+  if (typeof node === 'string' || typeof node === 'number') return String(node)
+  if (Array.isArray(node)) return node.map(renderFallbackVnode).join('')
+  if (typeof node === 'object' && node.$$vnode) {
+    if (typeof node.type === 'function') return renderFallbackVnode(node.type(node.props || {}))
+    const tag = typeof node.type === 'string' ? node.type : 'div'
+    const props = node.props || {}
+    const cls = props.className ? ` class="${props.className}"` : ''
+    const id = props.id ? ` id="${props.id}"` : ''
+    const inner =
+      props.dangerouslySetInnerHTML && props.dangerouslySetInnerHTML.__html
+        ? String(props.dangerouslySetInnerHTML.__html)
+        : renderFallbackVnode(props.children)
+    return `<${tag}${id}${cls}>${inner}</${tag}>`
+  }
+  return ''
+}
+
+const jsxSpec = hasHermesReact ? asUrl(join(HERMES, 'react', 'jsx-runtime.js')) : REACT_JSX_FALLBACK
+const reactSpec = hasHermesReact ? asUrl(join(HERMES, 'react', 'index.js')) : REACT_FALLBACK
 
 // Rewrite the three specifiers to files node can actually resolve here.
 const src = readFileSync(pluginPath, 'utf8')
   .replace(/from '@hermes\/plugin-sdk'/g, `from '${asUrl(join(here, 'mocks', 'plugin-sdk.js'))}'`)
-  .replace(/from 'react\/jsx-runtime'/g, `from '${asUrl(join(HERMES, 'react', 'jsx-runtime.js'))}'`)
-  .replace(/from 'react'/g, `from '${asUrl(join(HERMES, 'react', 'index.js'))}'`)
+  .replace(/from 'react\/jsx-runtime'/g, `from '${jsxSpec}'`)
+  .replace(/from 'react'/g, `from '${reactSpec}'`)
 
 const tmp = join(root, '.plugin-under-test.mjs')
 writeFileSync(tmp, src)
@@ -38,6 +119,7 @@ const ok = (cond, msg) => {
   if (!cond) failures++
 }
 
+try {
 const mod = await import(asUrl(tmp) + '?v=' + Date.now())
 const plugin = mod.default
 
@@ -130,8 +212,15 @@ if (atajo) {
 delete globalThis.window
 
 console.log('\n§ primer render')
-const { renderToStaticMarkup } = await import(asUrl(join(HERMES, 'react-dom', 'server.js')))
-const { createElement } = await import(asUrl(join(HERMES, 'react', 'index.js')))
+let renderToStaticMarkup
+let createElement
+if (hasHermesReact) {
+  ;({ renderToStaticMarkup } = await import(asUrl(join(HERMES, 'react-dom', 'server.js'))))
+  ;({ createElement } = await import(asUrl(join(HERMES, 'react', 'index.js'))))
+} else {
+  renderToStaticMarkup = renderFallbackVnode
+  ;({ createElement } = await import(REACT_FALLBACK))
+}
 let html = ''
 let threw = null
 try {
@@ -527,6 +616,16 @@ if (
     'esPendiente excluye maquinaria'
   )
 } else ok(false, 'derivarCampos, canonicalTitle, esSujetoInvalido, esDescClonada y esPendiente se exportan')
+} finally {
+  try {
+    unlinkSync(tmp)
+  } catch (_) {}
+  if (fallbackDir) {
+    try {
+      rmSync(fallbackDir, { recursive: true, force: true })
+    } catch (_) {}
+  }
+}
 
 console.log(failures ? `\n${failures} fallo(s)` : '\nTODO OK')
 process.exit(failures ? 1 : 0)

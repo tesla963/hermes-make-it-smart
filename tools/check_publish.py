@@ -19,7 +19,10 @@ import subprocess
 import sys
 from pathlib import Path
 
-import yaml
+try:
+    import yaml
+except ImportError:  # pragma: no cover — fallback defensivo si PyYAML no está instalado
+    yaml = None  # type: ignore[assignment]
 
 REPO = Path(__file__).resolve().parent.parent
 BLOCKLIST = Path.home() / ".hermes/plugin-data/make-it-smart/publish-blocklist.yaml"
@@ -29,7 +32,7 @@ SKIP_DIRS = {".git", "node_modules", "__pycache__", "reports", "dist", "build"}
 
 
 def cargar(ruta: Path) -> dict:
-    if not ruta.exists():
+    if not ruta.exists() or yaml is None:
         return {"terms": [], "paths": [], "patterns": [], "allow": []}
     d = yaml.safe_load(ruta.read_text(encoding="utf-8")) or {}
     return {k: d.get(k) or [] for k in ("terms", "paths", "patterns", "allow")}

@@ -156,8 +156,9 @@ def main() -> int:
     if args.apply:
         from adapters.hermes import HermesTitleWriter, backup_databases
         from core.normalize import Facets, render
+        from core.paths import data_dir
 
-        dest = Path("/Volumes/1TB_HD/Backups-the assistant")
+        dest = data_dir() / "backups"
         if dest.exists():
             print(f"\nbackup -> {backup_databases(dest, 'pre-subject-audit')}")
         w = HermesTitleWriter()

@@ -24,15 +24,32 @@ import sqlite3
 from functools import lru_cache
 from pathlib import Path
 
-import yaml
+try:
+    import yaml
+except ImportError:  # pragma: no cover — fallback defensivo si PyYAML no está instalado
+    yaml = None  # type: ignore[assignment]
 
-HOME = Path.home()
-STATE = HOME / ".hermes/state.db"
+from core.cheat_sheet import load_cheat_sheet
+from core.paths import hermes_root
+
 REPO = Path(__file__).resolve().parent.parent
 
 # Cuánto texto se lee por sesión: suficiente para encontrar la intención, sin arrastrar la base.
 MAX_MENSAJES = 14
 MAX_CHARS = 6000
+
+
+def _bases_datos() -> list[Path]:
+    """Descubre state.db en HERMES_HOME y en cada perfil bajo HERMES_HOME/profiles/*."""
+    root = hermes_root()
+    bases: list[Path] = []
+    principal = root / "state.db"
+    if principal.exists():
+        bases.append(principal)
+    for p in sorted(root.glob("profiles/*/state.db")):
+        if p.exists():
+            bases.append(p)
+    return bases
 
 
 @lru_cache(maxsize=1)
@@ -50,7 +67,7 @@ def _intenciones() -> dict[str, tuple[str, ...]]:
 def _programas() -> tuple[str, ...]:
     """Programas y marcas del cheat sheet, en minúsculas."""
     try:
-        d = yaml.safe_load((REPO / "core/cheat_sheet.yaml").read_text(encoding="utf-8")) or {}
+        d = load_cheat_sheet() or {}
     except Exception:
         return ()
     nombres = list((d.get("programas") or {})) + list((d.get("marcas") or {}))
@@ -59,18 +76,24 @@ def _programas() -> tuple[str, ...]:
 
 def textos_sesion(session_id: str, max_mensajes: int = MAX_MENSAJES) -> list[tuple[str, str]]:
     """Los mensajes de la sesión, del usuario primero. [(rol, texto)] — '' si no hay nada."""
-    if not STATE.exists():
+    filas: list[tuple[Any, Any]] = []
+    for db_path in _bases_datos():
+        con = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+        try:
+            filas = con.execute(
+                "select role, content from messages where session_id = ? "
+                "and role in ('user','assistant') and content is not null and length(content) > 0 "
+                "order by timestamp asc limit ?",
+                (session_id, max_mensajes),
+            ).fetchall()
+        except Exception:
+            filas = []
+        finally:
+            con.close()
+        if filas:
+            break
+    if not filas:
         return []
-    con = sqlite3.connect(f"file:{STATE}?mode=ro", uri=True)
-    try:
-        filas = con.execute(
-            "select role, content from messages where session_id = ? "
-            "and role in ('user','assistant') and content is not null and length(content) > 0 "
-            "order by timestamp asc limit ?",
-            (session_id, max_mensajes),
-        ).fetchall()
-    finally:
-        con.close()
     fuera, total = [], 0
     for rol, texto in filas:
         t = re.sub(r"\s+", " ", str(texto)).strip()
