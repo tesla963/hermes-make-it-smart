@@ -20,7 +20,7 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 const ID = 'make-it-smart'
 const NAME = 'Hermes, Make it Smart!'
 const APP_TITLE = 'Hermes, Make It Smart!'
-const VERSION = '0.29.0'
+const VERSION = '0.31.0'
 const ROUTE = '/smart'
 
 /** jsx-runtime helper: keeps uncompiled React code compact and readable. */
@@ -233,8 +233,6 @@ const esMaquinaria = (d) =>
 const esIntocable = (d) => Boolean(d && (esCron(d) || d.vacia || esBorrada(d) || esBotChat(d) || esSubagent(d)))
 
 /** Bot machinery: the canonical Bot Chat and subagent transcripts. Hidden by default. */
-const esBotSession = (d) => Boolean(d && (esBotChat(d) || esSubagent(d)))
-
 /* ------------------------------------------------------------------ *
  * Normalización de sujetos y derivación de campos (paridad con Python)
  * ------------------------------------------------------------------ */
@@ -272,14 +270,6 @@ const CONNECTORS = new Set([
   'de', 'del', 'la', 'el', 'los', 'las', 'un', 'una', 'y', 'o', 'u', 'e',
   'vs', 'vs.', 'versus', 'a', 'en', 'con', 'por', 'para', 'al', 'on', 'in', 'of', 'the', 'and'
 ])
-
-const capWord = (w) => {
-  if (!w) return ''
-  const low = w.toLowerCase()
-  if (CONNECTORS.has(low)) return low
-  if (w.slice(1).toLowerCase() !== w.slice(1)) return w[0].toUpperCase() + w.slice(1)
-  return w[0].toUpperCase() + w.slice(1).toLowerCase()
-}
 
 const isCleanHead = (head, limit = 3) => {
   if (!head || typeof head !== 'string') return false
@@ -1021,11 +1011,17 @@ const I18N = {
     tabByo: '5) BYO AI',
     tabByoTitle: 'Motor de IA propio para el housekeeping del plugin (clave separada del agente)',
     byoIntro: 'El housekeeping del plugin (descripciones de sesiones) puede usar su propio motor y su propia clave, separada de la de Hermes Agent. Así el gasto no se mezcla y podés cambiar de motor sin tocar el agente.',
+    byoDisclosure: 'Transparencia — con BYO AI apagado no sale ni un carácter de tu equipo: la clasificación corre local. '
+      + 'Si lo activás y además marcás el consentimiento, el plugin envía hasta 600 caracteres por turno de tus mensajes '
+      + '—sin adjuntos ni URLs, y con los datos sensibles tapados— al endpoint que configures en esta pestaña. '
+      + 'La descripción que produce se guarda en tu base local. Nada más viaja.',
     byoMotor: 'Motor',
     byoModelo: 'Modelo',
     byoBase: 'Base URL',
     byoKey: 'API key',
-    byoKeyHint: 'Se guarda en ~/.hermes/plugin-data/make-it-smart/byo-ai.json con permisos 600. El panel nunca la muestra completa.',
+    byoKeyHint: 'La API key vive en Hermes: Plugins → Ajustes → «BYO AI API key» (variable MMS_API_KEY). '
+      + 'El plugin la lee con get_secret y nunca la escribe en sus archivos.',
+    byoKeyWhere: 'API key: configurada en Hermes (Plugins → Ajustes)',
     byoMax: 'Máx. tokens',
     byoConsent: 'Autorizo enviar extractos redactados de mis sesiones (máx. 600 caracteres por turno) al endpoint configurado para clasificar títulos y generar descripciones.',
     byoProbar: 'Probar conexión',
@@ -1034,7 +1030,7 @@ const I18N = {
     byoProbe: 'Probando…',
     byoOk: 'Conexión OK · respuesta {r}',
     byoFail: 'Falló: {e}',
-    byoMissing: 'Faltan datos: motor, modelo, base URL y API key',
+    byoMissing: 'Faltan datos: motor, modelo y base URL',
     byoTest: 'El housekeeping usará este motor: {m} / {mo}',
     byoNone: 'Sin configurar. El housekeeping no corre hasta que cargues el motor y la clave.',
     tabIqTitle: 'Las reglas del algoritmo, los scripts y los documentos del plugin',
@@ -1228,7 +1224,7 @@ const I18N = {
       'A browsable catalogue of your sessions: it indexes them from the 12 databases, gives each a canonical name and lets you filter by platform, family and pillar. The plugin window only paints — the classifier is pure Python and does not know Hermes exists.',
     vSub: 'v0.29 · native plugin',
     vVer: 'THIS VERSION',
-    vReg: 'REGLAS QUE APRENDIÓ',
+    vReg: 'RULES IT LEARNED',
     vCerrar: 'Close',
     sessionsWord: 'sessions',
 
@@ -1262,24 +1258,30 @@ const I18N = {
     procAllTitle: 'Rewrite every session title in canonical form: backs up, applies and reports what came out the same',
     tabIq: '4) Plugin IQ',
     tabByo: '5) BYO AI',
-    tabByoTitle: 'Motor de IA propio para el housekeeping del plugin (clave separada del agente)',
-    byoIntro: 'El housekeeping del plugin (descripciones de sesiones) puede usar su propio motor y su propia clave, separada de la de Hermes Agent. Así el gasto no se mezcla y podés cambiar de motor sin tocar el agente.',
-    byoMotor: 'Motor',
-    byoModelo: 'Modelo',
+    tabByoTitle: 'Own AI engine for the plugin housekeeping (key separate from the agent)',
+    byoIntro: 'The plugin housekeeping (session descriptions) can use its own engine and its own key, separate from Hermes Agent. That way the spend does not mix and you can switch engines without touching the agent.',
+    byoDisclosure: 'Transparency — with BYO AI off, not a single character leaves your machine: classification runs locally. '
+      + 'With it on and the consent box ticked, the plugin sends up to 600 characters per turn of your messages '
+      + '—no attachments or URLs, sensitive values redacted— to the endpoint you configure in this tab. '
+      + 'The description it produces is stored in your local database. Nothing else travels.',
+    byoMotor: 'Engine',
+    byoModelo: 'Model',
     byoBase: 'Base URL',
     byoKey: 'API key',
-    byoKeyHint: 'Se guarda en ~/.hermes/plugin-data/make-it-smart/byo-ai.json con permisos 600. El panel nunca la muestra completa.',
-    byoMax: 'Máx. tokens',
-    byoConsent: 'Autorizo enviar extractos redactados de mis sesiones (máx. 600 caracteres por turno) al endpoint configurado para clasificar títulos y generar descripciones.',
-    byoProbar: 'Probar conexión',
-    byoGuardar: 'Guardar',
-    byoSaved: 'Guardado: {m} · {k}',
-    byoProbe: 'Probando…',
-    byoOk: 'Conexión OK · respuesta {r}',
-    byoFail: 'Falló: {e}',
-    byoMissing: 'Faltan datos: motor, modelo, base URL y API key',
-    byoTest: 'El housekeeping usará este motor: {m} / {mo}',
-    byoNone: 'Sin configurar. El housekeeping no corre hasta que cargues el motor y la clave.',
+    byoKeyHint: 'The API key lives in Hermes: Plugins → Settings → "BYO AI API key" (MMS_API_KEY). '
+      + 'The plugin reads it with get_secret and never writes it to its own files.',
+    byoKeyWhere: 'API key: set in Hermes (Plugins → Settings)',
+    byoMax: 'Max tokens',
+    byoConsent: 'I authorise sending redacted excerpts of my sessions (max. 600 characters per turn) to the configured endpoint to classify titles and generate descriptions.',
+    byoProbar: 'Test connection',
+    byoGuardar: 'Save',
+    byoSaved: 'Saved: {m} · {k}',
+    byoProbe: 'Testing…',
+    byoOk: 'Connection OK · response {r}',
+    byoFail: 'Failed: {e}',
+    byoMissing: 'Missing data: engine, model and base URL',
+    byoTest: 'Housekeeping will use this engine: {m} / {mo}',
+    byoNone: 'Not configured. Housekeeping does not run until you load the engine and the key.',
     tabIqTitle: 'The algorithm rules, the scripts and the documents of this plugin',
     iqRules: 'Rules', iqScripts: 'Scripts', iqDocs: 'Documents',
     iqNoData: 'Build the inventory with: python3 tools/plugin_iq.py',
@@ -1287,7 +1289,7 @@ const I18N = {
     dlgApplyTitle: 'Process every session',
     dlgApplyBody: 'All {n} sessions have already been audited with the current rules.\n\nOn confirm, the panel really does three things: verifies every change against the title that exists today (an already-applied change is not repeated), writes a backup of the titles it will touch BEFORE touching them, and applies one by one, counting failures instead of assuming success.\n\nWhen it finishes it reports what happened: renamed, already fine, machinery, and whether anything failed.\n\nIf something goes wrong, Revert puts the exact titles back.\n\nApply the audit?',
     newRulesIdle: 'No proposal. Generate it with: python3 tools/propose_rename.py',
-    newRulesApply: 'Procesar todas las sesiones ({n})',
+    newRulesApply: 'Process every session ({n})',
     newRulesApplyTitle: 'Writes a backup of the title database, then applies the changes',
     newRulesReload: 'Reload proposal',
     machineryNote: '+{n} machinery sessions (bots, subagents) are never renamed',
@@ -1366,19 +1368,21 @@ position:relative;display:flex;flex-direction:column;width:100%;height:100%;min-
 .mmws .headtab.byotab{--accent:var(--ok)}
 /* BYO AI no lista sesiones: la tabla y su cabecera no tienen nada que hacer ahí. */
 .mmws.byomode #tb{display:none}
+.mmws .byodisclosure{border-left:3px solid var(--ok40);background:#141018;border-radius:6px;padding:8px 12px;font-size:11.5px;line-height:1.5;color:var(--tx2);max-width:760px;margin:8px 0 2px}
 .mmws .byoform{display:grid;grid-template-columns:repeat(2,minmax(220px,1fr));gap:10px 18px;max-width:760px;margin-top:10px}
 .mmws .byoform label{display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:.04em}
+.mmws .byoform .byokeystate{border:1px dashed var(--line);border-radius:6px;padding:6px 8px;font-size:11.5px;color:var(--tx2);text-transform:none;letter-spacing:0}
 .mmws .byoform input,.mmws .byoform select{background:#15121a;border:1px solid var(--border);border-radius:6px;color:var(--tx);padding:6px 8px;font-size:12px;font-family:inherit}
 /* Inactiva: verde atenuado, mismo color que la activa sin competir con ella. */
 .mmws .headtab:not(.on){color:var(--ok);opacity:.55}
 .mmws .headtab:not(.on)::before,.mmws .headtab:not(.on)::after{opacity:.55}
 /* Hover: solo se ilumina la que tiene el cursor. */
 .mmws .headtab:hover{opacity:1;color:var(--ok)}
-.mmws .headtab:hover::before,.mmws .headtab:hover::after{opacity:.65}
 /* Activa: su color, su fondo, su borde inferior. */
-.mmws .headtab.on{opacity:1;color:var(--accent);background:#1b1720;border-bottom-color:var(--accent)}
+/* sin color: la pestaña activa lo toma de la regla del borde, que gana por especificidad */
+.mmws .headtab.on{opacity:1;background:#1b1720;border-bottom-color:var(--accent)}
 .mmws .headtab.on::before,.mmws .headtab.on::after{opacity:1}
-.iqpanel{position:absolute;inset:0;background:var(--bg);z-index:6;display:flex;flex-direction:column;gap:10px;padding:14px 18px;overflow:hidden}
+.mmws .iqpanel{position:absolute;inset:0;background:var(--bg);z-index:6;display:flex;flex-direction:column;gap:10px;padding:14px 18px;overflow:hidden}
 .mmws .actbar{display:flex;align-items:center;gap:10px;padding:10px 18px;border-bottom:1px solid var(--line);background:#141018;flex-wrap:wrap}
 .mmws .actbar .procbtn{font-size:12px;padding:6px 12px}
 .mmws .actbar .footmsg{color:var(--tx3);font-size:11.8px}
@@ -1387,16 +1391,13 @@ position:relative;display:flex;flex-direction:column;width:100%;height:100%;min-
 /* El resumen va DEBAJO de los tabs, centrado: primero se elige, después se lee. */
 .mmws .iqpanel .iqstrip.main{order:1}
 .mmws .iqpanel .iqstrip:not(.main){order:3;justify-content:center}
-.mmws .iqpanel pre{order:4}
 .mmws .iqpanel .iqstrip{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;padding:2px 0 6px}
 .mmws .iqpanel .iqstrip.main .iqbtn{font-size:12px;padding:5px 16px;border-bottom:2px solid transparent}
 .mmws .iqpanel .iqstrip.main .iqbtn.on{border-bottom-color:#3fa8a0}
 .mmws .iqpanel .iqbtn{border:1px solid var(--line);background:#17141b;color:var(--tx2);font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer}
 .mmws .iqpanel .iqbtn.on{background:#13302e;color:#7fd6ce;border-color:#3fa8a0}
-.mmws .iqpanel pre{flex:1 1 auto;overflow:auto;background:#100d13;border:1px solid var(--line);border-radius:8px;padding:12px 14px;font-size:11.8px;line-height:1.5;color:var(--tx2);white-space:pre-wrap}
+.mmws .iqpanel pre{order:4;flex:1 1 auto;overflow:auto;background:#100d13;border:1px solid var(--line);border-radius:8px;padding:12px 14px;font-size:11.8px;line-height:1.5;color:var(--tx2);white-space:pre-wrap}
 .mmws .headtab:hover::before,.mmws .headtab:hover::after{opacity:.75}
-.mmws .headtab.on{color:#fff}
-.mmws .headtab.on::before,.mmws .headtab.on::after{opacity:1}
 /* La pestaña manda sobre su propio borde, en todos sus estados. Las reglas
    genéricas del plugin (.mmws button:hover{border-color:var(--wine)},
    .mmws button.on{background/border wine}) y el anillo de foco del sistema
@@ -1640,7 +1641,7 @@ position:relative;display:flex;flex-direction:column;width:100%;height:100%;min-
 .mmws .shell .footrow{margin-left:0}
 /* Sin facetas (Process, New Rules, IQ) el panel izquierdo no ocupa espacio. */
 /* Sin facetas (Process, New Rules, IQ, BYO) el panel izquierdo no ocupa espacio. */
-.mmws:has(.bodywrap.nofilters) .shell > aside{display:none}
+.mmws.nofilters .shell > aside{display:none}
 .mmws .footbtns{display:flex;align-items:center;gap:8px;padding:0 12px;flex:0 0 auto}
 .mmws .footbtns button{height:24px;padding:1px 10px;font-size:11px;font-weight:600;border-radius:5px;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;transition:filter .12s,background .12s}
 /* Restore queda al final de la fila de indicadores, no junto a Revert. */
@@ -2261,9 +2262,9 @@ function App({ ctx }) {
         const def = BYO_MOTORES[mm] || BYO_MOTORES.deepseek
         setByo({ motor: mm, modelo: d.modelo || def.modelo || '', base_url: d.base_url || def.base_url || '',
           api_key: '', max_tokens: d.max_tokens || 120, timeout: d.timeout || 60,
-          tiene_key: Boolean(d.api_key), guardada: d.api_key ? String(d.api_key).slice(-4) : '',
+          tiene_key: false,
           allow_send_excerpts: Boolean(d.allow_send_excerpts) })
-        setByoMsg(d.api_key ? t('byoTest', { m: d.motor || '—', mo: d.modelo || '—' }) : t('byoNone'))
+        setByoMsg(t('byoNone'))
       } else {
         setByoMsg(t('byoNone'))
       }
@@ -2275,16 +2276,17 @@ function App({ ctx }) {
     const def = BYO_MOTORES[byo.motor] || { base_url: '', modelo: '' }
     const modelo = (byo.modelo || def.modelo || '').trim()
     const baseUrl = (byo.base_url || def.base_url || '').trim()
-    if (!byo.motor || !modelo || !baseUrl || (!byo.api_key && !byo.tiene_key)) {
+    if (!byo.motor || !modelo || !baseUrl) {
       setByoMsg(t('byoMissing')); return
     }
-    const actual = JSON.parse((await filesApi.readText('data', 'byo-ai.json').catch(() => ({})))?.text || '{}')
+    // Este archivo no guarda credenciales (regla 11): la clave vive en Hermes y se configura en
+    // Plugins → Ajustes. Guardar deja el archivo sin ningún secreto.
     const payload = { motor: byo.motor, modelo: modelo, base_url: baseUrl,
-      api_key: byo.api_key || actual.api_key || '', max_tokens: byo.max_tokens, timeout: byo.timeout,
+      max_tokens: byo.max_tokens, timeout: byo.timeout,
       allow_send_excerpts: Boolean(byo.allow_send_excerpts) }
     try {
       await filesApi.writeText('data', 'byo-ai.json', JSON.stringify(payload, null, 1))
-      setByoMsg(t('byoSaved', { m: payload.motor, k: payload.api_key ? 'key ✓' : 'sin key' }))
+      setByoMsg(t('byoSaved', { m: payload.motor, k: 'key en Hermes' }))
       await leerByo()
     } catch (e) { setByoMsg(t('byoFail', { e: String((e && e.message) || e) })) }
   }
@@ -3403,22 +3405,6 @@ function App({ ctx }) {
     })()
   }, [activeTab])
 
-  const refrescarBase = async () => {
-    setIsRefreshing(true)
-    try {
-      const fresco = await loadCatalogue(ctx)
-      const lista = (fresco && Array.isArray(fresco.sessions)) ? fresco.sessions : null
-      if (lista) setSessions(lista)
-      const base = lista || sessions
-      const pend = base.filter((d) => esPendiente(d)).length
-      setBtnMsg({ updb: t('updbDone', { n: base.length, v: pend }) + ' · ' + t('updbHelp'),
-                 mig: t('updbDone', { n: base.length, v: pend }) + ' · ' + t('updbHelp') })
-    } catch (e) {
-      setBtnMsg({ mig: t('updbDone', { n: sessions.length, v: pendingRows.length }) })
-    }
-    setIsRefreshing(false)
-  }
-
   const aplicarPropuesta = async () => {
     /* Qué hace esto, sin adornos:
      * la auditoría la hace el motor de reglas (tools/propose_rename.py) y queda escrita en
@@ -4496,10 +4482,13 @@ function App({ ctx }) {
 
   // Process y New Rules comparten la caja de filtros; cada una con su propio estado.
   const panelFiltros = activeTab === 'testing' || activeTab === 'newrules'
+  // Solo las ventanas 4 y 5 no llevan panel de filtros. No es lo contrario de `panelFiltros`:
+  // Session DB no está en `panelFiltros` (esa caja es de Process y New Rules) y sí tiene panel.
+  const sinFiltros = activeTab === 'tabiq' || activeTab === 'byo'
 
   return h(
     'div',
-    { className: 'mmws' + (activeTab === 'byo' ? ' byomode' : '') },
+    { className: 'mmws' + (activeTab === 'byo' ? ' byomode' : '') + (sinFiltros ? ' nofilters' : '') },
     h('style', null, CSS),
 
     /* ---------- Header ---------- */
@@ -4817,6 +4806,7 @@ panelFiltros ? null : bloqueEstado
             { className: 'iqpanel' },
             h('div', { className: 'iqhead' }, h('b', null, t('tabByo'))),
             h('p', { className: 'hint', style: { maxWidth: '760px' } }, t('byoIntro')),
+            h('div', { className: 'byodisclosure', id: 'byoDisclosure' }, t('byoDisclosure')),
             h('div', { className: 'byoform' },
               h('label', null, t('byoMotor'),
                 h('select', {
@@ -4833,9 +4823,7 @@ panelFiltros ? null : bloqueEstado
                 h('input', { id: 'byoBase', value: byo.base_url, placeholder: 'https://api.deepseek.com/v1',
                   onChange: (e) => setByo((p) => ({ ...p, base_url: e.target.value })) })),
               h('label', null, t('byoKey'),
-                h('input', { id: 'byoKey', type: 'password', value: byo.api_key,
-                  placeholder: byo.tiene_key ? `guardada …${byo.guardada || ''}` : 'sk-…',
-                  onChange: (e) => setByo((p) => ({ ...p, api_key: e.target.value })) })),
+                h('div', { className: 'byokeystate', id: 'byoKeyState' }, t('byoKeyWhere'))),
               h('label', null, t('byoMax'),
                 h('input', { id: 'byoMax', type: 'number', value: byo.max_tokens,
                   onChange: (e) => setByo((p) => ({ ...p, max_tokens: Number(e.target.value) || 120 })) })),
@@ -5025,35 +5013,6 @@ h(
         )
       : null,
 
-    /* ---------- Migración de esquema: solo datos anteriores a 0.27.0, solo en Testing ---------- */
-    esqViejo && activeTab === 'testing'
-      ? h(
-          'div',
-          { className: 'aviso', id: 'avisoEsquema', style: { margin: '6px 16px' } },
-          h(
-            'div',
-            { className: 'avhead' },
-            h('b', null, '⚠ ' + t('migTitle')),
-            h(
-              'div',
-              { className: 'acc' },
-              h(
-                'button',
-                { id: 'btnMigrar', onClick: migrarEsquema, disabled: migrando },
-                migrando ? '…' : t('migNow')
-              ),
-              h(
-                'button',
-                { className: 'ghost', onClick: () => setEsqViejo(false), disabled: migrando },
-                t('migLater')
-              )
-            )
-          ),
-          h('div', null, t('migBody')),
-          btnMsg && btnMsg.mig ? h('div', { style: { marginTop: '6px' } }, btnMsg.mig) : null
-        )
-      : null,
-
 
     /* ---------- Body (Aside + Main + Slide-over Detail Panel) ---------- */
     /* Action bar: below the window tabs, above the body; spans the content column. */
@@ -5122,7 +5081,7 @@ h(
 
     h(
       'div',
-      { className: 'bodywrap' + (activeTab === 'tabiq' || activeTab === 'byo' ? ' nofilters' : '') + (activeTab === 'tabiq' ? ' iqmode' : '') + (activeTab === 'byo' ? ' byomode' : '') },
+      { className: 'bodywrap' + (sinFiltros ? ' nofilters' : '') + (activeTab === 'tabiq' ? ' iqmode' : '') + (activeTab === 'byo' ? ' byomode' : '') },
 
       /* Left Filters Aside */
       h(

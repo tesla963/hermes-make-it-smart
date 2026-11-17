@@ -1,5 +1,56 @@
 # Changelog
 
+## 0.31.0 — 17-nov-2026 · the API key leaves the plugin, and the window stops patching itself
+
+The one change that needed doing before a reviewer looks again: **the BYO AI key is now a Hermes
+secret, not a file in the plugin's data directory.** Under catalog rule 11 a plugin gets credentials
+only through Hermes, and a bare `os.environ` read can pick up another profile's key when the gateway
+multiplexes. So:
+
+- `plugin.yaml` declares `config_schema.api_key` of `type: secret` under `MMS_API_KEY`. Hermes draws
+  the masked field in **Plugins → Settings** and stores the value in the profile's `.env`; the
+  secret never reaches `config.yaml` or any file the plugin owns.
+- `core/byo_ai.py` resolves it with `agent.secret_scope.get_secret("MMS_API_KEY")` and no longer
+  reads the key from `byo-ai.json`; `guardar()` stopped writing it. `byo-ai.json` (mode 600) keeps
+  engine, model, base URL, limits and the consent flag.
+- A `byo-ai.json` that still carries an `api_key` is ignored and flagged in the panel with the fix:
+  move the key to Plugins → Settings and delete it from the file. **This is the one manual step of
+  the release.**
+- The panel's key field is gone; it shows where the key lives instead. `guardarByo` no longer needs
+  a key to save the rest of the settings.
+
+Cleanups found while reviewing the release with a second reader:
+
+- `const VERSION` had stayed at `0.29.0` while `plugin.yaml` said `0.30.0` — a rule-14 mismatch that
+  `hermes plugins validate` does not catch.
+- The schema-migration notice was **copy-pasted twice** (28 identical lines), putting two nodes with
+  the same `id` and two `btnMigrar` buttons in the DOM. One copy remains.
+- Dead code removed: `esBotSession`, `capWord`, `refrescarBase` (declared, never referenced).
+- CSS: the last tab's gold variant was still described in duplicate rules; `.headtab:hover::before`
+  carried two different opacities (`.65` and `.75`, the second silently winning), `.headtab.on` was
+  declared twice, `.iqpanel` lacked the `.mmws` prefix its siblings have, and `.iqpanel pre` was split
+  across two rules. Each is now a single rule with the value that was actually in effect.
+- The filter panel hides through `:has(.bodywrap.nofilters)`; it now uses a `nofilters` class on the
+  root and one `sinFiltros` definition, so the layout no longer depends on `:has` support.
+
+Also from the reviewer's recommended list:
+
+- `core/paths.py` now resolves the Hermes root through `hermes_constants.get_default_hermes_root()`,
+  so `hermes -p <name>` (where `HERMES_HOME` is the profile directory) no longer restricts the index
+  to a single profile; the env path stays as a fallback and climbs out of `profiles/<name>`.
+- The English UI table was completed: 53 keys that fell back to Spanish now have their translation,
+  and six BYO AI strings that were written in Spanish inside `en` were rewritten. Both tables hold
+  236 keys; `scripts/check-i18n.cjs` compares them.
+- **The plugin has no notion of a stored key.** `byo-ai.json` is configuration only: if an old copy
+  still carries an `api_key`, the next save deletes it, and nothing in the code reads, copies,
+  preserves or migrates it. The key lives in Hermes (Plugins → Settings, `MMS_API_KEY`) and the plugin
+  asks for it there, exactly as if it had never kept one. `migracion_pendiente()` and the panel's
+  migration banner were removed with the rest of that path.
+
+Tests: `tests/test_secret_scope.py` (20 checks) locks the credential path in place — the manifest
+declares the secret, `guardar()` never writes it, `_clave()` reads it from Hermes, and an old key in
+`byo-ai.json` never comes back.
+
 ## 0.30.0 — 17-nov-2026 · three windows, each with its own filters, and a two-line table
 
 The Session DB window stopped being a single column with a sidebar bolted on. The window is now a

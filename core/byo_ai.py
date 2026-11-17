@@ -3,11 +3,14 @@
 
 Hermes tiene una vía oficial para esto —`ctx.llm` con `auxiliary.<task>`— donde el host resuelve
 la credencial y el plugin nunca ve el token. Esta pieza es el complemento para cuando el dueño
-quiere una clave **separada y propia** del plugin, guardada en su carpeta de datos y no en el
-`.env` del agente: así el gasto del housekeeping no se mezcla con el del asistente y se puede
-cambiar de motor sin tocar la configuración de Hermes.
+quiere una clave **separada y propia** del plugin: así el gasto del housekeeping no se mezcla con
+el del asistente y se puede cambiar de motor sin tocar la configuración de Hermes.
 
-Configuración: `~/.hermes/plugin-data/make-it-smart/byo-ai.json`, permisos 600.
+La **clave no vive en un archivo del plugin**. Se declara en `plugin.yaml` como
+`config_schema.api_key` de tipo `secret` (variable `MMS_API_KEY`), Hermes la guarda en el `.env`
+del perfil y acá se lee con `agent.secret_scope.get_secret`, que respeta el perfil activo cuando el
+gateway multiplexa (regla 11 del catálogo). El resto de la configuración —motor, modelo, base URL,
+límites y consentimiento— sigue en `~/.hermes/plugin-data/make-it-smart/byo-ai.json`, permisos 600.
 
     from core.byo_ai import configurado, completar, probar
     if configurado():  frase = completar("...")
@@ -61,6 +64,38 @@ def ruta_config() -> Path:
     return canon
 
 
+def _fuera_de_hermes() -> bool:
+    """True solo cuando el módulo corre suelto (CLI, tests) y no hay secret scope que consultar.
+
+    Sirve para decidir si las variables de entorno pueden usarse: dentro de un proceso de Hermes,
+    incluso uno que sirve varios perfiles, el entorno es el del perfil de lanzamiento y no el de la
+    tarea. Un `os.environ` pelado ahí filtraría la clave de un perfil a otro.
+    """
+    try:
+        import agent.secret_scope  # noqa: F401
+
+        return False
+    except Exception:
+        return True
+
+
+def _clave() -> str:
+    """La clave del motor, siempre por la ruta oficial de Hermes.
+
+    `get_secret` honra el perfil activo. Si el import existe y el secreto no está, se devuelve vacío:
+    **no** se cae al entorno, porque ese entorno es el del proceso y no el de la tarea (regla 11).
+    El entorno se usa únicamente cuando el módulo corre fuera de Hermes.
+    """
+    if _fuera_de_hermes():
+        return os.environ.get("MMS_API_KEY", "").strip()
+    try:
+        from agent.secret_scope import get_secret  # type: ignore
+
+        return (get_secret("MMS_API_KEY") or "").strip()
+    except Exception:
+        return ""
+
+
 def _leer() -> dict:
     ruta = ruta_config()
     d: dict = {}
@@ -73,9 +108,12 @@ def _leer() -> dict:
         d = {}
     d["allow_send_excerpts"] = bool(d.get("allow_send_excerpts", False))
 
-    env_key = os.environ.get("MMS_API_KEY", "").strip()
-    env_url = os.environ.get("MMS_BASE_URL", "").strip().rstrip("/")
-    env_mod = os.environ.get("MMS_MODEL", "").strip()
+    # La clave nunca se lee del archivo del plugin: si un JSON viejo la tiene, se ignora.
+    d.pop("api_key", None)
+    env_key = _clave()
+    fuera = _fuera_de_hermes()
+    env_url = os.environ.get("MMS_BASE_URL", "").strip().rstrip("/") if fuera else ""
+    env_mod = os.environ.get("MMS_MODEL", "").strip() if fuera else ""
     if env_key:
         d["api_key"] = env_key
     if env_url:
@@ -98,7 +136,6 @@ def guardar(cfg: dict) -> dict:
         "motor": str(cfg.get("motor") or "custom").strip().lower(),
         "modelo": str(cfg.get("modelo") or "").strip(),
         "base_url": str(cfg.get("base_url") or "").strip().rstrip("/"),
-        "api_key": str(cfg.get("api_key") or "").strip(),
         "max_tokens": int(cfg.get("max_tokens") or 120),
         "timeout": int(cfg.get("timeout") or 60),
         "allow_send_excerpts": bool(cfg.get("allow_send_excerpts", False)),
@@ -110,6 +147,8 @@ def guardar(cfg: dict) -> dict:
     if not limpio["modelo"]:
         limpio["modelo"] = base.get("modelo", "")
     ruta = data_dir() / "byo-ai.json"
+    # Este archivo no guarda credenciales: la clave vive en Hermes (regla 11). Si una copia vieja
+    # quedó en disco, el próximo guardado la elimina; el plugin no la lee, no la copia y no la cuida.
     ruta.parent.mkdir(parents=True, exist_ok=True)
     tmp = ruta.with_suffix(".tmp")
     tmp.write_text(json.dumps(limpio, ensure_ascii=False, indent=1), encoding="utf-8")
@@ -121,7 +160,7 @@ def guardar(cfg: dict) -> dict:
 def enmascarar(cfg: dict) -> dict:
     """Lo que la UI puede ver: la clave nunca completa."""
     c = dict(cfg or {})
-    k = str(c.get("api_key") or "")
+    k = _clave()
     c["api_key"] = ("•" * max(len(k) - 4, 0) + k[-4:]) if len(k) > 4 else ("•" * len(k))
     c["tiene_key"] = bool(k)
     c["allow_send_excerpts"] = bool(c.get("allow_send_excerpts", False))
@@ -170,7 +209,9 @@ def redactar(texto: str) -> str:
 
 def probar(cfg: dict | None = None) -> tuple[bool, str]:
     """Una llamada mínima para verificar motor, modelo y clave. Devuelve (ok, mensaje)."""
-    c = cfg or _leer()
+    c = dict(cfg or _leer())
+    if not c.get("api_key"):
+        c["api_key"] = _clave()
     if not (c.get("api_key") and c.get("modelo") and c.get("base_url")):
         return False, "faltan datos: motor, modelo, base_url y api_key"
     try:
@@ -185,8 +226,9 @@ def completar(prompt: str, sistema: str = "", max_tokens: int | None = None) -> 
     c = _leer()
     if not consentimiento_activo():
         raise RuntimeError(
-            "BYO AI no está activo: abrí la pestaña 5 · BYO AI en el panel, cargá motor, "
-            "modelo y api_key, y activá el consentimiento para enviar extractos redactados."
+            "BYO AI no está activo: cargá motor, modelo y base URL en la pestaña 5 · BYO AI, "
+            "poné la API key en Plugins → Ajustes (campo BYO AI API key) y activá el "
+            "consentimiento para enviar extractos redactados."
         )
     mensajes = []
     if sistema:
@@ -237,7 +279,8 @@ if __name__ == "__main__":
     elif len(sys.argv) > 1 and sys.argv[1] == "modelos":
         c = _leer()
         if not c.get("api_key"):
-            print("  falta la api_key: cargala en la pestaña 5 · BYO AI")
+            print("  falta la api_key: configurala en Plugins → Ajustes (BYO AI API key), "
+                  "variable MMS_API_KEY")
             raise SystemExit(2)
         req = urllib.request.Request(f"{c['base_url'].rstrip('/')}/models",
                                      headers={"Authorization": f"Bearer {c['api_key']}"})

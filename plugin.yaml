@@ -1,5 +1,5 @@
 name: hermes-make-it-smart
-version: 0.30.0
+version: 0.31.0
 description: "Hermes, Make it Smart! — Session categorization, tagging and renaming to access all your sessions — faster than it takes to press 3 clicks."
 author: "the owner"
 license: MIT
@@ -20,6 +20,12 @@ provides_tools:
   - cellar_verify
   - cellar_export
 requires_env: []
+config_schema:
+  api_key:
+    type: secret
+    env: MMS_API_KEY
+    label: "BYO AI API key"
+    description: "Clave del motor propio del plugin. Hermes la guarda en el .env del perfil; el plugin solo la lee con get_secret y nunca la escribe en sus archivos."
 python_dependencies: ["PyYAML>=6,<7"]
 data:
   canonical_dir: "~/.hermes/plugin-data/make-it-smart"

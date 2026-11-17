@@ -288,7 +288,7 @@ carried, and the panel dutifully listed them as work pending a rename. The scrip
 | Piece | What it does |
 |---|---|
 | `core/byo_ai.py` | Reads engine, model, endpoint and key from the plugin's own data directory and makes the call. Nothing else in the plugin talks to a model. |
-| Tab **5 · BYO AI** | A form: engine, model, base URL, API key, token ceiling. Save writes `byo-ai.json`. |
+| Tab **5 · BYO AI** | A form: engine, model, base URL, token ceiling and the consent box. Save writes `byo-ai.json`. The API key is not a form field: it is set in Hermes → **Plugins → Settings**. |
 | Masked key | The panel never receives the key back. It sees `…3456` and a boolean. |
 | Mode `600` | The file is written with owner-only permissions, atomically. |
 | Redaction at the boundary | Every text that leaves the machine goes through `redact_sensitive_text(..., force=True)`, which masks secrets even when global redaction is off. |

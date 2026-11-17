@@ -328,8 +328,9 @@ key, separate from Hermes Agent.
 1. Open the panel and go to **5 · BYO AI**.
 2. Pick the engine (`deepseek`, `openrouter`, `kimi`, `google`, `openai`, `custom`).
    Model and base URL fill themselves; with `custom` you type them.
-3. Paste the API key and save. The field shows `…3456` afterwards: the panel never gets the key
-   back.
+3. Put the API key in Hermes → **Plugins → Settings → BYO AI API key** (`MMS_API_KEY`). The panel
+   never holds it: the tab only shows where the key lives. As of 0.31.0 `byo-ai.json` keeps no
+   credential, and saving deletes any copy an older version left there.
 4. Verify from a terminal:
 
 ```bash
@@ -346,5 +347,15 @@ python3 tools/batch_describe.py --limit 50
 **Without configuration the batch refuses to run.** It does not fall back to the agent's model:
 spending someone else's budget silently is worse than not writing the description.
 
-The key is stored in `~/.hermes/plugin-data/make-it-smart/byo-ai.json`, mode `600`, never in the
-repository and never in `~/.hermes/.env`.
+**What leaves the machine, and when.** Nothing, while BYO AI is off: the classifier runs locally.
+If you turn it on and tick the consent box, up to 600 characters per turn of your own messages go to
+the endpoint you configured —attachments stripped, URLs removed, sensitive values redacted— and the
+description it returns is saved in your local database. Nothing else is sent, and unticking the box stops
+it immediately.
+
+The key does **not** live in the plugin's data directory. It lives in the profile's `.env` as
+`MMS_API_KEY`, written by Hermes from **Plugins → Settings → BYO AI API key**, and the plugin reads it
+through `agent.secret_scope.get_secret` — the catalog's rule 11. `byo-ai.json` (mode `600`) keeps only
+the engine, model, base URL, limits and the consent flag. An older `byo-ai.json` that still carries an
+`api_key` is ignored by the plugin and flagged in the panel: move the key to Plugins → Settings and
+delete it from the file.

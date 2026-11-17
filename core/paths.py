@@ -32,11 +32,23 @@ def hermes_root() -> Path:
     """The one real Hermes home, whatever profile is active.
 
     ``get_hermes_home()`` returns ``<root>/profiles/<name>`` when a profile is in
-    play. ``HERMES_HOME``, when set, already points at the root.
+    play, and under ``hermes -p <name>`` ``HERMES_HOME`` itself can point at that profile
+    directory — reading it directly made the index see only one profile. Hermes'
+    ``get_default_hermes_root()`` resolves a profile back to the root that contains
+    ``profiles/``, so it is preferred; the environment stays as a fallback for a Hermes
+    too old to expose it.
     """
+    try:
+        from hermes_constants import get_default_hermes_root  # type: ignore
+
+        return Path(get_default_hermes_root()).expanduser().resolve()
+    except Exception:
+        pass
     env = os.environ.get("HERMES_HOME")
     if env:
-        return Path(env).expanduser().resolve()
+        p = Path(env).expanduser().resolve()
+        # `hermes -p <name>` puede dejar HERMES_HOME en <raíz>/profiles/<name>.
+        return p.parent.parent if p.parent.name == "profiles" else p
     return Path.home() / ".hermes"
 
 

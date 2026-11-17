@@ -261,12 +261,19 @@ reports `already-current`.
 - **Reads** every profile's `state.db` in read-only mode (`mode=ro`) to build its index. It never
   reads `~/.hermes/auth.json` or any host credential store, and it does not modify anything while
   indexing.
+**Transparency, in one paragraph.** With BYO AI off, not a single character leaves your machine:
+classification runs locally. With it on *and* the consent box ticked, the plugin sends up to 600
+characters per turn of your messages —no attachments or URLs, sensitive values redacted— to the
+endpoint you configure. The description it produces is stored in your local database. Nothing else travels.
+
 - **Classifies locally by default (zero network calls).** `cellar_index(op="classify")` runs the
   deterministic local protocol (`core/actors.py` + `core/intent.py` + `fallback_facets`) with
   `use_llm=false` by default.
 - **Sends redacted excerpts only with explicit opt-in.** No session text ever leaves the machine
-  unless you (1) configure your own endpoint, model and API key in tab **5 · BYO AI**
-  (`~/.hermes/plugin-data/make-it-smart/byo-ai.json`, mode `600`), (2) explicitly check the
+  unless you (1) configure your own endpoint and model in tab **5 · BYO AI** and put the API key in
+  Hermes' own store — **Plugins → Settings → BYO AI API key**, kept in the profile's `.env` as
+  `MMS_API_KEY`; the plugin reads it with `agent.secret_scope.get_secret` and never writes it to
+  its own files —, (2) explicitly check the
   consent box (`allow_send_excerpts: true`, off by default), and (3) request LLM classification
   (`use_llm=true`) or run `tools/batch_describe.py`. When enabled, sampled user turns (up to 600
   chars per turn, cleaned of attachments and URLs, and passed through `redact_sensitive_text`) are
