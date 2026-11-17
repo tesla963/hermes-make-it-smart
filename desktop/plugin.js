@@ -19,7 +19,7 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 
 const ID = 'make-it-smart'
 const NAME = 'Hermes, Make it Smart!'
-const APP_TITLE = 'Make It Smart'
+const APP_TITLE = 'Hermes, Make It Smart!'
 const VERSION = '0.29.0'
 const ROUTE = '/smart'
 
@@ -196,8 +196,17 @@ const esBorrada = (d) =>
 
 // The canonical Bot Chat's name IS its identity, and a subagent transcript is
 // machinery, not work: neither is renamed, and neither counts as a pending change.
+/**
+ * Bot Chat: la sesión del agente por defecto (Lisa). Su título lo pone el runtime
+ * (`agent._session_title_hint = "Bot Chat"`), así que aquí sólo se detecta.
+ */
 const esBotChat = (d) => Boolean(d && /^\s*bot chat\b/i.test(String(d.raw || '')))
 
+/**
+ * Subagente: la sesión que un subagente crea para hacer su parte del trabajo. Es otra
+ * población que Bot Chat — doce y diez en el archivo real — y por eso tienen filtros
+ * separados: el bot es el agente, el subagente es trabajo delegado por él.
+ */
 const esSubagent = (d) =>
   Boolean(
     d &&
@@ -843,8 +852,8 @@ const I18N = {
   es: {
     navPrev: 'Sesión anterior',
     navNext: 'Sesión siguiente',
-    tabInfo: 'Sesión',
-    tabInfoTitle: 'Abrir la ficha de la primera sesión de la lista',
+    tabInfo: 'Info de sesión',
+    tabInfoTitle: 'Abrir o cerrar la ficha de la primera sesión de la lista',
     mostrarLbl: 'Mostrar:',
     ordenar: 'Ordenar:',
     limpiar: 'Limpiar',
@@ -856,8 +865,12 @@ const I18N = {
     showCron: 'Cron',
     hideCron: 'Cron',
     showBots: 'Bots',
+    estSub: 'Subagentes',
+    estPend: 'Por procesar',
+    estAllState: 'Todos de State',
     hideBots: 'Bots',
-    botsTitle: 'Mostrar u ocultar sesiones de bot (Bot Chat y subagentes)',
+    botsTitle: 'Mostrar u ocultar las sesiones del agente por defecto (Bot Chat)',
+    subTitle: 'Mostrar u ocultar las sesiones creadas por subagentes',
     showVacio: 'Vacío',
     hideVacio: 'Vacío',
     buscar: 'Buscar sujeto, tema, eje…',
@@ -897,6 +910,12 @@ const I18N = {
     kPend2: 'AUTORIZ',
     kPendTitle: 'Filtrar sesiones con solicitudes de autorización pendientes',
     mostrando: 'Mostrando',
+    estadoLbl: 'Estado',
+    estTodas: 'Todas',
+    estBorradas: 'Borradas',
+    estVacias: 'Vacías',
+    estCron: 'Cron',
+    estBots: 'Bots',
     de: 'de',
     copiarSesion: 'Copiar sesión',
     abrirSesion: 'Abrir sesión',
@@ -922,6 +941,8 @@ const I18N = {
     kSes2: 'visibles',
     kCos1: 'Costo',
     kCos2: 'acumulado',
+    kHor1: 'Horas',
+    kHor2: 'trabajadas',
     lblPlataforma: 'programa / marca',
     lblFamilia: 'contexto',
     lblPilar: 'intención',
@@ -989,15 +1010,15 @@ const I18N = {
     r2: 'La marca y el producto son dos cosas: USPS + Ground Advantage',
     r3: 'El sujeto es el paciente, no quien sostiene la ficha',
     r4: 'Una serie, un pilar: si hay 40 hermanos, el que no encaja está mal',
-    tabActual: '1 · Actual Session DB',
+    tabActual: '1) Session Database',
     tabActualTitle: 'Sesiones reales de la base de datos de Hermes (solo lectura)',
-    tabTesting: '2 · Process',
-    tabNewRules: '3 · New Rules',
+    tabTesting: '2) Process',
+    tabNewRules: '3) New Rules',
     tabNewRulesTitle: 'Aplicar las reglas nuevas a los títulos, con respaldo y revert',
     procAll: 'Procesar toda la base ({n})',
     procAllTitle: 'Reescribir el título de todas las sesiones con la forma canónica: respalda, aplica y reporta qué quedó igual',
-    tabIq: '4 · Plugin IQ',
-    tabByo: '5 · BYO AI',
+    tabIq: '4) Plugin IQ',
+    tabByo: '5) BYO AI',
     tabByoTitle: 'Motor de IA propio para el housekeeping del plugin (clave separada del agente)',
     byoIntro: 'El housekeeping del plugin (descripciones de sesiones) puede usar su propio motor y su propia clave, separada de la de Hermes Agent. Así el gasto no se mezcla y podés cambiar de motor sin tocar el agente.',
     byoMotor: 'Motor',
@@ -1028,6 +1049,8 @@ const I18N = {
     newRulesReload: 'Recargar propuesta',
     machineryNote: '+{n} de maquinaria (bots, subagentes), no se renombran',
     machineryNoteTitle: 'Son sesiones de máquina: se excluyen del renombrado a propósito',
+    machTitle: 'Sesiones de máquina',
+    machBody: 'Estas {n} sesiones son de bots o de cron: se muestran para que las revises, pero no se renombran nunca.',
     tabTestingTitle: 'Procesar los títulos que todavía no fueron renombrados (con backup y revert)',
     commitBtn: 'Commit Changes to Hermes DB',
     commitBtnCount: 'Commit Changes to Hermes DB ({n} sesiones por procesar)',
@@ -1072,8 +1095,8 @@ const I18N = {
   en: {
     navPrev: 'Previous session',
     navNext: 'Next session',
-    tabInfo: 'Session',
-    tabInfoTitle: 'Open the card of the first session in the list',
+    tabInfo: 'Session Info',
+    tabInfoTitle: 'Open or close the card of the first session in the list',
     mostrarLbl: 'Show:',
     ordenar: 'Sort:',
     limpiar: 'Clear',
@@ -1085,8 +1108,12 @@ const I18N = {
     showCron: 'Cron',
     hideCron: 'Cron',
     showBots: 'Bots',
+    estSub: 'Subagents',
+    estPend: 'To be processed',
+    estAllState: 'All from State',
     hideBots: 'Bots',
-    botsTitle: 'Show or hide bot sessions (Bot Chat and subagent transcripts)',
+    botsTitle: 'Show or hide the default agent sessions (Bot Chat)',
+    subTitle: 'Show or hide the sessions created by subagents',
     showVacio: 'Empty',
     hideVacio: 'Empty',
     buscar: 'Search subject, topic, axis…',
@@ -1126,6 +1153,12 @@ const I18N = {
     kPend2: 'AUTH',
     kPendTitle: 'Filter sessions with pending authorization requests',
     mostrando: 'Showing',
+    estadoLbl: 'State',
+    estTodas: 'All',
+    estBorradas: 'Deleted',
+    estVacias: 'Empty',
+    estCron: 'Cron',
+    estBots: 'Bots',
     de: 'of',
     copiarSesion: 'Copy session',
     abrirSesion: 'Open session',
@@ -1151,6 +1184,8 @@ const I18N = {
     kSes2: 'sessions',
     kCos1: 'Total',
     kCos2: 'cost',
+    kHor1: 'Total',
+    kHor2: 'hours',
     lblPlataforma: 'program / brand',
     lblFamilia: 'context',
     lblPilar: 'intention',
@@ -1218,15 +1253,15 @@ const I18N = {
     r2: 'The brand and the product are two things: USPS + Ground Advantage',
     r3: 'The subject is the patient, not whoever holds the file',
     r4: 'One series, one pillar: with 40 siblings, the one that does not fit is wrong',
-    tabActual: '1 · Actual Session DB',
+    tabActual: '1) Session Database',
     tabActualTitle: 'Actual sessions from Hermes database (read-only)',
-    tabTesting: '2 · Process',
-    tabNewRules: '3 · New Rules',
+    tabTesting: '2) Process',
+    tabNewRules: '3) New Rules',
     tabNewRulesTitle: 'Apply the new rules to the titles, with backup and revert',
     procAll: 'Process the whole database ({n})',
     procAllTitle: 'Rewrite every session title in canonical form: backs up, applies and reports what came out the same',
-    tabIq: '4 · Plugin IQ',
-    tabByo: '5 · BYO AI',
+    tabIq: '4) Plugin IQ',
+    tabByo: '5) BYO AI',
     tabByoTitle: 'Motor de IA propio para el housekeeping del plugin (clave separada del agente)',
     byoIntro: 'El housekeeping del plugin (descripciones de sesiones) puede usar su propio motor y su propia clave, separada de la de Hermes Agent. Así el gasto no se mezcla y podés cambiar de motor sin tocar el agente.',
     byoMotor: 'Motor',
@@ -1257,6 +1292,8 @@ const I18N = {
     newRulesReload: 'Reload proposal',
     machineryNote: '+{n} machinery sessions (bots, subagents) are never renamed',
     machineryNoteTitle: 'Machine sessions are excluded from renaming on purpose',
+    machTitle: 'Machine sessions',
+    machBody: 'These {n} sessions belong to bots or cron: shown so you can review them, but they are never renamed.',
     tabTestingTitle: 'Process the titles that have not been renamed yet (with backup and revert)',
     commitBtn: 'Commit Changes to Hermes DB',
     commitBtnCount: 'Commit Changes to Hermes DB ({n} Sessions to Process)',
@@ -1323,20 +1360,20 @@ position:relative;display:flex;flex-direction:column;width:100%;height:100%;min-
 .mmws .headtab::after{right:0}
 /* La identidad va por NOMBRE de pestaña, nunca por posición: así añadir una no repinta las otras. */
 .mmws .headtab.tabactual{--accent:var(--ok)}
-.mmws .headtab.tabprocess{--accent:var(--gold)}
-.mmws .headtab.newruletab{--accent:#8b5cf6}
-.mmws .headtab.iqtab{--accent:#3fa8a0}
-.mmws .headtab.byotab{--accent:#ff6fae}
+.mmws .headtab.tabprocess{--accent:var(--ok)}
+.mmws .headtab.newruletab{--accent:var(--ok)}
+.mmws .headtab.iqtab{--accent:var(--ok)}
+.mmws .headtab.byotab{--accent:var(--ok)}
 /* BYO AI no lista sesiones: la tabla y su cabecera no tienen nada que hacer ahí. */
 .mmws.byomode #tb{display:none}
 .mmws .byoform{display:grid;grid-template-columns:repeat(2,minmax(220px,1fr));gap:10px 18px;max-width:760px;margin-top:10px}
 .mmws .byoform label{display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:.04em}
 .mmws .byoform input,.mmws .byoform select{background:#15121a;border:1px solid var(--border);border-radius:6px;color:var(--tx);padding:6px 8px;font-size:12px;font-family:inherit}
-/* Inactiva: atenuada pero completa, con su color de identidad en los laterales. */
-.mmws .headtab:not(.on){color:var(--tx3);opacity:.7}
-.mmws .headtab:not(.on)::before,.mmws .headtab:not(.on)::after{opacity:.3}
+/* Inactiva: verde atenuado, mismo color que la activa sin competir con ella. */
+.mmws .headtab:not(.on){color:var(--ok);opacity:.55}
+.mmws .headtab:not(.on)::before,.mmws .headtab:not(.on)::after{opacity:.55}
 /* Hover: solo se ilumina la que tiene el cursor. */
-.mmws .headtab:hover{opacity:1;color:var(--tx2)}
+.mmws .headtab:hover{opacity:1;color:var(--ok)}
 .mmws .headtab:hover::before,.mmws .headtab:hover::after{opacity:.65}
 /* Activa: su color, su fondo, su borde inferior. */
 .mmws .headtab.on{opacity:1;color:var(--accent);background:#1b1720;border-bottom-color:var(--accent)}
@@ -1360,8 +1397,6 @@ position:relative;display:flex;flex-direction:column;width:100%;height:100%;min-
 .mmws .headtab:hover::before,.mmws .headtab:hover::after{opacity:.75}
 .mmws .headtab.on{color:#fff}
 .mmws .headtab.on::before,.mmws .headtab.on::after{opacity:1}
-.mmws .headtab.on.testing{color:var(--gold)}
-.mmws .headtab.on.testing::before,.mmws .headtab.on.testing::after{background:var(--gold);opacity:1}
 /* La pestaña manda sobre su propio borde, en todos sus estados. Las reglas
    genéricas del plugin (.mmws button:hover{border-color:var(--wine)},
    .mmws button.on{background/border wine}) y el anillo de foco del sistema
@@ -1371,22 +1406,11 @@ position:relative;display:flex;flex-direction:column;width:100%;height:100%;min-
 .mmws .headtabs .headtab:focus,
 .mmws .headtabs .headtab:focus-visible,
 .mmws .headtabs .headtab:active{border-color:transparent!important;background-color:transparent!important;box-shadow:none!important;outline:0!important}
-/* La pestaña cierra su silueta también abajo en su propio color atenuado.
-   La identidad va por NOMBRE de pestaña, nunca por posición. */
-.mmws .headtabs .headtab.tabactual{border-bottom-color:var(--ok40)!important}
-.mmws .headtabs .headtab.tabprocess{border-bottom-color:var(--gold40)!important}
-.mmws .headtabs .headtab.newruletab{border-bottom-color:rgba(139,92,246,0.4)!important}
-.mmws .headtabs .headtab.iqtab{border-bottom-color:rgba(63,168,160,0.4)!important}
-/* Hover: el tab inactivo sube a color pleno bajo el cursor. */
-.mmws .headtabs .headtab.tabactual:hover{border-bottom-color:var(--ok)!important}
-.mmws .headtabs .headtab.tabprocess:hover{border-bottom-color:var(--gold)!important}
-.mmws .headtabs .headtab.newruletab:hover{border-bottom-color:#8b5cf6!important}
-.mmws .headtabs .headtab.iqtab:hover{border-bottom-color:#3fa8a0!important}
-/* Activa: su color pleno y su texto iluminado. */
-.mmws .headtabs .headtab.tabactual.on{border-bottom-color:var(--ok)!important;color:var(--ok)!important}
-.mmws .headtabs .headtab.tabprocess.on{border-bottom-color:var(--gold)!important;color:var(--gold)!important}
-.mmws .headtabs .headtab.newruletab.on{border-bottom-color:#8b5cf6!important;color:#8b5cf6!important}
-.mmws .headtabs .headtab.iqtab.on{border-bottom-color:#3fa8a0!important;color:#3fa8a0!important}
+/* Todas las pestañas comparten el verde de la ventana 1, en cualquier estado.
+   La identidad ya no va por color: solo hay un color para todo el grupo. */
+.mmws .headtabs .headtab{border-bottom-color:var(--ok40)!important}
+.mmws .headtabs .headtab:hover{border-bottom-color:var(--ok)!important}
+.mmws .headtabs .headtab.on{border-bottom-color:var(--ok)!important;color:var(--ok)!important}
 
 .mmws .bodywrap{flex:1 1 auto;min-height:0;display:flex;align-items:stretch;position:relative;overflow:hidden}
 /* Process and New Rules do not filter: they act. The left aside would be dead weight. */
@@ -1395,15 +1419,57 @@ position:relative;display:flex;flex-direction:column;width:100%;height:100%;min-
 .mmws .bodywrap.nofilters .toolbar{display:none}
 /* Plugin IQ no es una lista de sesiones: ahí la tabla no aplica, ni su cabecera. */
 .mmws .bodywrap.iqmode main{display:none}
-.mmws .abarra{flex:none;padding:9px 0 8px;background:var(--bg2);border-bottom:1px solid var(--line);z-index:2}
+.mmws .abarra{flex:none;display:block;padding:9px 0 8px;background:var(--bg2);border-bottom:1px solid var(--line);z-index:2;text-align:center}
+/* El buscador se centra en el panel: texto y placeholder al medio. */
+.mmws .abarra #q{text-align:center}
+.mmws .fechagroup{display:contents}
 .mmws .ascroll{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;padding:8px 0 14px;scrollbar-width:none;-ms-overflow-style:none;overscroll-behavior:contain}
 .mmws .ascroll::-webkit-scrollbar{display:none;width:0;height:0}
-.mmws aside{width:var(--aside-ef);flex:0 0 var(--aside-ef);height:100%;display:flex;flex-direction:column;overflow:hidden;border-right:1px solid var(--line);background:var(--bg2);padding:0 10px}
+.mmws aside{width:var(--aside-ef);flex:0 0 var(--aside-ef);height:100%;display:flex;flex-direction:column;overflow:hidden;border-right:1px solid var(--line);background:var(--bg2);padding:0 30px 0 10px;position:relative}
 .mmws aside::-webkit-scrollbar{display:none;width:0;height:0}
 .mmws main{flex:1 1 auto;min-width:0;height:100%;overflow-y:auto;overflow-x:hidden;padding:0 0 40px}
-.mmws #tabInfo{position:absolute;right:0;top:0;bottom:0;width:44px;display:flex;align-items:center;justify-content:center;writing-mode:vertical-rl;text-orientation:mixed;background:#191420;border:0;border-left:1px solid var(--line);border-bottom:1px solid var(--line);border-radius:0 0 0 6px;color:var(--tx3);font-size:9.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;padding:8px 4px;white-space:normal;line-height:1.1;text-align:center;z-index:45}
-.mmws #tabInfo:hover{background:#241c2e;color:#fff}
-.mmws #tabInfo:active{background:#2d2338}
+/* Panel superior: pestañas y fila de acciones en un solo bloque, con el rail
+   de la ficha de sesión pegado a su derecha. */
+.mmws .toppanel{position:relative;z-index:8;border-bottom:1px solid var(--line);background:var(--bg)}
+/* Las ventanas que se dibujan con .iqpanel (inset:0, z-index 6) tapaban la barra de
+   pestañas. Con el toppanel por encima, los tabs siguen visibles y clicables. */
+.mmws .toppanel .top{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;min-width:0;border-bottom:0}
+.mmws .toppanel .top .headtabs{justify-self:center;margin-left:0}
+.mmws .toppanel .top .langsw{justify-self:end}
+.mmws .toppanel .brandrow{flex:0 0 auto;flex-wrap:nowrap;justify-self:start}
+/* El título vive en el panel izquierdo, sobre el buscador, centrado con todo su bloque. */
+.mmws .asideTitle{flex:0 0 auto;padding:10px 0 3px;text-align:center}
+.mmws .asideTitle h1{margin:0;font-size:15.5px;font-weight:700;color:#fff;cursor:pointer;line-height:1.25;letter-spacing:-.01em;text-align:center}
+/* Acciones: bajo el buscador, después del contador y los chips, centradas. */
+.mmws .abarraFoot{display:block;padding-top:6px;text-align:center}
+.mmws .abarraFoot #acciones{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;justify-content:center}
+.mmws .abarraFoot #acciones button{font-size:11.2px;padding:3px 8px;white-space:nowrap}
+.mmws .abarraFoot .chips{justify-content:center}
+.mmws .abarraFoot .counter{font-size:11.6px;color:var(--tx2);white-space:normal;line-height:1.35}
+.mmws .abarraFoot .counter b{color:#fff}
+.mmws .abarraFoot .chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
+/* Estado: cierre del mismo scroll del panel, no una caja fija aparte. */
+.mmws .estados{padding:14px 0 4px;margin:0;background:transparent;border:0}
+.mmws .estados h4{margin:0 0 5px;font-size:9.5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3)}
+.mmws .estados label{display:flex;align-items:center;gap:7px;font-size:11.6px;color:var(--tx3);cursor:pointer;padding:2px 0;line-height:1.5}
+.mmws .estados label:hover{color:var(--tx2)}
+.mmws .estados label.on{color:#fff;font-weight:600}
+.mmws .estados input[type=radio]{accent-color:var(--ok);width:12px;height:12px;margin:0;flex:0 0 auto}
+/* Casilla con forma de círculo: permite que ningún estado esté marcado al entrar. */
+.mmws .estados input[type=checkbox]{appearance:none;-webkit-appearance:none;width:12px;height:12px;margin:0;flex:0 0 auto;border-radius:50%;border:1px solid #554c60;background:#100d13;cursor:pointer;position:relative;transition:border-color .12s,background .12s}
+.mmws .estados input[type=checkbox]:hover{border-color:#8d8399}
+.mmws .estados input[type=checkbox]:checked{background:var(--ok);border-color:var(--ok)}
+.mmws .estados input[type=checkbox]:checked::after{content:'';position:absolute;inset:3px;border-radius:50%;background:#0d0b0e}
+/* La ficha de sesión: rail vertical pegado al borde derecho del panel de búsqueda. */
+/* Rail vertical: flechas pegadas al texto, cada una con su recuadro. */
+.mmws aside #tabInfo{position:absolute;right:0;top:0;bottom:0;width:26px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:6px;background:#191420;border-left:1px solid var(--line);z-index:45;padding:0 0 6px;cursor:pointer}
+.mmws aside #tabInfo .railnav{flex:0 0 auto;width:22px;height:20px;display:flex;align-items:center;justify-content:center;background:#221c2b;border:1px solid #8d8399;border-radius:5px;color:var(--tx);font-size:8px;line-height:1;cursor:pointer;padding:0}
+.mmws aside #tabInfo .railnav:hover:not(:disabled){background:#332944;border-color:#cfc6d8;color:#fff}
+.mmws aside #tabInfo .railnav:disabled{cursor:default;background:#1b1720;border-color:#575061;color:#6d6578}
+.mmws aside #tabInfo .railtxt{flex:0 1 auto;min-height:0;display:flex;align-items:center;justify-content:center;writing-mode:vertical-rl;text-orientation:mixed;background:transparent;border:0;color:var(--tx3);font-size:9.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;padding:6px 2px;line-height:1.1;text-align:center}
+.mmws aside #tabInfo .railtxt span{display:block;transform:rotate(180deg)}
+.mmws aside #tabInfo .railtxt:hover{background:#241c2e;color:#fff}
+.mmws #tabInfo:active{background:transparent}
 .mmws .toolbar{position:sticky;top:0;z-index:30;background:rgba(13,11,14,.98);backdrop-filter:blur(6px);border-bottom:1px solid var(--line);padding:8px 54px 7px 16px;display:flex;gap:8px;row-gap:6px;align-items:center;flex-wrap:wrap}
 .mmws .counter{font-size:12.5px;color:var(--tx2);flex:0 0 auto;white-space:nowrap}
 .mmws .counter b{color:#fff}
@@ -1477,7 +1543,25 @@ position:relative;display:flex;flex-direction:column;width:100%;height:100%;min-
 .mmws #tb th:nth-child(8){width:64px;text-align:center}
 .mmws #tb th:nth-child(1),.mmws #tb td.ncol{padding:6px 0;text-align:center;white-space:nowrap;width:48px}
 .mmws td.fecha{padding-left:8px !important;text-align:left !important;color:var(--tx3)}
-.mmws #tb td.ttitle{padding:6px 8px 2px 0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10.5px;line-height:1.45;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-bottom:none !important;color:#f4e6ee;font-weight:700}
+.mmws #tb td.ttitle .pill.iq3,.mmws #tb td.ttitle .pill.iq4,.mmws #tb td.ttitle .pill.iq5,.mmws #tb td.ttitle .pill.iq6,.mmws #tb td.ttitle .pill.iq7,.mmws #tb td.ttitle .pill.iq8{background:#1b1720;border:1px solid #3a3342;color:var(--tx3)}
+.mmws #tb td.ttitle .pill.iq3:hover,.mmws #tb td.ttitle .pill.iq4:hover,.mmws #tb td.ttitle .pill.iq5:hover,.mmws #tb td.ttitle .pill.iq6:hover,.mmws #tb td.ttitle .pill.iq7:hover,.mmws #tb td.ttitle .pill.iq8:hover{border-color:#8d8399;color:#fff}
+/* Segunda línea: una franja que arranca en el borde izquierdo de SUBJECT y se
+   expande hasta POSTS; las etiquetas fluyen y el Pending queda a la derecha. */
+.mmws #tb td.iqrow{padding:3px 8px 5px 6px;min-height:20px;overflow:hidden;vertical-align:middle}
+.mmws #tb td.iqrow .iqwrap{display:flex;flex-wrap:wrap;align-items:center;gap:5px;max-width:100%}
+.mmws #tb td.iqrow .pill{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mmws #tb td.iqrow .mmark{font-size:10px;color:var(--tx3)}
+.mmws #tb td.pendright{text-align:right;padding-right:8px !important}
+.mmws #tb td.fecha{white-space:nowrap;font-size:11px;color:var(--tx3)}
+.mmws #tb tr.t td.fecha{color:var(--tx2);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;padding-left:8px}
+.mmws #tb td.ttitle .pill.iq3,.mmws #tb td.ttitle .pill.iq4,.mmws #tb td.ttitle .pill.iq5,
+.mmws #tb td.ttitle .pill.iq6,.mmws #tb td.ttitle .pill.iq7,.mmws #tb td.ttitle .pill.iq8{
+  background:#1b1720;border:1px solid #3a3342;color:var(--tx3)}
+/* La primera línea manda: todas las celdas se alinean arriba y comparten relleno y
+   alto de línea, así el título largo empuja hacia abajo sin desalinear las cifras. */
+.mmws #tb tr.t td{vertical-align:top;padding-top:6px;line-height:15px}
+.mmws #tb tr.t td.ttitle{padding-top:6px;line-height:15px}
+.mmws #tb td.ttitle{padding:6px 8px 2px 0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10.5px;line-height:1.45;white-space:normal;overflow:hidden;text-overflow:clip;word-break:break-word;overflow-wrap:anywhere;border-bottom:none !important;color:#f4e6ee;font-weight:700}
 .mmws tr.t{cursor:pointer}
 .mmws tr.t.sele{background:#251521;box-shadow:inset 3px 0 0 var(--wine2)}
 .mmws #tb .tsub{color:var(--gold);font-weight:700;opacity:.9;margin-right:3px}
@@ -1547,7 +1631,16 @@ position:relative;display:flex;flex-direction:column;width:100%;height:100%;min-
 .mmws .why{font-size:11.5px;color:var(--tx3);background:#151119;border:1px dashed var(--line2);border-radius:7px;padding:8px 10px;margin:10px 0}
 .mmws .pidfoot{margin-top:10px;padding-top:8px;border-top:1px solid var(--line);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px;line-height:1.45;color:var(--tx3);word-break:break-all;user-select:all}
 .mmws .pidfoot span{text-transform:uppercase;letter-spacing:.06em;font-size:9px;opacity:.7;margin-right:4px}
-.mmws .footrow{flex:0 0 var(--kbar-h);height:var(--kbar-h);display:flex;align-items:stretch;justify-content:space-between;z-index:60;background:#0f0c13d9;backdrop-filter:blur(8px);border-top:1px solid var(--line2)}
+.mmws .footrow{flex:0 0 var(--kbar-h);height:var(--kbar-h);display:flex;align-items:stretch;justify-content:space-between;z-index:60;background:#0f0c13d9;backdrop-filter:blur(8px);border-top:1px solid var(--line2);margin-left:calc(var(--aside-ef) - 27px)}
+/* Columna izquierda de altura completa y columna derecha con tabs, tabla y pie. */
+.mmws .shell{display:flex;flex:1 1 auto;min-height:0;width:100%}
+.mmws .shell > aside{height:auto;align-self:stretch}
+.mmws .rightcol{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;min-height:0}
+.mmws .rightcol .bodywrap{flex:1 1 auto;min-height:0}
+.mmws .shell .footrow{margin-left:0}
+/* Sin facetas (Process, New Rules, IQ) el panel izquierdo no ocupa espacio. */
+/* Sin facetas (Process, New Rules, IQ, BYO) el panel izquierdo no ocupa espacio. */
+.mmws:has(.bodywrap.nofilters) .shell > aside{display:none}
 .mmws .footbtns{display:flex;align-items:center;gap:8px;padding:0 12px;flex:0 0 auto}
 .mmws .footbtns button{height:24px;padding:1px 10px;font-size:11px;font-weight:600;border-radius:5px;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;transition:filter .12s,background .12s}
 /* Restore queda al final de la fila de indicadores, no junto a Revert. */
@@ -2061,7 +2154,12 @@ function App({ ctx }) {
   const [pendAttr, setPendAttr] = useState(null)
   const [expandSujetos, setExpandSujetos] = useState(false)
   const [openOrphans, setOpenOrphans] = useState(false)
-  const [q, setQ] = useState(() => leerConsultaHash())
+  // La ventana activa se declara antes que los filtros: ellos dependen de ella.
+  const [activeTab, setActiveTab] = useState('actual')
+  const [qPorVentana, setQPorVentana] = useState(() => ({ actual: leerConsultaHash() }))
+  const q = qPorVentana[activeTab] || ''
+  const setQ = (v) =>
+    setQPorVentana((m) => ({ ...m, [activeTab]: typeof v === 'function' ? v(m[activeTab] || '') : v }))
 
   // Enlace profundo (`#/smart?q=…`) y atajo con la página ya abierta: la consulta
   // entra en la caja y el foco queda puesto. `hashchange` cubre la navegación
@@ -2096,33 +2194,44 @@ function App({ ctx }) {
     }
   }, [])
 
-  const [f, setF] = useState({
-    iq1: null,
-    iq2: null,
-    iq3i: null,
-    iq3: null,
-    iq4: null,
-    iq5: null,
-    iq6: null,
-    iq8: null,
-    iq9: null,
-    sujeto: null,
-    motor: null,
-    autor: null,
-    anio: null,
-    mes: null,
-    sem: null,
-    dia: '',
-    d1: '',
-    d2: '',
-  })
+  // Cada ventana tiene sus propios filtros: lo que se marca en Process no toca Session DB.
+  const FILTRO_VACIO = useMemo(
+    () => ({
+      iq1: null, iq2: null, iq3i: null, iq3: null, iq4: null, iq5: null, iq6: null, iq8: null, iq9: null,
+      sujeto: null, motor: null, autor: null, anio: null, mes: null, sem: null, dia: '', d1: '', d2: '',
+    }),
+    []
+  )
+  const [fPorVentana, setFPorVentana] = useState({})
+  const f = fPorVentana[activeTab] || FILTRO_VACIO
+  const setF = (upd) =>
+    setFPorVentana((m) => {
+      const act = m[activeTab] || FILTRO_VACIO
+      return { ...m, [activeTab]: typeof upd === 'function' ? upd(act) : upd }
+    })
   const [folded, setFolded] = useState(() => new Set(['iq2', 'iq3']))
   const [expanded, setExpanded] = useState(() => new Set())
   const [openNodes, setOpenNodes] = useState(() => new Set())
-  const [showElim, setShowElim] = useState(false)
-  const [showVacio, setShowVacio] = useState(false)
-  const [showCron, setShowCron] = useState(false)
-  const [showBots, setShowBots] = useState(false)
+  // El estado (borradas / vacías / cron / bots) también es propio de cada ventana.
+  const [estadoPorVentana, setEstadoPorVentana] = useState({})
+  const estV = estadoPorVentana[activeTab] || {}
+  const showElim = !!estV.elim
+  const showVacio = !!estV.vacio
+  const showCron = !!estV.cron
+  const showBots = !!estV.bots
+  const showSub = !!estV.sub
+  const showAll = !!estV.all
+  const marcaEstado = (k) => (v) =>
+    setEstadoPorVentana((m) => {
+      const act = m[activeTab] || {}
+      return { ...m, [activeTab]: { ...act, [k]: typeof v === 'function' ? v(!!act[k]) : v } }
+    })
+  const setShowElim = marcaEstado('elim')
+  const setShowVacio = marcaEstado('vacio')
+  const setShowCron = marcaEstado('cron')
+  const setShowBots = marcaEstado('bots')
+  const setShowSub = marcaEstado('sub')
+  const setShowAll = marcaEstado('all')
   const [orden, setOrden] = useState({ k: 'fecha', asc: false })
   const [sel, setSel] = useState(null)
   const [editModal, setEditModal] = useState(false)
@@ -2130,7 +2239,6 @@ function App({ ctx }) {
   const [vModal, setVModal] = useState(false)
   // The panel always opens on the real session database. Testing is a deliberate
   // step the user takes to preview a rename, so it is never restored on open.
-  const [activeTab, setActiveTab] = useState('actual')
   const [lastBackup, setLastBackup] = useState(null)
   const [canRevert, setCanRevert] = useState(false)
   const [isCommitting, setIsCommitting] = useState(false)
@@ -2371,14 +2479,18 @@ function App({ ctx }) {
   // Mutually exclusive state filter: Borradas | Vacío | Cron
   const setEstado = (cual) => {
     const yaActivo =
+      (cual === 'all' && showAll) ||
       (cual === 'elim' && showElim) ||
       (cual === 'vacio' && showVacio) ||
       (cual === 'cron' && showCron) ||
-      (cual === 'bots' && showBots)
+      (cual === 'bots' && showBots) ||
+      (cual === 'sub' && showSub)
+    setShowAll(!yaActivo && cual === 'all')
     setShowElim(!yaActivo && cual === 'elim')
     setShowVacio(!yaActivo && cual === 'vacio')
     setShowCron(!yaActivo && cual === 'cron')
     setShowBots(!yaActivo && cual === 'bots')
+    setShowSub(!yaActivo && cual === 'sub')
   }
 
   const copyPendingIds = async (ids, key) => {
@@ -2429,9 +2541,9 @@ function App({ ctx }) {
       } else if (qs && !(d._s || '').includes(qs)) {
         return false
       }
-      return true
+      // Sin `return true`: la ventana Process también se acota con las facetas.
     }
-    const modo = showElim ? 'elim' : showVacio ? 'vacio' : showCron ? 'cron' : showBots ? 'bots' : null
+    const modo = showElim ? 'elim' : showVacio ? 'vacio' : showCron ? 'cron' : showBots ? 'bots' : showSub ? 'sub' : null
     if (!skips.includes('estado')) {
       if (modo === 'elim') {
         if (!esBorrada(d)) return false
@@ -2440,14 +2552,14 @@ function App({ ctx }) {
       } else if (modo === 'cron') {
         if (!esCron(d)) return false
       } else if (modo === 'bots') {
-        if (!esBotSession(d)) return false
+        if (!esBotChat(d)) return false
+      } else if (modo === 'sub') {
+        if (!esSubagent(d)) return false
+      } else if (showAll && activeTab !== 'testing') {
+        if (!(esBorrada(d) || d.vacia || esCron(d) || esBotChat(d) || esSubagent(d))) return false
       } else {
-        if (!skips.includes('elim') && esBorrada(d)) return false
-        if (!skips.includes('cron') && esCron(d)) return false
-        if (!skips.includes('vacio') && d.vacia) return false
-        // Bot Chat and subagent transcripts stay out of the way until the Bots chip
-        // is switched on.
-        if (!skips.includes('bots') && esBotSession(d)) return false
+        // Todas: las especiales (borradas, vacías, cron, bots) también aparecen.
+        // El radio de estado no las esconde: sólo las aísla cuando se elige uno.
       }
     }
     if (!skips.includes('iq3') && f.iq3 && d.pilar !== f.iq3) return false
@@ -2494,14 +2606,28 @@ function App({ ctx }) {
     [sessions]
   )
 
+  // Universo de cada ventana. Session DB trabaja sobre todo el archivo; Process, sobre las
+  // pendientes… salvo que el estado pida un conjunto de máquina (bots, cron, borradas, vacías),
+  // en cuyo caso ese conjunto sustituye al de pendientes.
+  const universo = useMemo(() => {
+    if (activeTab !== 'testing') return sessions
+    if (showElim) return sessions.filter(esBorrada)
+    if (showVacio) return sessions.filter((d) => d.vacia)
+    if (showCron) return sessions.filter(esCron)
+    if (showBots) return sessions.filter(esBotChat)
+    if (showSub) return sessions.filter(esSubagent)
+    return pendingRows
+  }, [activeTab, sessions, pendingRows, showElim, showVacio, showCron, showBots, showSub])
+
   const visible = useMemo(() => {
     if (activeTab === 'testing') {
-      if (nums) return pendingRows.filter((d) => nums.has(+d.n))
-      if (qs) return pendingRows.filter((d) => (d._s || '').includes(qs))
-      return pendingRows
+      let rows = universo
+      if (nums) rows = rows.filter((d) => nums.has(+d.n))
+      else if (qs) rows = rows.filter((d) => (d._s || '').includes(qs))
+      return rows.filter((d) => pass(d))
     }
     return sessions.filter((d) => pass(d))
-  }, [sessions, pendingRows, activeTab, f, q, nums, qs, showElim, showVacio, showCron, showBots])
+  }, [sessions, pendingRows, universo, activeTab, f, q, nums, qs, showAll, showElim, showVacio, showCron, showBots, showSub])
 
   const arbol = useMemo(() => {
     const arr = visible.slice()
@@ -2533,10 +2659,25 @@ function App({ ctx }) {
   const sorted = arbol.rows
   const subIds = arbol.sub
 
+  // El rail se ancla al borde inferior de la cabecera de la tabla: se mide en vivo
+  // porque la ventana, el idioma y el número de filas cambian esa altura.
+  useEffect(() => {
+    const ajusta = () => {
+      const rail = document.getElementById('tabInfo')
+      const th = document.querySelector('#tb thead')
+      if (!rail || !th) return
+      const borde = th.getBoundingClientRect().bottom
+      rail.style.paddingTop = Math.max(0, Math.round(borde - 30)) + 'px'
+    }
+    ajusta()
+    window.addEventListener('resize', ajusta)
+    return () => window.removeEventListener('resize', ajusta)
+  }, [activeTab, lang, visible.length, showAll, showElim, showVacio, showCron, showBots, showSub])
+
   const facetCounts = (skipKeys, field) => {
     const c = {}
     const allValues = new Set()
-    for (const d of sessions) {
+    for (const d of universo) {
       const v = d[field]
       if (v) allValues.add(v)
       if (pass(d, ...skipKeys) && v) {
@@ -2563,7 +2704,16 @@ function App({ ctx }) {
   const nElim = useMemo(() => sessions.filter(esBorrada).length, [sessions])
   const nVacio = useMemo(() => sessions.filter((d) => d.vacia).length, [sessions])
   const nCron = useMemo(() => sessions.filter(esCron).length, [sessions])
-  const nBots = useMemo(() => sessions.filter(esBotSession).length, [sessions])
+  const nBots = useMemo(() => sessions.filter(esBotChat).length, [sessions])
+  const nSub = useMemo(() => sessions.filter(esSubagent).length, [sessions])
+  // Unión de las categorías del módulo State: es lo que significa «All» ahí dentro.
+  const nEspecial = useMemo(() => {
+    const ids = new Set()
+    for (const d of sessions) {
+      if (esBorrada(d) || d.vacia || esCron(d) || esBotChat(d) || esSubagent(d)) ids.add(d.id)
+    }
+    return ids.size
+  }, [sessions])
 
   // Active chips list
   const activeChips = useMemo(() => {
@@ -2589,10 +2739,26 @@ function App({ ctx }) {
     if (q) out.push(['q', `“${q}”`])
     if (f.dia) out.push(['dia', f.dia])
     if (f.d1 || f.d2) out.push(['rango', `${f.d1 || '…'} → ${f.d2 || '…'}`])
+    // El estado también es un filtro: sin su chip no había manera de quitarlo solo.
+    if (showAll && activeTab !== 'testing') out.push(['estado', `${t('estAllState')} · ${nEspecial}`])
+    if (showElim) out.push(['estado', `${t('estBorradas')} · ${nElim}`])
+    else if (showVacio) out.push(['estado', `${t('estVacias')} · ${nVacio}`])
+    else if (showCron) out.push(['estado', `${t('estCron')} · ${nCron}`])
+    else if (showBots) out.push(['estado', `${t('estBots')} · ${nBots}`])
+    else if (showSub) out.push(['estado', `${t('estSub')} · ${nSub}`])
     return out
-  }, [f, q, lang])
+  }, [f, q, lang, showAll, showElim, showVacio, showCron, showBots, showSub, universo, activeTab, nElim, nVacio, nCron, nBots, nSub, nEspecial])
 
   const removeChip = (k) => {
+    if (k === 'estado') {
+      setShowAll(false)
+      setShowElim(false)
+      setShowVacio(false)
+      setShowCron(false)
+      setShowBots(false)
+      setShowSub(false)
+      return
+    }
     if (k === 'q') {
       setQ('')
       return
@@ -2634,6 +2800,12 @@ function App({ ctx }) {
       d2: '',
     })
     setQ('')
+    setShowAll(false)
+    setShowElim(false)
+    setShowVacio(false)
+    setShowCron(false)
+    setShowBots(false)
+    setShowSub(false)
     setOrden({ k: 'fecha', asc: false })
   }
 
@@ -3351,12 +3523,8 @@ function App({ ctx }) {
   }
 
   const switchTab = async (tab) => {
-    // Tres ventanas distintas: ningún filtro ni estado de una ventana puede afectar a otra.
-    limpiar()
-    setShowElim(false)
-    setShowVacio(false)
-    setShowCron(false)
-    setShowBots(false)
+    // Cada ventana guarda sus propios filtros y su estado: al cambiar no se limpia nada,
+    // así al volver cada una sigue donde la dejaste. Lo que no se comparte es el dato.
     setActiveTab(tab)
     if (tab === 'byo') {
       await leerByo()
@@ -3885,7 +4053,7 @@ function App({ ctx }) {
     const cMes = {}
     const cSem = {}
     const mesesMap = {}
-    for (const d of sessions) {
+    for (const d of universo) {
       if (!d.mes) continue
       mesesMap[d.mes] = mesesMap[d.mes] || {}
       if (d.semana) mesesMap[d.mes][d.semana] = (mesesMap[d.mes][d.semana] || 0) + 1
@@ -4028,7 +4196,7 @@ function App({ ctx }) {
   // Motor & Autor facets
   const motorStats = useMemo(() => {
     const cnt = {}
-    for (const d of sessions) {
+    for (const d of universo) {
       if (pass(d)) {
         const k = d.motor || 'Sin dato'
         cnt[k] = (cnt[k] || 0) + 1
@@ -4043,11 +4211,11 @@ function App({ ctx }) {
         return na !== nb ? na - nb : (cnt[b] || 0) - (cnt[a] || 0)
       })
     return { cnt, keys }
-  }, [sessions, visible, f.motor])
+  }, [sessions, pendingRows, activeTab, visible, f.motor])
 
   const autorStats = useMemo(() => {
     const cnt = {}
-    for (const d of sessions) {
+    for (const d of universo) {
       if (pass(d)) {
         const k = d.autor || d.prof || 'default'
         cnt[k] = (cnt[k] || 0) + 1
@@ -4057,17 +4225,17 @@ function App({ ctx }) {
       .filter((k) => (cnt[k] || 0) > 0 || f.autor === k)
       .sort((a, b) => (cnt[b] || 0) - (cnt[a] || 0))
     return { cnt, keys }
-  }, [sessions, visible, f.autor])
+  }, [sessions, pendingRows, activeTab, visible, f.autor])
 
   const pendStats = useMemo(() => {
     let n = 0
-    for (const d of sessions) if (pass(d) && d.pendTot > 0) n++
+    for (const d of universo) if (pass(d) && d.pendTot > 0) n++
     return n
-  }, [sessions, visible, f.iq9])
+  }, [sessions, pendingRows, activeTab, visible, f.iq9])
 
   const sujetoStats = useMemo(() => {
     const cnt = {}
-    for (const d of sessions) {
+    for (const d of universo) {
       if (pass(d)) {
         const k = d.iq0 || d.sujeto || 'Sin sujeto'
         cnt[k] = (cnt[k] || 0) + 1
@@ -4077,7 +4245,7 @@ function App({ ctx }) {
       .filter((k) => (cnt[k] || 0) > 0 || f.sujeto === k)
       .sort((a, b) => (cnt[b] || 0) - (cnt[a] || 0))
     return { cnt, keys }
-  }, [sessions, visible, f.sujeto])
+  }, [sessions, pendingRows, activeTab, visible, f.sujeto])
 
   const hiddenByFilterCount = useMemo(() => {
     if (visible.length > 0 || !qNorm) return 0
@@ -4106,6 +4274,7 @@ function App({ ctx }) {
     const esSub = subIds.has(d.id)
 
     return [
+      /* ---------- Línea 1: número · fecha · título · cifras ---------- */
       h(
         'tr',
         {
@@ -4114,10 +4283,10 @@ function App({ ctx }) {
           onClick: () => selectSession(d),
         },
         h('td', { className: 'ncol t' }, (isCanon || activeTab === 'testing') ? d.n : ''),
+        h('td', { className: 'fecha t' }, d.fecha),
         h(
           'td',
           {
-            colSpan: pendMap ? 7 : 6,
             className: 'ttitle' + (isDel ? ' borrada' : ''),
             style: esSub ? { paddingLeft: '18px' } : undefined,
           },
@@ -4131,8 +4300,14 @@ function App({ ctx }) {
                 title: 'Renombrada en esta corrida: ' + (recienCambiadas[d.id] || ''),
               }, 'renamed')
             : null
-        )
+        ),
+        h('td', { className: 'num tight cen' }, fmtC(d.costo)),
+        h('td', { className: 'num tight cen' }, fmtHoras(d.horas)),
+        h('td', { className: 'num tight cen', style: { color: 'var(--tx3)' } }, fmtT(d.tok_tot)),
+        h('td', { className: 'num tight cen', style: { color: 'var(--tx3)' } }, fmtP(d.posts)),
+        pendMap ? h('td', { className: 'num tight cen' }) : null
       ),
+      /* ---------- Línea 2: una sola franja con todas las etiquetas ---------- */
       h(
         'tr',
         {
@@ -4141,13 +4316,15 @@ function App({ ctx }) {
           key: d.id + '-r',
           onClick: () => selectSession(d),
         },
+        // La columna del número queda vacía en esta línea: la franja arranca en
+        // FECHA, lo que deja una sangría y hace destacar el número de la sesión.
         h('td', { className: 'ncol' }),
-        h('td', { className: 'mono tight fecha' }, d.fecha),
         h(
           'td',
-          { className: 'tight' },
-          // A row without a canonical title has no subject of its own in the live database,
-          // but in Process (testing) it displays the derived subject so it is not an empty stub.
+          { className: 'iqrow', colSpan: pendMap ? 6 : 5 },
+          h(
+            'div',
+            { className: 'iqwrap' },
           (isCanon || activeTab === 'testing') && d.sujeto
             ? h(
                 'span',
@@ -4163,51 +4340,33 @@ function App({ ctx }) {
                 d.sujeto
               )
             : null,
-          (isCanon || activeTab === 'testing') ? ' ' : null,
           (isCanon || activeTab === 'testing')
-            ? h('span', { className: 'mono', style: { color: 'var(--tx3)' } }, String(d.mmm || 1).padStart(3, '0'))
+            ? h('span', { className: 'mmark' }, String(d.mmm || 1).padStart(3, '0'))
             : null,
-          d.iq1
-            ? h(
-                'span',
-                {
-                  className: 'pill iq1 pick',
-                  style: { marginLeft: '4px' },
-                  title: 'Filtrar por iq1',
-                  onClick: (e) => {
-                    e.stopPropagation()
-                    setF((p) => ({ ...p, iq1: p.iq1 === d.iq1 ? null : d.iq1 }))
-                    setSel(null)
+          ['iq1', 'iq2', 'iq3', 'iq3i', 'iq4', 'iq5', 'iq6', 'iq7', 'iq8'].map((k) =>
+            d[k]
+              ? h(
+                  'span',
+                  {
+                    key: k,
+                    className: 'pill ' + k + ' pick',
+                    title: 'Filtrar por ' + k,
+                    onClick: (e) => {
+                      e.stopPropagation()
+                      setF((p) => ({ ...p, [k]: p[k] === d[k] ? null : d[k] }))
+                      setSel(null)
+                    },
                   },
-                },
-                d.iq1
-              )
-            : null,
-          d.iq2
-            ? h(
-                'span',
-                {
-                  className: 'pill iq2 pick',
-                  style: { marginLeft: '4px' },
-                  title: 'Filtrar por iq2',
-                  onClick: (e) => {
-                    e.stopPropagation()
-                    setF((p) => ({ ...p, iq2: p.iq2 === d.iq2 ? null : d.iq2 }))
-                    setSel(null)
-                  },
-                },
-                d.iq2
-              )
-            : null
+                  d[k]
+                )
+              : null
+          )
+          )
         ),
-        h('td', { className: 'num tight cen' }, fmtC(d.costo)),
-        h('td', { className: 'num tight cen' }, fmtHoras(d.horas)),
-        h('td', { className: 'num tight cen', style: { color: 'var(--tx3)' } }, fmtT(d.tok_tot)),
-        h('td', { className: 'num tight cen', style: { color: 'var(--tx3)' } }, fmtP(d.posts)),
         pendMap
           ? h(
               'td',
-              { className: 'num tight cen' },
+              { className: 'num tight pendright' },
               d.pendTot > 0
                 ? h(
                     'span',
@@ -4224,6 +4383,120 @@ function App({ ctx }) {
     ]
   })
 
+  // Bloque de fecha (árbol + día exacto + rango). En Process va justo debajo de
+  // Subject; en Session DB se queda donde estaba, después de iq8.
+  const bloqueFecha = h(
+    'div',
+    { className: 'fechagroup' },
+          h('h4', null, t('fecha')),
+          h('div', null, renderFechaTree()),
+
+          h('h4', null, t('diaExacto')),
+          h('input', {
+            id: 'dia',
+            type: 'date',
+            value: f.dia,
+            onChange: (e) => setF((p) => ({ ...p, dia: e.target.value })),
+            style: {
+              width: '100%',
+              background: '#100d13',
+              border: '1px solid var(--line2)',
+              color: 'var(--tx)',
+              borderRadius: '6px',
+              padding: '5px 8px',
+              fontSize: '12.5px',
+            },
+          }),
+
+          h('h4', null, t('rango')),
+          h(
+            'div',
+            { style: { display: 'flex', gap: '6px' } },
+            h('input', {
+              id: 'd1',
+              type: 'date',
+              value: f.d1,
+              onChange: (e) => setF((p) => ({ ...p, d1: e.target.value })),
+              style: {
+                flex: 1,
+                background: '#100d13',
+                border: '1px solid var(--line2)',
+                color: 'var(--tx)',
+                borderRadius: '6px',
+                padding: '4px',
+                fontSize: '11.5px',
+              },
+            }),
+            h('input', {
+              id: 'd2',
+              type: 'date',
+              value: f.d2,
+              onChange: (e) => setF((p) => ({ ...p, d2: e.target.value })),
+              style: {
+                flex: 1,
+                background: '#100d13',
+                border: '1px solid var(--line2)',
+                color: 'var(--tx)',
+                borderRadius: '6px',
+                padding: '4px',
+                fontSize: '11.5px',
+              },
+            })
+          ),
+
+  )
+
+  // El módulo de estado del panel de filtros. En Process va arriba de las facetas;
+  // en Session DB queda al final, como estaba.
+  const bloqueEstado = h(
+          'div',
+          { className: 'estados' },
+          h('h4', null, t('estadoLbl')),
+          h('label', {
+            className: (activeTab === 'testing'
+              ? !showElim && !showVacio && !showCron && !showBots && !showSub
+              : showAll) ? 'on' : '',
+          },
+            h('input', {
+              type: 'checkbox',
+              name: 'estado',
+              checked: activeTab === 'testing'
+                ? !showElim && !showVacio && !showCron && !showBots && !showSub
+                : showAll,
+              onChange: () => {
+                if (activeTab === 'testing') {
+                  setShowAll(false)
+                  setShowElim(false)
+                  setShowVacio(false)
+                  setShowCron(false)
+                  setShowBots(false)
+                  setShowSub(false)
+                } else {
+                  setEstado('all')
+                }
+              },
+            }),
+            h('span', null, activeTab === 'testing' ? t('estPend') + ' · ' + pendingRows.length : t('estAllState'))),
+          h('label', { className: showElim ? 'on' : '' },
+            h('input', { type: 'checkbox', name: 'estado', checked: showElim, onChange: () => setEstado('elim') }),
+            h('span', null, t('estBorradas') + ' · ' + nElim)),
+          h('label', { className: showVacio ? 'on' : '' },
+            h('input', { type: 'checkbox', name: 'estado', checked: showVacio, onChange: () => setEstado('vacio') }),
+            h('span', null, t('estVacias') + ' · ' + nVacio)),
+          h('label', { className: showCron ? 'on' : '' },
+            h('input', { type: 'checkbox', name: 'estado', checked: showCron, onChange: () => setEstado('cron') }),
+            h('span', null, t('estCron') + ' · ' + nCron)),
+          h('label', { className: showBots ? 'on' : '' },
+            h('input', { type: 'checkbox', name: 'estado', checked: showBots, onChange: () => setEstado('bots') }),
+            h('span', null, t('estBots') + ' · ' + nBots)),
+          h('label', { className: showSub ? 'on' : '', title: t('subTitle') },
+            h('input', { type: 'checkbox', name: 'estado', checked: showSub, onChange: () => setEstado('sub') }),
+            h('span', null, t('estSub') + ' · ' + nSub))
+        )
+
+  // Process y New Rules comparten la caja de filtros; cada una con su propio estado.
+  const panelFiltros = activeTab === 'testing' || activeTab === 'newrules'
+
   return h(
     'div',
     { className: 'mmws' + (activeTab === 'byo' ? ' byomode' : '') },
@@ -4231,92 +4504,436 @@ function App({ ctx }) {
 
     /* ---------- Header ---------- */
     h(
-      'header',
-      { className: 'top' },
-      h(
-        'div',
-        { className: 'brandrow' },
-        h(
-          'h1',
-          {
-            onClick: () => setVModal(true),
-            style: { cursor: 'pointer' },
-            title: t('infoPluginTitle'),
-          },
-          APP_TITLE
-        ),
-        h(
-          'span',
-          { className: 'sub' },
-          h('b', null, loading ? '—' : sessions.length),
-          ' ' + t('sessionsWord')
+      'div',
+      { className: 'shell' },
+h(
+        'aside',
+        null,
+        h('div', { className: 'asideTitle' }, h('h1', { onClick: () => setVModal(true), style: { cursor: 'pointer' }, title: t('infoPluginTitle') }, APP_TITLE)),
+h(
+            'div',
+            {
+              id: 'tabInfo',
+              onClick: (e) => {
+                e.stopPropagation()
+                if (sel) {
+                  setSel(null)
+                  return
+                }
+                if (sorted.length > 0) {
+                  selectSession(sorted[0], true)
+                }
+              },
+            },
+            h(
+              'button',
+              { className: 'railnav', disabled: !sel || updNaveg().prevDisabled, title: t('navPrev'), onClick: (e) => { e.stopPropagation(); navSesion(-1) } },
+              '\u25b2'
+            ),
+            h(
+              'button',
+              { className: 'railtxt', title: t('tabInfoTitle') },
+              h('span', null, t('tabInfo'))
+            ),
+            h(
+              'button',
+              { className: 'railnav', disabled: !sel || updNaveg().nextDisabled, title: t('navNext'), onClick: (e) => { e.stopPropagation(); navSesion(1) } },
+              '\u25bc'
+            )
         ),
         h(
           'div',
+          { className: 'abarra' },
+          h('input', {
+            id: 'q',
+            type: 'text',
+            placeholder: t('buscar'),
+            value: q,
+            onChange: (e) => setQ(e.target.value),
+            style: {
+              width: '100%',
+              background: '#100d13',
+              border: '1px solid var(--line2)',
+              color: 'var(--tx)',
+              borderRadius: '6px',
+              padding: '5px 8px',
+              fontSize: '12.5px',
+            },
+          }),
+
+          h('div', { className: 'abarraFoot' },
+h(
+              'span',
+              { className: 'counter', id: 'counter' },
+              t('mostrando') + ' ',
+              h('b', null, visible.length),
+              ' ' + t('de') + ' ',
+              h('b', null, universo.length),
+              hiddenByFilterCount > 0
+                ? [
+                    ' · ',
+                    h(
+                      'span',
+                      { key: 'qh', className: 'qhint' },
+                      `${hiddenByFilterCount} ${t('ocultasFiltro')}`
+                    ),
+                    h(
+                      'button',
+                      {
+                        key: 'qs',
+                        className: 'qshow',
+                        onClick: () =>
+                          setF({
+                            iq1: null,
+                            iq2: null,
+                            iq3i: null,
+                            iq3: null,
+                            iq4: null,
+                            iq5: null,
+                            iq6: null,
+                            iq8: null,
+                            iq9: null,
+                            sujeto: null,
+                            motor: null,
+                            autor: null,
+                            anio: null,
+                            mes: null,
+                            sem: null,
+                            dia: '',
+                            d1: '',
+                            d2: '',
+                          }),
+                      },
+                      t('ver')
+                    ),
+                  ]
+                : null
+            ),
+h(
+              'div',
+              { className: 'chips', id: 'chips' },
+              h(
+                'span',
+                { id: 'chipwrap', className: 'chipwrap' },
+                activeChips.map(([k, val]) =>
+                  h(
+                    'span',
+                    { key: k, className: 'chip' },
+                    val,
+                    ' ',
+                    h('b', { onClick: () => removeChip(k) }, '✕')
+                  )
+                )
+              )
+            ),
+            h(
+              'span',
+              { id: 'acciones' },
+              h(
+                'button',
+                {
+                  id: 'clr',
+                  className: 'clrbtn primary' + (activeChips.length ? '' : ' ghost'),
+                  disabled: !activeChips.length,
+                  onClick: limpiar,
+                  title: 'Limpiar todos los filtros activos',
+                },
+                t('limpiar')
+              ),
+              h(
+                'button',
+                {
+                  id: 'copia',
+                  className: 'ghost',
+                  onClick: copiarResultado,
+                  title: 'Copia los nombres e IDs de las sesiones visibles al portapapeles',
+                },
+                btnMsg.copia || `${t('copiar')} · ${visible.length}`
+              ),
+              h(
+                'button',
+                {
+                  id: 'expc',
+                  className: 'ghost',
+                  onClick: exportarCorrecciones,
+                  title: 'Descarga CSV de las sesiones visibles para anotar correcciones',
+                },
+                btnMsg.expc || `${t('exportar')} · ${visible.length}`
+              )
+            )
+          )
+        ),
+        panelFiltros ? bloqueEstado : null,
+        h(
+          'div',
+          { className: 'ascroll' },
+          pendMap
+            ? [
+                h(
+                  'h4',
+                  { key: 'pend-h4' },
+                  h('span', null, t('pendFacet')),
+                  h('span', null, pendStats + ' ' + t('pendFacetCount'))
+                ),
+                h(
+                  'div',
+                  { key: 'pend-opt' },
+                  h(
+                    'label',
+                    {
+                      className: 'opt' + (f.iq9 === 'Pending' ? ' sel' : ''),
+                      onClick: (e) => {
+                        e.preventDefault()
+                        setF((p) => ({ ...p, iq9: p.iq9 === 'Pending' ? null : 'Pending' }))
+                      },
+                    },
+                    h('input', { type: 'radio', checked: f.iq9 === 'Pending', readOnly: true }),
+                    h('span', null, 'Pending'),
+                    h('span', { className: 'n' }, pendStats)
+                  )
+                ),
+              ]
+            : null,
+
+          h(
+            'h4',
+            null,
+            h('span', null, t('sujetoFacet')),
+            h('span', null, (f.sujeto ? t('de1') : '') + sujetoStats.keys.length + ' ' + t('sujetosCount'))
+          ),
+          h(
+            'div',
+            null,
+            (expandSujetos ? sujetoStats.keys : sujetoStats.keys.slice(0, 20)).map((k) =>
+              h(
+                'label',
+                {
+                  key: k,
+                  className: 'opt' + (f.sujeto === k ? ' sel' : '') + (k === 'Sin sujeto' ? ' empty' : ''),
+                  onClick: (e) => {
+                    e.preventDefault()
+                    setF((p) => ({ ...p, sujeto: p.sujeto === k ? null : k }))
+                  },
+                },
+                h('input', { type: 'radio', checked: f.sujeto === k, readOnly: true }),
+                h('span', null, k),
+                h('span', { className: 'n' }, sujetoStats.cnt[k] || 0)
+              )
+            ),
+            sujetoStats.keys.length > 20
+              ? h(
+                  'button',
+                  {
+                    className: 'navb',
+                    style: {
+                      width: '100%',
+                      height: '24px',
+                      fontSize: '11px',
+                      marginTop: '4px',
+                      textAlign: 'center',
+                    },
+                    onClick: () => setExpandSujetos((v) => !v),
+                  },
+                  expandSujetos
+                    ? (lang === 'en' ? 'Show less' : 'Ver menos')
+                    : `+ ${sujetoStats.keys.length - 20} ${lang === 'en' ? 'more' : 'más'}`
+                )
+              : null
+          ),
+
+          panelFiltros ? bloqueFecha : null,
+          renderFacetBlock('iq1', 'iq1', 'iq1', 'iq1', false),
+          renderFacetBlock('iq2', 'iq2', 'iq2', 'iq2', false),
+          renderFacetBlock('iq3', 'iq3', 'iq3i', 'iq3', false),
+          renderFacetBlock('iq4', 'tema', 'iq3', 'pilar', true),
+          renderFacetBlock('iq8', 'lblProyecto', 'iq8', 'iq8', false),
+
+panelFiltros ? null : bloqueFecha,
+
+          h(
+            'h4',
+            null,
+            h('span', null, t('motor')),
+            h('span', null, (f.motor ? t('de1') : '') + motorStats.keys.length + ' ' + t('motores'))
+          ),
+          h(
+            'div',
+            null,
+            motorStats.keys.map((k) =>
+              h(
+                'label',
+                {
+                  key: k,
+                  className: 'opt' + (f.motor === k ? ' sel' : '') + (k === 'Sin dato' ? ' empty' : ''),
+                  onClick: (e) => {
+                    e.preventDefault()
+                    setF((p) => ({ ...p, motor: p.motor === k ? null : k }))
+                  },
+                },
+                h('input', { type: 'radio', checked: f.motor === k, readOnly: true }),
+                h('span', null, k),
+                h('span', { className: 'n' }, motorStats.cnt[k])
+              )
+            )
+          ),
+
+          h(
+            'h4',
+            null,
+            h('span', null, t('autor')),
+            h('span', null, (f.autor ? t('de1') : '') + autorStats.keys.length + ' ' + t('autores'))
+          ),
+          h(
+            'div',
+            null,
+            autorStats.keys.map((k) =>
+              h(
+                'label',
+                {
+                  key: k,
+                  className: 'opt' + (f.autor === k ? ' sel' : ''),
+                  onClick: (e) => {
+                    e.preventDefault()
+                    setF((p) => ({ ...p, autor: p.autor === k ? null : k }))
+                  },
+                },
+                h('input', { type: 'radio', checked: f.autor === k, readOnly: true }),
+                h('span', null, k),
+                h('span', { className: 'n' }, autorStats.cnt[k])
+              )
+            )
+          ),
+
+          h('p', { className: 'hint' }, t('hintUnica')),
+panelFiltros ? null : bloqueEstado
+        ),
+        
+      ),
+
+      /* BYO AI: el motor propio del plugin, con su propia clave */
+      activeTab === 'byo'
+        ? h(
+            'div',
+            { className: 'iqpanel' },
+            h('div', { className: 'iqhead' }, h('b', null, t('tabByo'))),
+            h('p', { className: 'hint', style: { maxWidth: '760px' } }, t('byoIntro')),
+            h('div', { className: 'byoform' },
+              h('label', null, t('byoMotor'),
+                h('select', {
+                  id: 'byoMotor', value: byo.motor,
+                  onChange: (e) => setByo((p) => ({ ...p, motor: e.target.value,
+                    base_url: BYO_MOTORES[e.target.value]?.base_url || '',
+                    modelo: BYO_MOTORES[e.target.value]?.modelo || '' })),
+                }, ['deepseek', 'openrouter', 'kimi', 'google', 'openai', 'custom'].map((m) =>
+                  h('option', { key: m, value: m }, m)))),
+              h('label', null, t('byoModelo'),
+                h('input', { id: 'byoModelo', value: byo.modelo, placeholder: 'deepseek-chat',
+                  onChange: (e) => setByo((p) => ({ ...p, modelo: e.target.value })) })),
+              h('label', null, t('byoBase'),
+                h('input', { id: 'byoBase', value: byo.base_url, placeholder: 'https://api.deepseek.com/v1',
+                  onChange: (e) => setByo((p) => ({ ...p, base_url: e.target.value })) })),
+              h('label', null, t('byoKey'),
+                h('input', { id: 'byoKey', type: 'password', value: byo.api_key,
+                  placeholder: byo.tiene_key ? `guardada …${byo.guardada || ''}` : 'sk-…',
+                  onChange: (e) => setByo((p) => ({ ...p, api_key: e.target.value })) })),
+              h('label', null, t('byoMax'),
+                h('input', { id: 'byoMax', type: 'number', value: byo.max_tokens,
+                  onChange: (e) => setByo((p) => ({ ...p, max_tokens: Number(e.target.value) || 120 })) })),
+              h('label', { style: { gridColumn: '1 / -1', flexDirection: 'row', alignItems: 'center', gap: '8px', textTransform: 'none', cursor: 'pointer' } },
+                h('input', { id: 'byoConsent', type: 'checkbox', checked: Boolean(byo.allow_send_excerpts),
+                  onChange: (e) => setByo((p) => ({ ...p, allow_send_excerpts: Boolean(e.target.checked) })) }),
+                h('span', null, t('byoConsent'))),
+              h('div', { className: 'row' },
+                h('button', { id: 'btnByoSave', className: 'openbtn', onClick: guardarByo }, t('byoGuardar'))),
+              h('p', { className: 'hint' }, t('byoKeyHint')),
+              byoMsg ? h('p', { className: 'hint', id: 'byoMsg', style: { whiteSpace: 'pre-line' } }, byoMsg) : null
+            )
+          )
+        : null,
+
+      /* Plugin IQ: the inventory of the plugin, with one sub-tab per document */
+      activeTab === 'tabiq'
+        ? h(
+            'div',
+            { className: 'iqpanel' },
+            h(
+              'div',
+              { className: 'iqhead' },
+              h('b', null, t('tabIq')),
+              iqData
+                ? `${iqData.rules.length} ${t('iqRuleOf')} · ${iqData.scripts.length} scripts · ${iqData.docs.length} ${t('iqDocs')} · ${iqData.generated || ''}`
+                : t('iqNoData')
+            ),
+            h(
+              'div',
+              { className: 'iqstrip main' },
+              ['rules', 'scripts', 'docs'].map((v) =>
+                h(
+                  'button',
+                  { key: v, className: 'iqbtn' + (iqView === v ? ' on' : ''), onClick: () => setIqView(v) },
+                  t(v === 'rules' ? 'iqRules' : v === 'scripts' ? 'iqScripts' : 'iqDocs')
+                )
+              )
+            ),
+            iqView === 'docs' && iqData
+              ? h(
+                  'div',
+                  { className: 'iqstrip' },
+                  iqData.docs.map((d) =>
+                    h(
+                      'button',
+                      { key: d.name, className: 'iqbtn' + (iqDoc === d.name ? ' on' : ''), onClick: () => setIqDoc(d.name) },
+                      d.name
+                    )
+                  )
+                )
+              : null,
+            h(
+              'pre',
+              null,
+              !iqData
+                ? t('iqNoData')
+                : iqView === 'rules'
+                ? iqData.rules.map((r) => `${r.id}\n  ${r.rule}\n  → ${r.control}`).join('\n\n')
+                : iqView === 'scripts'
+                ? iqData.scripts.map((s) => `${s.name.padEnd(26)} ${String(s.lines).padStart(4)} líneas   ${s.what}`).join('\n')
+                : (iqData.docs.find((d) => d.name === iqDoc) || iqData.docs[0] || {}).body || ''
+            )
+          )
+        : null,
+
+      /* Main Session List */
+      h(
+        'div',
+        { className: 'rightcol' },
+h(
+      'div',
+      { className: 'toppanel' },
+      h(
+        'header',
+        { className: 'top' },
+        h('div', null),
+        h(
+          'div',
           { className: 'headtabs', role: 'tablist' },
-          h(
-            'button',
-            {
-              role: 'tab',
-              className: 'headtab tabactual' + (activeTab === 'actual' ? ' on' : ''),
-              onClick: () => switchTab('actual'),
-              title: t('tabActualTitle'),
-            },
-            t('tabActual')
-          ),
-          h(
-            'button',
-            {
-              role: 'tab',
-              className: 'headtab tabprocess' + (activeTab === 'testing' ? ' on testing' : ''),
-              onClick: () => switchTab('testing'),
-              title: t('tabTestingTitle'),
-            },
-            t('tabTesting')
-          ),
-          h(
-            'button',
-            {
-              role: 'tab',
-              className: 'headtab newruletab' + (activeTab === 'newrules' ? ' on' : ''),
-              onClick: () => switchTab('newrules'),
-              title: t('tabNewRulesTitle'),
-            },
-            t('tabNewRules')
-          ),
-          h(
-            'button',
-            {
-              role: 'tab',
-              className: 'headtab iqtab' + (activeTab === 'tabiq' ? ' on' : ''),
-              onClick: () => switchTab('tabiq'),
-              title: t('tabIqTitle'),
-            },
-            t('tabIq')
-          ),
-          h(
-            'button',
-            {
-              role: 'tab',
-              className: 'headtab byotab' + (activeTab === 'byo' ? ' on' : ''),
-              onClick: () => switchTab('byo'),
-              title: t('tabByoTitle'),
-            },
-            t('tabByo')
+          [
+            ['actual', 'tabactual', 'tabActual', 'tabActualTitle'],
+            ['testing', 'tabprocess', 'tabTesting', 'tabTestingTitle'],
+            ['newrules', 'newruletab', 'tabNewRules', 'tabNewRulesTitle'],
+            ['tabiq', 'iqtab', 'tabIq', 'tabIqTitle'],
+            ['byo', 'byotab', 'tabByo', 'tabByoTitle'],
+          ].map(([id, cls, label, title]) =>
+            h('button', { key: id, role: 'tab', className: 'headtab ' + cls + (activeTab === id ? ' on' : ''), onClick: () => switchTab(id), title: t(title) }, t(label))
           )
         ),
         h(
           'button',
-          {
-            className: 'ghost langsw',
-            id: 'btnLang',
-            onClick: toggleLang,
-            title: 'Idioma de la interfaz · Interface language',
-          },
+          { className: 'ghost langsw', id: 'btnLang', onClick: toggleLang, title: 'Idioma de la interfaz' },
           h('span', { className: lang === 'es' ? 'on' : '' }, 'ES'),
           h('span', { className: lang === 'en' ? 'on' : '' }, 'EN')
         )
-      )
+      ),
+      
     ),
 
     /* ---------- Stale Notice Banner ---------- */
@@ -4439,8 +5056,7 @@ function App({ ctx }) {
 
 
     /* ---------- Body (Aside + Main + Slide-over Detail Panel) ---------- */
-    /* Action bar: outside the bodywrap, so it spans the top and is not a flex column */
-      /* Action bar: where the filters used to be, for the windows that act instead of filtering */
+    /* Action bar: below the window tabs, above the body; spans the content column. */
       (activeTab === 'testing' || activeTab === 'newrules')
         ? h(
             'div',
@@ -4459,368 +5075,56 @@ function App({ ctx }) {
                   canRevert
                     ? h('button', { key: 'rev', className: 'revertbtn', disabled: isCommitting || isReverting, onClick: handleRevert }, t('revertir'))
                     : null,
-                  h(
-                    'button',
-                    {
-                      key: 'rest', className: 'ghost restorebtn', id: 'btnRestaurarTop',
-                      disabled: isCommitting || isReverting,
-                      onClick: async () => {
-                        const filesApi = (ctx && ctx.files) || (host && host.files)
-                        let n = 0
-                        try {
-                          const r = await filesApi.readText('data', 'titles-origin.json')
-                          if (r && r.ok && r.text) n = Object.keys(JSON.parse(r.text) || {}).length
-                        } catch (_) {}
-                        setDialogo({ kind: 'restore', n })
-                      },
-                      title: t('restTitle'),
-                    },
-                    t('restTitle')
-                  ),
-                  machineryPending.length > 0
-                    ? h('span', { key: 'mach', className: 'footmsg' }, t('machineryNote', { n: machineryPending.length }))
-                    : null,
-                ]
-              : [
-                  h(
-                    'button',
-                    {
-                      key: 'apply', className: 'procbtn', id: 'btnApplyNewRules',
-                      disabled: isCommitting || isReverting,
-                      onClick: () => setDialogo({
-                        kind: 'applynewrules',
-                        n: sessions.length,
-                        c: (prop && prop.changes && prop.changes.length) || 0,
-                        m: sessions.filter(esIntocable).length,
-                      }),
-                      title: t('newRulesApplyTitle'),
-                    },
-                    t('newRulesApply', { n: sessions.length })
-                  ),
-                  h('button', { key: 'rel', className: 'ghost', onClick: leerPropuesta }, t('newRulesReload')),
-                  h('span', { key: 'msg', className: 'footmsg', id: 'propMsg' }, propMsg),
-                ]
-          )
-        : null,
+            h(
+              'button',
+              {
+                key: 'rest', className: 'ghost restorebtn', id: 'btnRestaurarTop',
+                disabled: isCommitting || isReverting,
+                onClick: async () => {
+                  const filesApi = (ctx && ctx.files) || (host && host.files)
+                  let n = 0
+                  try {
+                    const r = await filesApi.readText('data', 'titles-origin.json')
+                    if (r && r.ok && r.text) n = Object.keys(JSON.parse(r.text) || {}).length
+                  } catch (_) {}
+                  setDialogo({ kind: 'restore', n })
+                },
+                title: t('restTitle'),
+              },
+              t('restTitle')
+            ),
+            machineryPending.length > 0
+              ? h('span', { key: 'mach', className: 'footmsg' }, t('machineryNote', { n: machineryPending.length }))
+              : null,
+          ]
+        : [
+            h(
+              'button',
+              {
+                key: 'apply', className: 'procbtn', id: 'btnApplyNewRules',
+                disabled: isCommitting || isReverting,
+                onClick: () => setDialogo({
+                  kind: 'applynewrules',
+                  n: sessions.length,
+                  c: (prop && prop.changes && prop.changes.length) || 0,
+                  m: sessions.filter(esIntocable).length,
+                }),
+                title: t('newRulesApplyTitle'),
+              },
+              t('newRulesApply', { n: sessions.length })
+            ),
+            h('button', { key: 'rel', className: 'ghost', onClick: leerPropuesta }, t('newRulesReload')),
+            h('span', { key: 'msg', className: 'footmsg', id: 'propMsg' }, propMsg),
+          ]
+    )
+  : null,
+
 
     h(
       'div',
-      { className: 'bodywrap' + (activeTab === 'testing' || activeTab === 'newrules' || activeTab === 'tabiq' || activeTab === 'byo' ? ' nofilters' : '') + (activeTab === 'tabiq' ? ' iqmode' : '') + (activeTab === 'byo' ? ' byomode' : '') },
+      { className: 'bodywrap' + (activeTab === 'tabiq' || activeTab === 'byo' ? ' nofilters' : '') + (activeTab === 'tabiq' ? ' iqmode' : '') + (activeTab === 'byo' ? ' byomode' : '') },
 
       /* Left Filters Aside */
-      h(
-        'aside',
-        null,
-        h(
-          'div',
-          { className: 'abarra' },
-          h('input', {
-            id: 'q',
-            type: 'text',
-            placeholder: t('buscar'),
-            value: q,
-            onChange: (e) => setQ(e.target.value),
-            style: {
-              width: '100%',
-              background: '#100d13',
-              border: '1px solid var(--line2)',
-              color: 'var(--tx)',
-              borderRadius: '6px',
-              padding: '5px 8px',
-              fontSize: '12.5px',
-            },
-          })
-        ),
-        h(
-          'div',
-          { className: 'ascroll' },
-          pendMap
-            ? [
-                h(
-                  'h4',
-                  { key: 'pend-h4' },
-                  h('span', null, t('pendFacet')),
-                  h('span', null, pendStats + ' ' + t('pendFacetCount'))
-                ),
-                h(
-                  'div',
-                  { key: 'pend-opt' },
-                  h(
-                    'label',
-                    {
-                      className: 'opt' + (f.iq9 === 'Pending' ? ' sel' : ''),
-                      onClick: (e) => {
-                        e.preventDefault()
-                        setF((p) => ({ ...p, iq9: p.iq9 === 'Pending' ? null : 'Pending' }))
-                      },
-                    },
-                    h('input', { type: 'radio', checked: f.iq9 === 'Pending', readOnly: true }),
-                    h('span', null, 'Pending'),
-                    h('span', { className: 'n' }, pendStats)
-                  )
-                ),
-              ]
-            : null,
-
-          h(
-            'h4',
-            null,
-            h('span', null, t('sujetoFacet')),
-            h('span', null, (f.sujeto ? t('de1') : '') + sujetoStats.keys.length + ' ' + t('sujetosCount'))
-          ),
-          h(
-            'div',
-            null,
-            (expandSujetos ? sujetoStats.keys : sujetoStats.keys.slice(0, 20)).map((k) =>
-              h(
-                'label',
-                {
-                  key: k,
-                  className: 'opt' + (f.sujeto === k ? ' sel' : '') + (k === 'Sin sujeto' ? ' empty' : ''),
-                  onClick: (e) => {
-                    e.preventDefault()
-                    setF((p) => ({ ...p, sujeto: p.sujeto === k ? null : k }))
-                  },
-                },
-                h('input', { type: 'radio', checked: f.sujeto === k, readOnly: true }),
-                h('span', null, k),
-                h('span', { className: 'n' }, sujetoStats.cnt[k] || 0)
-              )
-            ),
-            sujetoStats.keys.length > 20
-              ? h(
-                  'button',
-                  {
-                    className: 'navb',
-                    style: {
-                      width: '100%',
-                      height: '24px',
-                      fontSize: '11px',
-                      marginTop: '4px',
-                      textAlign: 'center',
-                    },
-                    onClick: () => setExpandSujetos((v) => !v),
-                  },
-                  expandSujetos
-                    ? (lang === 'en' ? 'Show less' : 'Ver menos')
-                    : `+ ${sujetoStats.keys.length - 20} ${lang === 'en' ? 'more' : 'más'}`
-                )
-              : null
-          ),
-
-          renderFacetBlock('iq1', 'iq1', 'iq1', 'iq1', false),
-          renderFacetBlock('iq2', 'iq2', 'iq2', 'iq2', false),
-          renderFacetBlock('iq3', 'iq3', 'iq3i', 'iq3', false),
-          renderFacetBlock('iq4', 'tema', 'iq3', 'pilar', true),
-          renderFacetBlock('iq8', 'lblProyecto', 'iq8', 'iq8', false),
-
-          h('h4', null, t('fecha')),
-          h('div', null, renderFechaTree()),
-
-          h('h4', null, t('diaExacto')),
-          h('input', {
-            id: 'dia',
-            type: 'date',
-            value: f.dia,
-            onChange: (e) => setF((p) => ({ ...p, dia: e.target.value })),
-            style: {
-              width: '100%',
-              background: '#100d13',
-              border: '1px solid var(--line2)',
-              color: 'var(--tx)',
-              borderRadius: '6px',
-              padding: '5px 8px',
-              fontSize: '12.5px',
-            },
-          }),
-
-          h('h4', null, t('rango')),
-          h(
-            'div',
-            { style: { display: 'flex', gap: '6px' } },
-            h('input', {
-              id: 'd1',
-              type: 'date',
-              value: f.d1,
-              onChange: (e) => setF((p) => ({ ...p, d1: e.target.value })),
-              style: {
-                flex: 1,
-                background: '#100d13',
-                border: '1px solid var(--line2)',
-                color: 'var(--tx)',
-                borderRadius: '6px',
-                padding: '4px',
-                fontSize: '11.5px',
-              },
-            }),
-            h('input', {
-              id: 'd2',
-              type: 'date',
-              value: f.d2,
-              onChange: (e) => setF((p) => ({ ...p, d2: e.target.value })),
-              style: {
-                flex: 1,
-                background: '#100d13',
-                border: '1px solid var(--line2)',
-                color: 'var(--tx)',
-                borderRadius: '6px',
-                padding: '4px',
-                fontSize: '11.5px',
-              },
-            })
-          ),
-
-          h(
-            'h4',
-            null,
-            h('span', null, t('motor')),
-            h('span', null, (f.motor ? t('de1') : '') + motorStats.keys.length + ' ' + t('motores'))
-          ),
-          h(
-            'div',
-            null,
-            motorStats.keys.map((k) =>
-              h(
-                'label',
-                {
-                  key: k,
-                  className: 'opt' + (f.motor === k ? ' sel' : '') + (k === 'Sin dato' ? ' empty' : ''),
-                  onClick: (e) => {
-                    e.preventDefault()
-                    setF((p) => ({ ...p, motor: p.motor === k ? null : k }))
-                  },
-                },
-                h('input', { type: 'radio', checked: f.motor === k, readOnly: true }),
-                h('span', null, k),
-                h('span', { className: 'n' }, motorStats.cnt[k])
-              )
-            )
-          ),
-
-          h(
-            'h4',
-            null,
-            h('span', null, t('autor')),
-            h('span', null, (f.autor ? t('de1') : '') + autorStats.keys.length + ' ' + t('autores'))
-          ),
-          h(
-            'div',
-            null,
-            autorStats.keys.map((k) =>
-              h(
-                'label',
-                {
-                  key: k,
-                  className: 'opt' + (f.autor === k ? ' sel' : ''),
-                  onClick: (e) => {
-                    e.preventDefault()
-                    setF((p) => ({ ...p, autor: p.autor === k ? null : k }))
-                  },
-                },
-                h('input', { type: 'radio', checked: f.autor === k, readOnly: true }),
-                h('span', null, k),
-                h('span', { className: 'n' }, autorStats.cnt[k])
-              )
-            )
-          ),
-
-          h('p', { className: 'hint' }, t('hintUnica'))
-        )
-      ),
-
-      /* BYO AI: el motor propio del plugin, con su propia clave */
-      activeTab === 'byo'
-        ? h(
-            'div',
-            { className: 'iqpanel' },
-            h('div', { className: 'iqhead' }, h('b', null, t('tabByo'))),
-            h('p', { className: 'hint', style: { maxWidth: '760px' } }, t('byoIntro')),
-            h('div', { className: 'byoform' },
-              h('label', null, t('byoMotor'),
-                h('select', {
-                  id: 'byoMotor', value: byo.motor,
-                  onChange: (e) => setByo((p) => ({ ...p, motor: e.target.value,
-                    base_url: BYO_MOTORES[e.target.value]?.base_url || '',
-                    modelo: BYO_MOTORES[e.target.value]?.modelo || '' })),
-                }, ['deepseek', 'openrouter', 'kimi', 'google', 'openai', 'custom'].map((m) =>
-                  h('option', { key: m, value: m }, m)))),
-              h('label', null, t('byoModelo'),
-                h('input', { id: 'byoModelo', value: byo.modelo, placeholder: 'deepseek-chat',
-                  onChange: (e) => setByo((p) => ({ ...p, modelo: e.target.value })) })),
-              h('label', null, t('byoBase'),
-                h('input', { id: 'byoBase', value: byo.base_url, placeholder: 'https://api.deepseek.com/v1',
-                  onChange: (e) => setByo((p) => ({ ...p, base_url: e.target.value })) })),
-              h('label', null, t('byoKey'),
-                h('input', { id: 'byoKey', type: 'password', value: byo.api_key,
-                  placeholder: byo.tiene_key ? `guardada …${byo.guardada || ''}` : 'sk-…',
-                  onChange: (e) => setByo((p) => ({ ...p, api_key: e.target.value })) })),
-              h('label', null, t('byoMax'),
-                h('input', { id: 'byoMax', type: 'number', value: byo.max_tokens,
-                  onChange: (e) => setByo((p) => ({ ...p, max_tokens: Number(e.target.value) || 120 })) })),
-              h('label', { style: { gridColumn: '1 / -1', flexDirection: 'row', alignItems: 'center', gap: '8px', textTransform: 'none', cursor: 'pointer' } },
-                h('input', { id: 'byoConsent', type: 'checkbox', checked: Boolean(byo.allow_send_excerpts),
-                  onChange: (e) => setByo((p) => ({ ...p, allow_send_excerpts: Boolean(e.target.checked) })) }),
-                h('span', null, t('byoConsent'))),
-              h('div', { className: 'row' },
-                h('button', { id: 'btnByoSave', className: 'openbtn', onClick: guardarByo }, t('byoGuardar'))),
-              h('p', { className: 'hint' }, t('byoKeyHint')),
-              byoMsg ? h('p', { className: 'hint', id: 'byoMsg', style: { whiteSpace: 'pre-line' } }, byoMsg) : null
-            )
-          )
-        : null,
-
-      /* Plugin IQ: the inventory of the plugin, with one sub-tab per document */
-      activeTab === 'tabiq'
-        ? h(
-            'div',
-            { className: 'iqpanel' },
-            h(
-              'div',
-              { className: 'iqhead' },
-              h('b', null, t('tabIq')),
-              iqData
-                ? `${iqData.rules.length} ${t('iqRuleOf')} · ${iqData.scripts.length} scripts · ${iqData.docs.length} ${t('iqDocs')} · ${iqData.generated || ''}`
-                : t('iqNoData')
-            ),
-            h(
-              'div',
-              { className: 'iqstrip main' },
-              ['rules', 'scripts', 'docs'].map((v) =>
-                h(
-                  'button',
-                  { key: v, className: 'iqbtn' + (iqView === v ? ' on' : ''), onClick: () => setIqView(v) },
-                  t(v === 'rules' ? 'iqRules' : v === 'scripts' ? 'iqScripts' : 'iqDocs')
-                )
-              )
-            ),
-            iqView === 'docs' && iqData
-              ? h(
-                  'div',
-                  { className: 'iqstrip' },
-                  iqData.docs.map((d) =>
-                    h(
-                      'button',
-                      { key: d.name, className: 'iqbtn' + (iqDoc === d.name ? ' on' : ''), onClick: () => setIqDoc(d.name) },
-                      d.name
-                    )
-                  )
-                )
-              : null,
-            h(
-              'pre',
-              null,
-              !iqData
-                ? t('iqNoData')
-                : iqView === 'rules'
-                ? iqData.rules.map((r) => `${r.id}\n  ${r.rule}\n  → ${r.control}`).join('\n\n')
-                : iqView === 'scripts'
-                ? iqData.scripts.map((s) => `${s.name.padEnd(26)} ${String(s.lines).padStart(4)} líneas   ${s.what}`).join('\n')
-                : (iqData.docs.find((d) => d.name === iqDoc) || iqData.docs[0] || {}).body || ''
-            )
-          )
-        : null,
-
-      /* Main Session List */
       h(
         'main',
         {
@@ -4835,175 +5139,19 @@ function App({ ctx }) {
             }
           },
         },
-        h(
-          'div',
-          { className: 'toolbar' },
-          h(
-            'div',
-            { className: 'trow' },
-            h(
-              'span',
-              { id: 'acciones' },
-              h(
-                'button',
-                {
-                  id: 'clr',
-                  className: 'clrbtn primary' + (activeChips.length ? '' : ' ghost'),
-                  disabled: !activeChips.length,
-                  onClick: limpiar,
-                  title: 'Limpiar todos los filtros activos',
-                },
-                t('limpiar')
-              ),
-              h(
-                'button',
-                {
-                  id: 'copia',
-                  className: 'ghost',
-                  onClick: copiarResultado,
-                  title: 'Copia los nombres e IDs de las sesiones visibles al portapapeles',
-                },
-                btnMsg.copia || `${t('copiar')} · ${visible.length}`
-              ),
-              h(
-                'button',
-                {
-                  id: 'expc',
-                  className: 'ghost',
-                  onClick: exportarCorrecciones,
-                  title: 'Descarga CSV de las sesiones visibles para anotar correcciones',
-                },
-                btnMsg.expc || `${t('exportar')} · ${visible.length}`
-              )
-            ),
-            h('span', { className: 'sub', style: { fontSize: '11.5px', marginLeft: '14px' } }, t('mostrarLbl')),
-            h(
-              'button',
-              {
-                id: 'btnElim',
-                className: showElim ? 'on' : '',
-                onClick: () => setEstado('elim'),
-                title: 'Mostrar u ocultar sesiones marcadas como borradas',
-              },
-              (showElim ? t('hideDel') : t('showDel')) + ' · ' + nElim
-            ),
-            h(
-              'button',
-              {
-                id: 'btnVacio',
-                className: showVacio ? 'on' : '',
-                onClick: () => setEstado('vacio'),
-                title: t('vacioTitle'),
-              },
-              (showVacio ? t('hideVacio') : t('showVacio')) + ' · ' + nVacio
-            ),
-            h(
-              'button',
-              {
-                id: 'btnCron',
-                className: showCron ? 'on' : '',
-                onClick: () => setEstado('cron'),
-                title: 'Mostrar u ocultar sesiones automáticas de cron',
-              },
-              (showCron ? t('hideCron') : t('showCron')) + ' · ' + nCron
-            ),
-            h(
-              'button',
-              {
-                id: 'btnBots',
-                className: showBots ? 'on' : '',
-                onClick: () => setEstado('bots'),
-                title: t('botsTitle'),
-              },
-              (showBots ? t('hideBots') : t('showBots')) + ' · ' + nBots
-            ),
-            h('span', { style: { flex: 1, minWidth: 0 } })
-          ),
-          h(
-            'div',
-            { className: 'chipsrow' },
-            h(
-              'div',
-              { className: 'chips', id: 'chips' },
-              h(
-                'span',
-                { id: 'chipwrap', className: 'chipwrap' },
-                activeChips.map(([k, val]) =>
-                  h(
-                    'span',
-                    { key: k, className: 'chip' },
-                    val,
-                    ' ',
-                    h('b', { onClick: () => removeChip(k) }, '✕')
-                  )
-                )
-              )
-            ),
-            h(
-              'span',
-              { className: 'counter', id: 'counter' },
-              t('mostrando') + ' ',
-              h('b', null, visible.length),
-              ' ' + t('de') + ' ',
-              h('b', null, sessions.length),
-              hiddenByFilterCount > 0
-                ? [
-                    ' · ',
-                    h(
-                      'span',
-                      { key: 'qh', className: 'qhint' },
-                      `${hiddenByFilterCount} ${t('ocultasFiltro')}`
-                    ),
-                    h(
-                      'button',
-                      {
-                        key: 'qs',
-                        className: 'qshow',
-                        onClick: () =>
-                          setF({
-                            iq1: null,
-                            iq2: null,
-                            iq3i: null,
-                            iq3: null,
-                            iq4: null,
-                            iq5: null,
-                            iq6: null,
-                            iq8: null,
-                            iq9: null,
-                            sujeto: null,
-                            motor: null,
-                            autor: null,
-                            anio: null,
-                            mes: null,
-                            sem: null,
-                            dia: '',
-                            d1: '',
-                            d2: '',
-                          }),
-                      },
-                      t('ver')
-                    ),
-                  ]
-                : null
-            )
-          ),
-          h(
-            'button',
-            {
-              id: 'tabInfo',
-              title: t('tabInfoTitle'),
-              onClick: (e) => {
-                e.stopPropagation()
-                if (sorted.length > 0) {
-                  selectSession(sorted[0], true)
-                }
-              },
-            },
-            h('span', null, t('tabInfo'))
-          )
-        ),
+
 
         pintaAviso(),
+
+        /* En Process, cuando el estado muestra maquinaria, se dice claro que no se renombra. */
+        activeTab === 'testing' && (showBots || showSub || showCron) && visible.length > 0
+          ? h(
+              'div',
+              { className: 'aviso', id: 'avisoMaquinaria', style: { margin: '6px 16px' } },
+              h('div', { className: 'avhead' }, h('b', null, '⚙ ' + t('machTitle'))),
+              h('div', null, t('machBody', { n: visible.length }))
+            )
+          : null,
 
         h(
           'table',
@@ -5062,7 +5210,7 @@ function App({ ctx }) {
     /* ---------- Bottom Footer Row (Unified Actions + 5 KPIs) ---------- */
     h(
       'div',
-      { className: 'footrow' + (activeTab === 'testing' || activeTab === 'newrules' || activeTab === 'tabiq' ? ' actmode' : '') },
+      { className: 'footrow' + (activeTab === 'newrules' || activeTab === 'tabiq' ? ' actmode' : '') },
       activeTab === 'newrules'
         ? h(
             'div',
@@ -5080,48 +5228,6 @@ function App({ ctx }) {
               t('newRulesApply', { n: sessions.length })
             ),
             h('button', { id: 'btnReloadProposal', onClick: leerPropuesta }, t('newRulesReload'))
-          )
-        : activeTab === 'testing'
-        ? h(
-            'div',
-            { className: 'footbtns' },
-            pendingRows.length > 0
-              ? h(
-                  'button',
-                  {
-                    className: 'procbtn',
-                    id: 'btnProcess',
-                    disabled: isCommitting || isReverting,
-                    onClick: () => setDialogo({ kind: 'process', n: pendingRows.length }),
-                    title: t('procTitle'),
-                  },
-                  t('procCount', { n: pendingRows.length })
-                )
-              : h('span', { className: 'procnone', id: 'btnProcess' }, t('procCount', { n: 0 })),
-            pendingRows.length === 0 && !btnMsg.commit
-              ? h('span', { className: 'footmsg nopending', id: 'noPending' }, t('noSessions'))
-              : null,
-            machineryPending.length > 0
-              ? h(
-                  'span',
-                  { className: 'footmsg', id: 'machineryNote', title: t('machineryNoteTitle') },
-                  t('machineryNote', { n: machineryPending.length })
-                )
-              : null,
-            canRevert
-              ? h(
-                  'button',
-                  {
-                    className: 'revertbtn',
-                    id: 'btnRevert',
-                    disabled: isCommitting || isReverting,
-                    onClick: handleRevert,
-                    title: t('revertBtnTitle'),
-                  },
-                  btnMsg.revert || t('revertBtn')
-                )
-              : null,
-            btnMsg.foot ? h('span', { className: 'footmsg' }, btnMsg.foot) : null
           )
         : h('div', { className: 'footbtns' }),
       h(
@@ -5167,27 +5273,15 @@ function App({ ctx }) {
                 h('i', null, `${t('kPend2')} · ${(pendData.counts && pendData.counts.total) || 0}`))
             )
           : null,
-        // Último de la fila de indicadores y alineado a la izquierda: restaurar los
-        // títulos va junto al contador de autorizaciones, no junto a Revert.
+        // Horas acumuladas: la cifra que faltaba en el pie.
         h(
-          'button',
-          {
-            className: 'ghost restorebtn',
-            id: 'btnRestaurar',
-            disabled: isCommitting || isReverting,
-            onClick: async () => {
-              const filesApi = (ctx && ctx.files) || (host && host.files)
-              let n = 0
-              try {
-                const r = await filesApi.readText('data', 'titles-origin.json')
-                if (r && r.ok && r.text) n = Object.keys(JSON.parse(r.text) || {}).length
-              } catch (_) {}
-              setDialogo({ kind: 'restore', n })
-            },
-            title: t('restTitle'),
-          },
-          btnMsg.resto || t('restTitle')
+          'div',
+          { className: 'kpi hrs' },
+          h('b', null, fmtH(totals.horas)),
+          h('div', { className: 'lb' }, h('i', null, t('kHor1')), h('i', null, t('kHor2')))
         )
+      )
+    )
       )
     ),
 

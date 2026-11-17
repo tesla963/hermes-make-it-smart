@@ -55,3 +55,11 @@ reports/
 byo-ai.json
 # Delivery sheet baseline: local bookkeeping, not part of the plugin.
 .delivery-baseline.json
+
+# artefactos de los arneses de verificación del panel
+.render-under-test.mjs
+.interactivo-under-test.mjs
+.panel-harness/
+# copias locales del plugin, no forman parte del paquete
+backups/
+.pr-yaml-*.yaml

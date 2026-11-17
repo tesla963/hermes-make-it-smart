@@ -1,5 +1,40 @@
 # Changelog
 
+## 0.30.0 — 17-nov-2026 · three windows, each with its own filters, and a two-line table
+
+The Session DB window stopped being a single column with a sidebar bolted on. The window is now a
+three-column box —facet panel, vertical rail, content— and each window keeps its own filters, so
+narrowing Process never touches Session DB and vice versa.
+
+- **Left panel with full height.** The facet panel is a sibling of the top bar, not a child of the
+  content area, so it reaches from the window's top edge to the bottom. A `vertical rail` on its
+  right edge carries **Session Info** —prev arrow, label, next arrow— with `navSesion()` and the
+  same `updNaveg()` guard the detail card uses; its offset is measured at runtime against the
+  table header, never hard-coded.
+- **Per-window state.** `filters`, the search box and the four status flags are stored per tab
+  (`fPorVentana`, `qPorVentana`, `estadoPorVentana`). `switchTab()` no longer calls `limpiar()`:
+  leaving a window keeps what you marked, and coming back finds it as you left it.
+- **State is a first-class facet.** Six controls —**All from State**, Deleted, Empty, Cron, **Bots**
+  and **Subagents**— rendered as round checkboxes so *none* is selected on entry. Bots is `Bot Chat`
+  (the default agent's session), Subagents is what subagents create: two populations, two filters.
+  `All from State` is the union of the categories (130 of 903 in the reference index), not the whole
+  file. Each has its chip with its count, and the ✕ removes it.
+- **Process and New Rules share the box.** Both show the facet panel with their own universe:
+  Process works on the pending rows, New Rules on the whole catalogue. **To be processed · N** is
+  the Process label for that state, with the number that would be renamed.
+- **One table row for the figures, one for the tags.** Date and title moved to the first line
+  together with cost, hours, tokens and posts (`vertical-align: top`, so the first line sets the
+  alignment and long titles grow downwards without moving the numbers). The second line is a single
+  strip that starts under DATE and holds every facet —subject, ordinal and `iq1`…`iq8`— with the
+  Pending pill aligned to the right.
+- **Tabs.** Numbered `N) Name` in both languages, and a single green: the per-tab colours (gold,
+  violet, teal) and their hover/active variants are gone.
+- **Fix:** the Plugin IQ and BYO AI panel (`position:absolute; inset:0; z-index:6`) painted over the
+  tab bar; the top panel now sits at `z-index:8`.
+- **Verification harnesses in `scripts/`:** `verify-render.mjs` (static render for geometry),
+  `verify-clicks.mjs` (real React under jsdom, clicks included), `verify-process.mjs` (window
+  autonomy) and `dump-tab.mjs` (any tab to HTML, optionally against the real index).
+
 ## 0.29.0 — 16-nov-2026 · the plugin brings its own AI (opt-in, zero host credential reads)
 
 Housekeeping no longer borrows the assistant's model or reads `~/.hermes/auth.json`. The panel gains
