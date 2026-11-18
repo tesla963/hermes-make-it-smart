@@ -133,3 +133,49 @@ catalog            864 sessions · 851 with a subject · 570 with an intent
 cron jobs          0 — the 4 deleted; definitions in the 11-nov registry
 repos              work: code, 0 data · delivery: native plugin
 ```
+
+## Commit attribution — `Tesla369` (deferred by the owner, 2026-11-18)
+
+**What is wrong.** 175 commits in this repo carry
+`tesla369@users.noreply.github.com`. That is the *noreply* alias of a GitHub account
+(`Tesla369`, id 56352298, created 2019) that **is not the owner's**. GitHub maps a commit to
+an account by that address alone, so the stranger appears as a contributor (169 commits) next
+to the real account `tesla963` (66). The author *name* on every commit is correct
+("Jorge Matsufuji"); only the address is wrong.
+
+**Cause, established from the transcript.** In session `local-1ad15d…` ("909 Simulador /
+Plugin Bodega hackatón"), 36 `terminal` calls used
+`git -c user.email="tesla369@users.noreply.github.com"` — the first at 2026-11-10 10:44:04,
+the last at 14:51:52. The first five commits of that same session used the correct
+`tesla963@users.noreply.github.com`; the template then drifted to `tesla369`, taken from the
+macOS account name (`/Users/tesla369`) and never checked against `gh api user`. The repo was
+being rebuilt at the time to purge the leaked DeepSeek key (see §1), which is why a fresh
+identity was written at all.
+
+**Decision (owner, 2026-11-18): leave it.** Do not rewrite history now. Revisit only when
+**both** conditions hold:
+
+1. the Nous hackathon has closed, and
+2. the plugin is approved in the Nous Research catalog.
+
+**Why not before.** A rewrite changes every hash from 2026-11-10 10:44 onward, moves the tags
+`v0.26.0` / `v0.26.1` / `v0.27.0` that `NousResearch/hermes-agent#154009` pins, and could break
+the catalog entry while it is still under review.
+
+**Already fixed.** `user.email` is now `71205274+tesla963@users.noreply.github.com`, globally
+(`~/.gitconfig`, backup at `~/.gitconfig.bak_20261118_…`) and in this repo. New commits are
+attributed correctly.
+
+**When the moment comes, the options are:**
+
+| Option | Effect | Cost |
+|---|---|---|
+| `git filter-repo --email-callback` mapping the alias → `tesla963`'s | Removes the stranger from every commit | New hashes everywhere, force push, tags must be re-pointed, the Nous PR pin refreshed |
+| `.mailmap` only | Correct display in `git log` / `git shortlog` | GitHub may ignore it for profile attribution (unverified) |
+| Recreate the repo | Clean history | Loses history, traffic stats and the PR's pinned tag |
+| GitHub support report | Records the attribution flaw; may unlink the profile | Does not rewrite history |
+
+**Rule that came out of this.** Never write a git identity from an assumption or from the OS
+username: read `gh api user --jq .login` first, and use the address that belongs to *that*
+account.
+
