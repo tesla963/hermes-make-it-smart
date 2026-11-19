@@ -20,7 +20,7 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 const ID = 'make-it-smart'
 const NAME = 'Hermes, Make it Smart!'
 const APP_TITLE = 'Hermes, Make It Smart!'
-const VERSION = '0.31.0'
+const VERSION = '0.32.0'
 const ROUTE = '/smart'
 
 /** jsx-runtime helper: keeps uncompiled React code compact and readable. */
@@ -117,20 +117,33 @@ const fmtH = (m) =>
     ? Math.floor(m / 60) + 'h' + String(Math.round(m % 60)).padStart(2, '0')
     : Math.round(m || 0) + 'm'
 
-/** Duration formatter: supports '—' for <=0 and days ('Xd Yh') for >=1440 min. */
+/**
+ * Duration cascade, in the order jorge asked for:
+ * minutes below one hour → hours below one day → days below one week →
+ * weeks below one month → years from one month up. '—' for <= 0.
+ *  45m · 3h20 · 2d 4h · 3w 2d · 1.4y
+ */
 const fmtHoras = (v) => {
   const m = Math.round(Number(v) || 0)
   if (m <= 0) return '—'
-  if (m >= 1440) {
-    const d = Math.floor(m / 1440)
+  if (m < 60) return m + 'm'
+  if (m < 1440) {
+    const h = Math.floor(m / 60)
+    const mm = m % 60
+    return mm < 5 ? h + 'h' : h + 'h' + String(mm).padStart(2, '0')
+  }
+  const d = Math.floor(m / 1440)
+  if (m < 10080) {
     const h = Math.floor((m % 1440) / 60)
     return h ? d + 'd ' + h + 'h' : d + 'd'
   }
-  return m < 60
-    ? m + 'm'
-    : m % 60 < 5
-      ? Math.floor(m / 60) + 'h'
-      : Math.floor(m / 60) + 'h' + String(m % 60).padStart(2, '0') + 'm'
+  const w = Math.floor(m / 10080)
+  if (m < 43200) {
+    const dd = Math.floor((m % 10080) / 1440)
+    return dd ? w + 'w ' + dd + 'd' : w + 'w'
+  }
+  const y = m / 525600
+  return y < 10 ? y.toFixed(1) + 'y' : Math.round(y) + 'y'
 }
 
 const fmtN = (n) =>
@@ -811,6 +824,111 @@ function toFecha(startedAt, fallback) {
   return ''
 }
 
+/**
+ * Epoch milliseconds for a real session timestamp. Accepts epoch seconds or ms
+ * (number or numeric string) and full ISO datetimes. Bare YYYY-MM-DD strings
+ * are NOT parsed (Date.parse treats them as UTC midnight, shifting the local day),
+ * and no synthetic midnight is ever invented from `fecha`. Returns null if no
+ * real timestamp is available.
+ */
+function getTimestampMs(value) {
+  const fromNum = (n) => (Number.isFinite(n) && n > 0 ? (n > 1e12 ? n : n * 1000) : null)
+  if (typeof value === 'number') {
+    const ms = fromNum(value)
+    if (ms != null) return ms
+  } else if (typeof value === 'string' && value.trim()) {
+    const s = value.trim()
+    if (/^\d+(\.\d+)?$/.test(s)) {
+      const ms = fromNum(Number(s))
+      if (ms != null) return ms
+    } else if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+      const ms = Date.parse(s)
+      if (!isNaN(ms)) return ms
+    }
+  } else if (value instanceof Date && !isNaN(value.getTime())) {
+    return value.getTime()
+  }
+  return null
+}
+
+/** Local calendar date (YYYY-MM-DD) of an epoch-ms value. */
+function fechaLocal(ms) {
+  const d = new Date(ms)
+  if (isNaN(d.getTime())) return ''
+  const z = (n) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}`
+}
+
+/** Local calendar date (YYYY-MM-DD) of yesterday relative to `ms` (DST-safe). */
+function fechaAyerLocal(ms) {
+  const d = new Date(ms)
+  if (isNaN(d.getTime())) return ''
+  d.setDate(d.getDate() - 1)
+  return fechaLocal(d.getTime())
+}
+
+/** Local YYYY-MM-DD string for a session row (from real timestamp or d.fecha). */
+function fechaSesionLocal(d, ts) {
+  if (d && typeof d.last_used_date === 'string' && d.last_used_date.length >= 10) {
+    return d.last_used_date.slice(0, 10)
+  }
+  if (ts != null) return fechaLocal(ts)
+  const raw = String((d && (d.fecha || d.last_used_at || d.started_at)) || '').trim()
+  const m = /^(\d{4}-\d{2}-\d{2})/.exec(raw)
+  return m ? m[1] : ''
+}
+
+/** Keys of the "Last Used" block, in display order, with their I18N label key. */
+const LAST_USED_OPTS = [
+  ['up_to_8h', 'upTo8h'],
+  ['8_16h', 'h8_16'],
+  ['16_24h', 'h16_24'],
+  ['24h', 'h24'],
+  ['24_48h', 'h24_48'],
+  ['today', 'today'],
+  ['yesterday', 'yesterday'],
+]
+
+/**
+ * Does session `d` fall in the "Last Used" bucket `key`, measured from `nowMs`?
+ * Hour buckets require a real timestamp (`last_used_ms` or `last_used_at`/`started_at`)
+ * and never invent a synthetic midnight from `fecha`. Negative clock drift is clamped
+ * with `Math.max(0, edad)` so the newest session never drops out of `up_to_8h`.
+ * 'today' / 'yesterday' compare local YYYY-MM-DD strings.
+ */
+function matchLastUsed(d, key, nowMs, todayStr, yesterdayStr) {
+  if (!d || !key) return false
+  const now = Number.isFinite(nowMs) ? nowMs : Date.now()
+  const ts = Number.isFinite(d.last_used_ms)
+    ? d.last_used_ms
+    : getTimestampMs(d.last_used_at || d.started_at)
+  if (key === 'today' || key === 'yesterday') {
+    const fecha = fechaSesionLocal(d, ts)
+    if (!fecha) return false
+    const target =
+      key === 'today'
+        ? (todayStr || fechaLocal(now))
+        : (yesterdayStr || fechaAyerLocal(now))
+    return fecha === target
+  }
+  if (ts == null) return false
+  const hoursAgo = Math.max(0, (now - ts) / 3600000)
+  switch (key) {
+    case 'up_to_8h':
+      return hoursAgo <= 8
+    case '8_16h':
+      return hoursAgo > 8 && hoursAgo <= 16
+    case '16_24h':
+      return hoursAgo > 16 && hoursAgo <= 24
+    case '24h':
+      return hoursAgo <= 24
+    case '24_48h':
+      return hoursAgo > 24 && hoursAgo <= 48
+    default:
+      return false
+  }
+}
+
 function isoWeek(fecha) {
   if (!fecha || fecha.length < 10) return ''
   const d = new Date(fecha.slice(0, 10) + 'T00:00:00Z')
@@ -847,6 +965,14 @@ const I18N = {
     mostrarLbl: 'Mostrar:',
     ordenar: 'Ordenar:',
     limpiar: 'Limpiar',
+    lastUsed: 'ÚLTIMO USO',
+    upTo8h: 'Up to 8 Hours',
+    h8_16: '8 - 16 Hours',
+    h16_24: '16 - 24 Hours',
+    h24: '24 Hours',
+    h24_48: '24 - 48 Hours',
+    today: 'Today',
+    yesterday: 'Yesterday',
     copiar: 'Copiar',
     exportar: 'Exportar',
     actualizar: 'Actualizar BD',
@@ -1096,6 +1222,14 @@ const I18N = {
     mostrarLbl: 'Show:',
     ordenar: 'Sort:',
     limpiar: 'Clear',
+    lastUsed: 'LAST USED',
+    upTo8h: 'Up to 8 Hours',
+    h8_16: '8 - 16 Hours',
+    h16_24: '16 - 24 Hours',
+    h24: '24 Hours',
+    h24_48: '24 - 48 Hours',
+    today: 'Today',
+    yesterday: 'Yesterday',
     copiar: 'Copy',
     exportar: 'Export',
     actualizar: 'Refresh DB',
@@ -1760,15 +1894,23 @@ async function loadCatalogue(ctx) {
   let pendData = null
   let pendMap = null
   let pendAttr = null
+  let luCacheById = {}
 
   const filesApi = (ctx && ctx.files) || (host && host.files)
   if (filesApi && typeof filesApi.readText === 'function') {
     try {
-      const [idxRes, facRes, pendRes] = await Promise.all([
+      const [idxRes, facRes, pendRes, luRes] = await Promise.all([
         filesApi.readText('data', 'index.json').catch((e) => ({ ok: false, error: String((e && e.message) || e) })),
         filesApi.readText('data', 'facets.json').catch((e) => ({ ok: false, error: String((e && e.message) || e) })),
         filesApi.readText('data', 'pending_index.json').catch((e) => ({ ok: false, error: String((e && e.message) || e) })),
+        filesApi.readText('data', 'last_used_cache.json').catch(() => ({ ok: false })),
       ])
+      if (luRes && luRes.ok && luRes.text) {
+        try {
+          const parsedLu = JSON.parse(luRes.text)
+          if (parsedLu && typeof parsedLu.by_id === 'object') luCacheById = parsedLu.by_id
+        } catch (_) {}
+      }
       if (idxRes && idxRes.ok && idxRes.text) {
         try {
           idxData = JSON.parse(idxRes.text)
@@ -2006,6 +2148,28 @@ async function loadCatalogue(ctx) {
         ? Math.min(480, Math.max(1, Math.round((liveEnd - live.started_at) / 60)))
         : 0
     const horas = Number(idx.horas || liveMin || 0)
+    // Last use: the primary source is MAX(messages.timestamp WHERE active=1) from
+    // state.db (`idx.last_used_at` / `luCacheById[id]`). Only when a session has no
+    // message timestamp in the index/sidecar do we fall back to `last_activity_at`
+    // and then `started_at` (never `ended_at`).
+    const startedAt = (live && live.started_at) || idx.started_at || null
+    const msgCandidates = [idx.last_used_at, luCacheById[id]]
+      .map((v) => getTimestampMs(v))
+      .filter((ms) => ms != null)
+    const fallbackCandidates = [
+      live && live.last_activity_at,
+      live && live.last_active,
+      live && live.started_at,
+      idx.started_at,
+    ]
+      .map((v) => getTimestampMs(v))
+      .filter((ms) => ms != null)
+    const lastUsedCandidates = msgCandidates.length ? msgCandidates : fallbackCandidates
+    const lastUsedMs = lastUsedCandidates.length ? Math.max(...lastUsedCandidates) : null
+    const lastUsedAt = lastUsedMs != null ? lastUsedMs / 1000 : null
+    const lastUsedDate =
+      (lastUsedMs != null ? fechaLocal(lastUsedMs) : '') ||
+      String(fecha || '').slice(0, 10)
     const motor = (ex.motor || idx.motor || (live && live.model) || '').trim()
     const autor = (idx.autor || prof || 'default').trim()
     const claves = Array.isArray(idx.claves) ? idx.claves : []
@@ -2050,6 +2214,10 @@ async function loadCatalogue(ctx) {
       fecha,
       mes,
       semana,
+      started_at: startedAt,
+      last_used_at: lastUsedAt,
+      last_used_ms: lastUsedMs,
+      last_used_date: lastUsedDate,
       costo,
       horas,
       tok,
@@ -2200,6 +2368,7 @@ function App({ ctx }) {
     () => ({
       iq1: null, iq2: null, iq3i: null, iq3: null, iq4: null, iq5: null, iq6: null, iq8: null, iq9: null,
       sujeto: null, motor: null, autor: null, anio: null, mes: null, sem: null, dia: '', d1: '', d2: '',
+      lastUsed: null,
     }),
     []
   )
@@ -2383,6 +2552,7 @@ function App({ ctx }) {
         setPendMap(res.pendMap || null)
         setPendAttr(res.pendAttr || null)
         setEsqViejo(Boolean(res.esquemaViejo))
+        setIndiceGenerado(res.generado || '')
         const years = [...new Set(res.sessions.map((d) => (d.mes || '').slice(0, 4)).filter(Boolean))].sort().reverse()
         if (years.length) {
           setOpenNodes(new Set(['y:' + years[0], 'init:' + years[0]]))
@@ -2424,8 +2594,25 @@ function App({ ctx }) {
         /* ignore */
       }
     }
+    const onFocusRefresh = () => {
+      if (!alive) return
+      if (typeof document !== 'undefined' && document.visibilityState && document.visibilityState !== 'visible') return
+      run()
+    }
+    if (typeof window !== 'undefined' && window.addEventListener) {
+      window.addEventListener('focus', onFocusRefresh)
+    }
+    if (typeof document !== 'undefined' && document.addEventListener) {
+      document.addEventListener('visibilitychange', onFocusRefresh)
+    }
     return () => {
       alive = false
+      if (typeof window !== 'undefined' && window.removeEventListener) {
+        window.removeEventListener('focus', onFocusRefresh)
+      }
+      if (typeof document !== 'undefined' && document.removeEventListener) {
+        document.removeEventListener('visibilitychange', onFocusRefresh)
+      }
       if (typeof unsub === 'function') {
         try {
           unsub()
@@ -2535,6 +2722,10 @@ function App({ ctx }) {
   const qs = useMemo(() => (nums ? '' : sin(q)), [q, nums])
   const qNorm = useMemo(() => norm(q), [q])
 
+  // Reference instant for the "Last Used" buckets: refreshed when the data reloads
+  // or the bucket changes, so every count in one frame is measured from the same now.
+  const nowMs = useMemo(() => Date.now(), [sessions, f.lastUsed])
+
   const pass = (d, ...skips) => {
     if (!d) return false
     if (activeTab === 'testing') {
@@ -2579,6 +2770,7 @@ function App({ ctx }) {
     if (!skips.includes('anio') && f.anio && (d.fecha || '').slice(0, 4) !== f.anio) return false
     if (!skips.includes('mes') && f.mes && d.mes !== f.mes) return false
     if (!skips.includes('sem') && f.sem && d.mes + '|' + d.semana !== f.sem) return false
+    if (!skips.includes('lastUsed') && f.lastUsed && !matchLastUsed(d, f.lastUsed, nowMs)) return false
     if (nums) {
       if (!nums.has(+d.n)) return false
     } else if (qs && !(d._s || '').includes(qs)) {
@@ -2741,6 +2933,10 @@ function App({ ctx }) {
     if (q) out.push(['q', `“${q}”`])
     if (f.dia) out.push(['dia', f.dia])
     if (f.d1 || f.d2) out.push(['rango', `${f.d1 || '…'} → ${f.d2 || '…'}`])
+    if (f.lastUsed) {
+      const opt = LAST_USED_OPTS.find(([k]) => k === f.lastUsed)
+      out.push(['lastUsed', `${t('lastUsed')} · ${opt ? t(opt[1]) : f.lastUsed}`])
+    }
     // El estado también es un filtro: sin su chip no había manera de quitarlo solo.
     if (showAll && activeTab !== 'testing') out.push(['estado', `${t('estAllState')} · ${nEspecial}`])
     if (showElim) out.push(['estado', `${t('estBorradas')} · ${nElim}`])
@@ -2800,6 +2996,7 @@ function App({ ctx }) {
       dia: '',
       d1: '',
       d2: '',
+      lastUsed: null,
     })
     setQ('')
     setShowAll(false)
@@ -3524,6 +3721,25 @@ function App({ ctx }) {
       await leerPropuesta()
       return
     }
+    if (tab === 'actual') {
+      // Coming back to the Session Database is also a refresh moment: the index is a
+      // disk cache that tools/build_index.py rewrites, so re-read it here instead of
+      // making the user restart Hermes Desktop to see new counts.
+      try {
+        const res = await loadCatalogue(ctx)
+        if (res && Array.isArray(res.sessions)) {
+          setSessions(res.sessions)
+          setRpcErrors(Array.isArray(res.errors) ? res.errors : [])
+          setCronInfo(res.cronInfo || { vacias: 0, jobs_activos: 0 })
+          setIndiceGenerado(res.generado || '')
+          setPendData(res.pendData || null)
+          setPendMap(res.pendMap || null)
+          setPendAttr(res.pendAttr || null)
+          setEsqViejo(Boolean(res.esquemaViejo))
+        }
+      } catch (_) {}
+      return
+    }
     if (tab === 'testing') {
       // Entering Testing is the refresh moment. The index is a cache, so it is left
       // alone everywhere else; here the catalogue is re-read (and the gateway rows
@@ -4034,6 +4250,84 @@ function App({ ctx }) {
     ]
   }
 
+  // Precompute the 7 "Last Used" bucket counts in one single pass per row, with
+  // todayStr and yesterdayStr computed once outside the loop.
+  const isLastUsedOff = folded.has('lastUsed')
+  const lastUsedCounts = useMemo(() => {
+    const c = { up_to_8h: 0, '8_16h': 0, '16_24h': 0, '24h': 0, '24_48h': 0, today: 0, yesterday: 0 }
+    if (isLastUsedOff) return c
+    const todayStr = fechaLocal(nowMs)
+    const yesterdayStr = fechaAyerLocal(nowMs)
+    for (const d of universo) {
+      if (!pass(d, 'lastUsed')) continue
+      const ts = Number.isFinite(d.last_used_ms)
+        ? d.last_used_ms
+        : getTimestampMs(d.last_used_at || d.started_at)
+      const fStr = fechaSesionLocal(d, ts)
+      if (fStr) {
+        if (fStr === todayStr) c.today++
+        else if (fStr === yesterdayStr) c.yesterday++
+      }
+      if (ts != null) {
+        const hoursAgo = Math.max(0, (nowMs - ts) / 3600000)
+        if (hoursAgo <= 24) {
+          c['24h']++
+          if (hoursAgo <= 8) c.up_to_8h++
+          else if (hoursAgo <= 16) c['8_16h']++
+          else c['16_24h']++
+        } else if (hoursAgo <= 48) {
+          c['24_48h']++
+        }
+      }
+    }
+    return c
+  }, [universo, f, q, nums, qs, showAll, showElim, showVacio, showCron, showBots, showSub, activeTab, nowMs, isLastUsedOff])
+
+  // Render the foldable "Last Used" block: seven fixed buckets, each counted over the
+  // rows that pass every other filter (the bucket itself is skipped, like a facet).
+  const renderLastUsedBlock = () => {
+    const blockId = 'lastUsed'
+    const isOff = isLastUsedOff
+    const c = lastUsedCounts
+    return h(
+      'div',
+      { className: 'lastusedgroup' },
+      h(
+        'h4',
+        {
+          className: 'fold' + (isOff ? ' off' : ''),
+          onClick: () => toggleFold(blockId),
+          title: indiceGenerado ? `Index: ${indiceGenerado}` : undefined,
+        },
+        h('span', { className: 'caret' }, isOff ? '▸' : '▾'),
+        h('span', null, t('lastUsed')),
+        f.lastUsed ? h('span', null, ' · 1') : null
+      ),
+      !isOff
+        ? h(
+            'div',
+            null,
+            LAST_USED_OPTS.map(([k, lbl]) =>
+              h(
+                'label',
+                {
+                  key: k,
+                  className: 'opt' + (f.lastUsed === k ? ' sel' : ''),
+                  onClick: (e) => {
+                    e.preventDefault()
+                    setF((p) => ({ ...p, lastUsed: p.lastUsed === k ? null : k }))
+                  },
+                },
+                h('input', { type: 'radio', checked: f.lastUsed === k, readOnly: true }),
+                h('span', null, t(lbl)),
+                h('span', { className: 'n' }, c[k] || 0)
+              )
+            )
+          )
+        : null
+    )
+  }
+
   // Render Fecha tree (Year -> Month -> Week)
   const renderFechaTree = () => {
     const cMes = {}
@@ -4371,6 +4665,9 @@ function App({ ctx }) {
 
   // Bloque de fecha (árbol + día exacto + rango). En Process va justo debajo de
   // Subject; en Session DB se queda donde estaba, después de iq8.
+  // Bloque «Last Used»: va siempre justo encima del bloque de fecha.
+  const bloqueLastUsed = renderLastUsedBlock()
+
   const bloqueFecha = h(
     'div',
     { className: 'fechagroup' },
@@ -4591,6 +4888,7 @@ h(
                             dia: '',
                             d1: '',
                             d2: '',
+                            lastUsed: null,
                           }),
                       },
                       t('ver')
@@ -4656,6 +4954,7 @@ h(
         h(
           'div',
           { className: 'ascroll' },
+          bloqueLastUsed,
           pendMap
             ? [
                 h(
@@ -5204,6 +5503,14 @@ h(
           h('b', null, '$' + totals.costo.toFixed(2)),
           h('div', { className: 'lb' }, h('i', null, t('kCos1')), h('i', null, t('kCos2')))
         ),
+        // Tiempo acumulado, entre el costo y los posts: es la cifra que se mira
+        // junto al dinero, y el pie la tenía al final, después de los pendientes.
+        h(
+          'div',
+          { className: 'kpi hrs' },
+          h('b', null, fmtHoras(totals.horas)),
+          h('div', { className: 'lb' }, h('i', null, t('kHor1')), h('i', null, t('kHor2')))
+        ),
         h(
           'div',
           { className: 'kpi pst' },
@@ -5231,14 +5538,7 @@ h(
                 h('i', null, t('kPend1')),
                 h('i', null, `${t('kPend2')} · ${(pendData.counts && pendData.counts.total) || 0}`))
             )
-          : null,
-        // Horas acumuladas: la cifra que faltaba en el pie.
-        h(
-          'div',
-          { className: 'kpi hrs' },
-          h('b', null, fmtH(totals.horas)),
-          h('div', { className: 'lb' }, h('i', null, t('kHor1')), h('i', null, t('kHor2')))
-        )
+          : null
       )
     )
       )
@@ -5399,9 +5699,10 @@ h(
 }
 
 // Named exports so tests/test_plugin.mjs can exercise the pure helpers without React.
-export { numSel, fmtC, fmtH, fmtN, loadCatalogue, canonicalTitle, jerarquia, isChildRow,
+export { numSel, fmtC, fmtH, fmtHoras, fmtN, loadCatalogue, canonicalTitle, jerarquia, isChildRow,
   esEsquemaViejo, migrarEjes, contarEjes, ESQUEMA_ACTUAL, tieneNumero, esMaquinaria,
-  esPendiente, esSujetoInvalido, esDescClonada, derivarCampos, leerConsultaHash, textoSeleccionado
+  esPendiente, esSujetoInvalido, esDescClonada, derivarCampos, leerConsultaHash, textoSeleccionado,
+  matchLastUsed, getTimestampMs, LAST_USED_OPTS
 }
 
 export default {
@@ -5410,8 +5711,9 @@ export default {
   version: VERSION,
 
   register(ctx) {
+    const mountEpoch = Date.now()
     ctx.registerMany([
-      { id: 'page', area: ROUTES_AREA, data: { path: ROUTE }, render: () => h(App, { ctx }) },
+      { id: 'page-' + mountEpoch, area: ROUTES_AREA, data: { path: ROUTE }, render: () => h(App, { key: mountEpoch, ctx }) },
       {
         id: 'nav',
         area: SIDEBAR_NAV_AREA,

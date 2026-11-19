@@ -232,9 +232,11 @@ try {
 ok(!threw, threw ? 'renders: ' + threw.message : 'renders a first frame')
 ok(html.includes('mmws'), 'emits the plugin root class')
 ok(html.length > 200, `frame has substance (${html.length} chars)`)
+ok(/ÚLTIMO USO|LAST USED/.test(html) && html.includes('Up to 8 Hours') && html.includes('Yesterday'),
+  'el panel izquierdo pinta el bloque Last Used con sus opciones')
 
 console.log('\n§ funciones puras')
-const { numSel, fmtC, fmtH, fmtN } = mod
+const { numSel, fmtC, fmtH, fmtHoras, fmtN } = mod
 if (typeof numSel === 'function') {
   ok(numSel('126,305').has(305), 'numSel reads a comma list')
   ok(numSel('50-53').size === 4, 'numSel expands a range')
@@ -249,10 +251,116 @@ if (typeof fmtH === 'function') {
   ok(fmtH(90) === '1h30', 'fmtH splits hours and minutes')
   ok(fmtH(45) === '45m', 'fmtH keeps minutes under an hour')
 }
+if (typeof fmtHoras === 'function') {
+  ok(fmtHoras(45) === '45m', 'fmtHoras: minutes below an hour')
+  ok(fmtHoras(200) === '3h20', 'fmtHoras: hours below a day')
+  ok(fmtHoras(3000) === '2d 2h', 'fmtHoras: days below a week')
+  ok(fmtHoras(15840) === '1w 4d', 'fmtHoras: weeks below a month')
+  ok(fmtHoras(525600) === '1.0y', 'fmtHoras: years from a month up')
+  ok(fmtHoras(0) === '—', 'fmtHoras: zero is a dash')
+} else ok(false, 'fmtHoras is exported')
 if (typeof fmtN === 'function') {
   ok(fmtN(15514624) === '15.5M', 'fmtN scales to millions')
   ok(fmtN(1500) === '1.5k', 'fmtN scales to thousands')
 }
+
+console.log('\n§ filtro Last Used')
+const { matchLastUsed, getTimestampMs, LAST_USED_OPTS } = mod
+if (typeof matchLastUsed === 'function') {
+  // Mediodía local fijo: así «hoy» y «ayer» no dependen de la hora a la que corre el test.
+  const NOW = new Date(2026, 10, 18, 12, 0, 0).getTime()
+  const H = 3600000
+  const z = (n) => String(n).padStart(2, '0')
+  const ymd = (ms) => {
+    const d = new Date(ms)
+    return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}`
+  }
+  // Sesión sintética usada hace `h` horas (marca en ms, como la deja el merge).
+  const hace = (h) => ({ last_used_ms: NOW - h * H, fecha: ymd(NOW - h * H) })
+  const en = (h, k) => matchLastUsed(hace(h), k, NOW)
+  const KEYS = ['up_to_8h', '8_16h', '16_24h', '24h', '24_48h', 'today', 'yesterday']
+
+  ok(Array.isArray(LAST_USED_OPTS) && LAST_USED_OPTS.map(([k]) => k).join() === KEYS.join(),
+    'Last Used ofrece las 7 opciones en orden')
+
+  // 1. Up to 8 Hours: 0 <= h <= 8 (deriva negativa se clava a 0 con Math.max(0, edad))
+  ok(en(0, 'up_to_8h') && en(3, 'up_to_8h') && en(8, 'up_to_8h'), 'up_to_8h incluye 0, 3 y 8 h')
+  ok(!en(8.01, 'up_to_8h') && en(-0.05, 'up_to_8h'), 'up_to_8h excluye >8 h y tolera deriva negativa con Math.max(0, edad)')
+  // 2. 8 - 16 Hours: 8 < h <= 16
+  ok(!en(8, '8_16h') && en(8.01, '8_16h') && en(16, '8_16h'), '8_16h: (8, 16]')
+  ok(!en(16.01, '8_16h'), '8_16h excluye >16 h')
+  // 3. 16 - 24 Hours: 16 < h <= 24
+  ok(!en(16, '16_24h') && en(20, '16_24h') && en(24, '16_24h'), '16_24h: (16, 24]')
+  ok(!en(24.01, '16_24h'), '16_24h excluye >24 h')
+  // 4. 24 Hours: 0 <= h <= 24, exactamente la suma de los tres tramos anteriores
+  ok(en(0, '24h') && en(12, '24h') && en(24, '24h'), '24h incluye 0, 12 y 24 h')
+  ok(!en(24.01, '24h') && en(-0.05, '24h'), '24h excluye >24 h y tolera deriva negativa')
+  const muestras = [-1, 0, 1, 7.99, 8, 8.5, 15, 16, 16.2, 23, 24, 24.5, 30, 47, 48, 49, 72]
+  const sumaOk = muestras.every((h) => {
+    const tramos = ['up_to_8h', '8_16h', '16_24h'].filter((k) => en(h, k)).length
+    return tramos === (en(h, '24h') ? 1 : 0)
+  })
+  ok(sumaOk, '24h = 0-8h + 8-16h + 16-24h, sin solapes ni huecos')
+  // 5. 24 - 48 Hours: 24 < h <= 48
+  ok(!en(24, '24_48h') && en(24.01, '24_48h') && en(48, '24_48h'), '24_48h: (24, 48]')
+  ok(!en(48.01, '24_48h'), '24_48h excluye >48 h')
+  // 6. Today: fecha === hoy (local)
+  ok(matchLastUsed({ fecha: '2026-11-18' }, 'today', NOW), 'today: fecha de hoy')
+  ok(!matchLastUsed({ fecha: '2026-11-17' }, 'today', NOW), 'today excluye ayer')
+  // 7. Yesterday: fecha === ayer (local)
+  ok(matchLastUsed({ fecha: '2026-11-17' }, 'yesterday', NOW), 'yesterday: fecha de ayer')
+  ok(!matchLastUsed({ fecha: '2026-11-18' }, 'yesterday', NOW) &&
+    !matchLastUsed({ fecha: '2026-11-16' }, 'yesterday', NOW), 'yesterday excluye hoy y anteayer')
+  // Cambio de mes: ayer del 1 de diciembre es el 30 de noviembre.
+  const DIC1 = new Date(2026, 11, 1, 9, 0, 0).getTime()
+  ok(matchLastUsed({ fecha: '2026-11-30' }, 'yesterday', DIC1), 'yesterday cruza el cambio de mes')
+
+  // Derivación de la marca: segundos epoch (gateway), ISO, o sólo fecha.
+  const segs = Math.floor((NOW - 5 * H) / 1000)
+  ok(matchLastUsed({ started_at: segs }, 'up_to_8h', NOW), 'started_at en segundos epoch se convierte a ms')
+  ok(matchLastUsed({ started_at: new Date(NOW - 30 * H).toISOString() }, '24_48h', NOW), 'started_at ISO se interpreta')
+  ok(matchLastUsed({ fecha: '2026-11-18' }, 'up_to_8h', NOW) === false &&
+    matchLastUsed({ fecha: '2026-11-18' }, '8_16h', NOW) === false &&
+    matchLastUsed({ fecha: '2026-11-18' }, 'today', NOW) === true,
+    'sólo fecha: nunca inventa medianoche sintética en tramos horarios, pero sí entra en Today')
+  ok(!matchLastUsed({}, 'up_to_8h', NOW) && !matchLastUsed({}, 'today', NOW), 'sin marca ni fecha no entra en ningún tramo')
+  ok(!matchLastUsed(hace(1), 'desconocida', NOW), 'una clave desconocida no filtra a favor')
+  if (typeof getTimestampMs === 'function') {
+    ok(getTimestampMs(1700000000, '') === 1700000000000, 'getTimestampMs: segundos → ms')
+    ok(getTimestampMs(1700000000000, '') === 1700000000000, 'getTimestampMs: ms se respetan')
+    ok(getTimestampMs(null, '') === null, 'getTimestampMs: nada → null')
+    ok(getTimestampMs('2026-11-18') === null, 'getTimestampMs: fecha YYYY-MM-DD no se parsea como UTC')
+  }
+
+  // Marca real de último uso (SPEC LAST USED FIX): last_used_at manda sobre started_at.
+  const fila3h = {
+    last_used_at: Math.floor((NOW - 3 * H) / 1000), // epoch segundos, como sale del índice
+    started_at: Math.floor((NOW - 30 * H) / 1000),
+    fecha: ymd(NOW - 30 * H),
+  }
+  ok(matchLastUsed(fila3h, 'up_to_8h', NOW), 'last_used_at de hace 3 h entra en up_to_8h')
+  ok(!matchLastUsed(fila3h, '24_48h', NOW), 'started_at de hace 30 h no la manda a 24_48h')
+
+  // Today / Yesterday por fecha del último uso: iniciada ayer 23:00, usada hoy 01:00.
+  const ayer23 = new Date(2026, 10, 17, 23, 0, 0).getTime()
+  const hoy01 = new Date(2026, 10, 18, 1, 0, 0).getTime()
+  const filaNoche = { last_used_at: hoy01 / 1000, started_at: ayer23 / 1000, fecha: '2026-11-17' }
+  ok(matchLastUsed(filaNoche, 'today', NOW), 'iniciada ayer 23:00 y usada hoy 01:00 cuenta como Today')
+  ok(!matchLastUsed(filaNoche, 'yesterday', NOW), '… y no como Yesterday')
+  // Igual con la marca ya en ms, como la deja el merge (last_used_ms).
+  ok(matchLastUsed({ last_used_ms: hoy01, fecha: '2026-11-17' }, 'today', NOW),
+    'last_used_ms real decide Today aunque fecha sea ayer')
+  // Sin marca utilizable, respaldo a d.fecha.
+  ok(matchLastUsed({ last_used_at: null, fecha: '2026-11-17' }, 'yesterday', NOW),
+    'sin marca: Yesterday se decide por fecha')
+
+  // Posición: LAST USED es el primer hijo del ascroll, en las dos pestañas.
+  const srcLU = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), '../desktop/plugin.js'), 'utf8')
+  ok(/\{ className: 'ascroll' \},\s*bloqueLastUsed,\s*pendMap/.test(srcLU),
+    'bloqueLastUsed es el primer bloque del ascroll, antes de Pending')
+  ok(!/panelFiltros \? (bloqueLastUsed|null) : (null|bloqueLastUsed)/.test(srcLU),
+    'bloqueLastUsed ya no depende de panelFiltros')
+} else ok(false, 'matchLastUsed se exporta')
 
 console.log('\n§ sub-sesiones')
 const { jerarquia, isChildRow } = mod

@@ -197,6 +197,7 @@ def build(with_messages: bool = True) -> dict:
                     "id": rec.id,
                     "prof": profile,
                     "fecha": str(rec.created_at or "")[:10],
+                    "last_used_at": round(float(rec.last_used_at), 3) if rec.last_used_at else None,
                     "costo": round(float(rec.cost_usd or 0), 4),
                     "horas": round(float(rec.hours or 0), 1),
                     "tok": int(rec.tokens or 0),
@@ -257,6 +258,28 @@ def main() -> int:
     out.write_text(content, encoding="utf-8")
     if not args.out:
         sync_ui_mirror()
+        try:
+            (data_dir() / "last_used_cache.json").write_text(
+                json.dumps(
+                    {
+                        "generated": data.get("generated"),
+                        "by_id": {
+                            str(r["id"]): r["last_used_at"]
+                            for r in (data.get("sessions") or [])
+                            if r.get("id") and r.get("last_used_at") is not None
+                        },
+                    },
+                    ensure_ascii=False,
+                    separators=(",", ":"),
+                ),
+                encoding="utf-8",
+            )
+            (ui_data_dir() / "last_used_cache.json").write_text(
+                (data_dir() / "last_used_cache.json").read_text(encoding="utf-8"),
+                encoding="utf-8",
+            )
+        except Exception:
+            pass
 
     print(f"{data['count']} sesiones · {data['subjects']} sujetos")
     print(f"{out} · {out.stat().st_size/1024:.0f} KB · generado {data['generated']}")

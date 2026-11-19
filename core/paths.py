@@ -178,10 +178,39 @@ def _schema_of(path: Path) -> int:
 
 
 def can_overwrite_mirror(canonico: Path, espejo: Path) -> bool:
-    """True when `canonico` is on the same or newer schema than `espejo`."""
+    """True when `canonico` is on the same or newer schema than `espejo` and
+    does not regress `last_used_at` (e.g. from a long-lived gateway process
+    whose in-memory `build_index` predates the `last_used_at` field)."""
     if not Path(espejo).exists():
         return True
-    return _schema_of(canonico) >= _schema_of(espejo)
+    if _schema_of(canonico) < _schema_of(espejo):
+        return False
+    if Path(canonico).name == "index.json":
+        try:
+            c_data = json.loads(Path(canonico).read_text(encoding="utf-8"))
+            m_data = json.loads(Path(espejo).read_text(encoding="utf-8"))
+            c_sess = (c_data.get("sessions") or []) if isinstance(c_data, dict) else []
+            m_sess = (m_data.get("sessions") or []) if isinstance(m_data, dict) else []
+            m_has_lu = any(isinstance(r, dict) and r.get("last_used_at") is not None for r in m_sess[:50])
+            c_has_lu = any(isinstance(r, dict) and r.get("last_used_at") is not None for r in c_sess[:50])
+            if m_has_lu and not c_has_lu:
+                # Mirror has last_used_at and canonical dropped it (stale in-memory builder):
+                # merge last_used_at from mirror back into canonical so neither loses it.
+                lu_by_id = {
+                    str(r.get("id")): r.get("last_used_at")
+                    for r in m_sess
+                    if isinstance(r, dict) and r.get("id") and r.get("last_used_at") is not None
+                }
+                for r in c_sess:
+                    if isinstance(r, dict) and r.get("last_used_at") is None and str(r.get("id")) in lu_by_id:
+                        r["last_used_at"] = lu_by_id[str(r.get("id"))]
+                Path(canonico).write_text(
+                    json.dumps(c_data, ensure_ascii=False, separators=(",", ":")),
+                    encoding="utf-8",
+                )
+        except Exception:  # noqa: BLE001
+            pass
+    return True
 
 
 def sync_ui_mirror(plugin: str = PLUGIN) -> None:

@@ -119,8 +119,8 @@ cd hermes-make-it-smart
 ~/.hermes/hermes-agent/scripts/run-in-hermes-env python3 tools/build_index.py
 
 # 2. copy the plugin where Hermes Desktop looks for it
-mkdir -p ~/.hermes/desktop-plugins/make-it-smart
-cp desktop/plugin.js ~/.hermes/desktop-plugins/make-it-smart/
+mkdir -p ~/.hermes/desktop-plugins/hermes-make-it-smart
+cp desktop/plugin.js ~/.hermes/desktop-plugins/hermes-make-it-smart/
 
 # 3. restart Hermes Desktop, then open "Make It Smart" in the sidebar
 ```

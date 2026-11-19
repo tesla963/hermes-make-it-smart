@@ -19,7 +19,7 @@ except ImportError:
     from tools.build_index import build
     from tools.cellar_tools import register_tools
 
-__version__ = "0.29.0"
+__version__ = "0.32.0"
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +27,19 @@ logger = logging.getLogger(__name__)
 def _on_session_end(**_kwargs: Any) -> None:
     """Refresh the global session index when a session turn ends."""
     try:
+        import importlib
+        import sys
+        for mod_sfx in ("adapters.hermes", "tools.build_index"):
+            for full_name, mod in list(sys.modules.items()):
+                if (full_name == mod_sfx or full_name.endswith("." + mod_sfx)) and mod is not None:
+                    try:
+                        importlib.reload(mod)
+                    except Exception:
+                        pass
+        try:
+            from .tools.build_index import build as _fresh_build
+        except ImportError:
+            from tools.build_index import build as _fresh_build
         out = data_dir() / "index.json"
         prev_claves: dict[str, Any] = {}
         if out.exists():
@@ -37,7 +50,7 @@ def _on_session_end(**_kwargs: Any) -> None:
                         prev_claves[str(r["id"])] = r["claves"]
             except Exception:
                 prev_claves = {}
-        data = build(with_messages=False)
+        data = _fresh_build(with_messages=False)
         for r in data.get("sessions") or []:
             sid = str(r.get("id") or "")
             if not r.get("claves") and sid in prev_claves:

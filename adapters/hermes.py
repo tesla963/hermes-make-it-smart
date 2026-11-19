@@ -43,6 +43,9 @@ class SessionRecord:
     source: str | None = None
     # Mother session of a subagent transcript (delegate_task). None for a root session.
     parent_session_id: str | None = None
+    # Last real use (state.db → sessions.last_activity_at), epoch seconds. None when the
+    # host's schema has no such column or the value is empty.
+    last_used_at: float | None = None
 
 
 # --------------------------------------------------------------------------- #
@@ -137,19 +140,101 @@ def _iso_date(value: Any) -> str:
     return m.group(1) if m else ""
 
 
+def _epoch_seconds(value: Any) -> float | None:
+    """Epoch seconds from an epoch number (s or ms), numeric text or ISO text. None if unusable."""
+    if value is None or value == "":
+        return None
+    try:
+        n = float(value)
+    except (TypeError, ValueError):
+        try:
+            n = datetime.fromisoformat(str(value).strip().replace("Z", "+00:00")).timestamp()
+        except (TypeError, ValueError, OverflowError, OSError):
+            return None
+    if not n or n <= 0 or n != n:
+        return None
+    return n / 1000.0 if n > 1e12 else n
+
+
+ACTIVE_GAP_CAP_SECONDS = 300  # Cap consecutive message delta to 5 min (300 s) to discard idle periods.
+
+
+def _session_message_stats(conn: sqlite3.Connection) -> tuple[dict[str, float], dict[str, float]]:
+    """En una sola pasada sobre `messages`: (minutos_activos, max_timestamp_ultimo_mensaje)."""
+    tables = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+    if "messages" not in tables:
+        return {}, {}
+
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(messages)")}
+    active_filter = "AND active = 1 " if "active" in cols else ""
+    sql = (
+        "SELECT session_id, timestamp FROM messages "
+        f"WHERE timestamp IS NOT NULL {active_filter}"
+        "ORDER BY session_id, timestamp"
+    )
+    result: dict[str, float] = {}
+    last_ts: dict[str, float] = {}
+    current_session_id: str | None = None
+    prev_ts: float | None = None
+    acc_seconds: float = 0.0
+
+    for row in conn.execute(sql):
+        sess_id = row[0]
+        try:
+            ts = float(row[1])
+        except (ValueError, TypeError):
+            continue
+
+        if sess_id != current_session_id:
+            if current_session_id is not None:
+                result[current_session_id] = round(acc_seconds / 60.0, 2)
+            current_session_id = sess_id
+            prev_ts = ts
+            acc_seconds = 0.0
+        else:
+            if prev_ts is not None:
+                delta = ts - prev_ts
+                if delta > 0:
+                    acc_seconds += min(delta, ACTIVE_GAP_CAP_SECONDS)
+            prev_ts = ts
+
+    if current_session_id is not None:
+        result[current_session_id] = round(acc_seconds / 60.0, 2)
+
+    max_sql = (
+        "SELECT session_id, MAX(timestamp) FROM messages "
+        f"WHERE timestamp IS NOT NULL {active_filter}"
+        "GROUP BY session_id"
+    )
+    for row in conn.execute(max_sql):
+        sess_id = row[0]
+        ep = _epoch_seconds(row[1])
+        if sess_id and ep is not None:
+            last_ts[sess_id] = ep
+
+    return result, last_ts
+
+
+def active_minutes_by_session(conn: sqlite3.Connection) -> dict[str, float]:
+    """Minutos de trabajo por sesión: Σ min(gap, 300 s) entre mensajes consecutivos."""
+    return _session_message_stats(conn)[0]
+
+
 def read_sessions(profile: str, path: Path, limit: int | None = None) -> list[SessionRecord]:
     """Read every session of one profile. Never writes."""
     out: list[SessionRecord] = []
     conn = _connect_ro(path)
     try:
+        minutos, ultimo_msg = _session_message_stats(conn)
         # parent_session_id exists in current hosts; an older state.db without it must
         # still read, so the column is selected only when the table has it.
         cols = {r[1] for r in conn.execute("PRAGMA table_info(sessions)")}
         parent_col = "parent_session_id" if "parent_session_id" in cols else "NULL AS parent_session_id"
+        last_col = "last_activity_at" if "last_activity_at" in cols else "NULL AS last_activity_at"
         sql = (
             "SELECT id, title, title_source, started_at, message_count, "
             "input_tokens, output_tokens, estimated_cost_usd, actual_cost_usd, hidden, source, "
-            f"{parent_col} "
+            f"{parent_col}, {last_col} "
             "FROM sessions ORDER BY started_at"
         )
         if limit:
@@ -167,6 +252,7 @@ def read_sessions(profile: str, path: Path, limit: int | None = None) -> list[Se
                         or (row["estimated_cost_usd"] if "estimated_cost_usd" in keys else 0)
                         or 0
                     ),
+                    hours=minutos.get(row["id"], 0.0),
                     tokens=int(
                         ((row["input_tokens"] or 0) if "input_tokens" in keys else 0)
                         + ((row["output_tokens"] or 0) if "output_tokens" in keys else 0)
@@ -176,6 +262,12 @@ def read_sessions(profile: str, path: Path, limit: int | None = None) -> list[Se
                     hidden=bool(row["hidden"]) if "hidden" in keys else False,
                     source=row["source"] if "source" in keys else None,
                     parent_session_id=(row["parent_session_id"] or None) if "parent_session_id" in keys else None,
+                    # Last real use: MAX(messages.timestamp WHERE active=1) -> last_activity_at -> started_at.
+                    last_used_at=(
+                        ultimo_msg.get(row["id"])
+                        or (_epoch_seconds(row["last_activity_at"]) if "last_activity_at" in keys else None)
+                        or _epoch_seconds(row["started_at"])
+                    ),
                 )
             )
     finally:
@@ -368,7 +460,9 @@ def verify_backup(dest: Path) -> bool:
 
 
 __all__ = [
+    "ACTIVE_GAP_CAP_SECONDS",
     "SessionRecord",
+    "active_minutes_by_session",
     "clean_message",
     "select_messages",
     "discover_databases",

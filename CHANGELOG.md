@@ -1,5 +1,38 @@
 # Changelog
 
+## 0.32.0 — 18-nov-2026 · LAST USED filter by last message timestamp, gateway-proof sidecar, and clean hot-remount
+
+Adds the **LAST USED** filter block at the top of the left filter panel (above Pending and Subject)
+and hardens session activity timestamps and desktop plugin hot-reloading:
+
+- **LAST USED filter block (7 options).** Placed first in the filter scroll on every filterable tab:
+  `Up to 8 Hours` (`0–8 h`), `8 - 16 Hours` (`(8, 16]`), `16 - 24 Hours` (`(16, 24]`),
+  `24 Hours` (consolidated `0–24 h`, exact sum of the first three), `24 - 48 Hours` (`(24, 48]`),
+  `Today` (local calendar date of last use = today), and `Yesterday` (local calendar date = yesterday).
+  Clicking an option filters the session list; clicking again clears it.
+- **`last_used_at` = `MAX(messages.timestamp)` (`WHERE active = 1`).** In `adapters/hermes.py`, the
+  primary source of a session's last use is now `SELECT session_id, MAX(timestamp) FROM messages
+  WHERE timestamp IS NOT NULL AND active = 1 GROUP BY session_id` in `state.db`, falling back to
+  `sessions.last_activity_at` and then `sessions.started_at` only when a session has no active
+  messages. In `desktop/plugin.js`, message timestamps (`msgCandidates`) always take precedence
+  over gateway fallback fields (`last_activity_at`, `started_at`), and `ended_at` is never used as
+  a last-use source.
+- **Sidecar `last_used_cache.json` immune to long-lived gateway hooks.** `tools/build_index.py`
+  writes `last_used_cache.json` (`{ generated, by_id }`) alongside `index.json` in both the
+  canonical data directory and the UI mirror, and `core/paths.py` (`can_overwrite_mirror`) plus
+  `__init__.py` (`_on_session_end` reload) prevent a long-running gateway process with older
+  in-memory modules from stripping `last_used_at` when a turn ends.
+- **Hot-reload remount with `mountEpoch` and focus refresh.** `register(ctx)` stamps each plugin
+  incarnation with `mountEpoch = Date.now()` (`id: 'page-' + mountEpoch` and `key: mountEpoch`),
+  forcing React Router's `ChatRoutesSurface` to unmount any previous in-memory component instance
+  on reload. Returning to `1) Session Database` or focusing the window also re-reads the catalogue.
+- **Single desktop plugin path.** Documentation (`README.md`, `docs/DATA-PATHS.md`) now points
+  exclusively to `~/.hermes/desktop-plugins/hermes-make-it-smart/plugin.js`, matching the package
+  folder name that Electron materializes and avoiding duplicate-id collisions.
+- **Duration cascade (`fmtHoras`) & active hours tests.** Adds `fmtHoras` (`45m` → `3h20` → `2d 4h`
+  → `3w 2d` → `1.4y`) for the Hours KPI and `tests/test_hours.py` + `tests/test_plugin.mjs`
+  coverage for active minutes and the 7 `LAST USED` buckets.
+
 ## 0.31.0 — 17-nov-2026 · the API key leaves the plugin, and the window stops patching itself
 
 The one change that needed doing before a reviewer looks again: **the BYO AI key is now a Hermes
