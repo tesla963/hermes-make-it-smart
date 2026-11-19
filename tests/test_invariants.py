@@ -154,6 +154,52 @@ def test_shrink_subject_coordinate_titles_not_amputated() -> None:
 
 
 # --------------------------------------------------------------------------- #
+# Mirror sync and cache preservation
+# --------------------------------------------------------------------------- #
+
+
+def test_can_overwrite_mirror_restores_last_used_from_cache(tmp_path_factory=None) -> None:
+    import json
+    import tempfile
+    from core.paths import can_overwrite_mirror
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmp = Path(tmpdir)
+        canon = tmp / "canon" / "index.json"
+        espejo = tmp / "mirror" / "index.json"
+        canon.parent.mkdir()
+        espejo.parent.mkdir()
+
+        # Sidecar with last_used timestamps
+        sidecar = canon.parent / "last_used_cache.json"
+        sidecar.write_text(json.dumps({
+            "generated": "2026-11-19T07:00:00",
+            "by_id": {"sess-1": 1795090000.5, "sess-2": 1795090100.0}
+        }), encoding="utf-8")
+
+        # Canonical generated WITHOUT last_used_at (stale builder simulation)
+        canon.write_text(json.dumps({
+            "schema": 2,
+            "sessions": [
+                {"id": "sess-1", "title": "Session 1", "last_used_at": None},
+                {"id": "sess-2", "title": "Session 2", "last_used_at": None},
+            ]
+        }), encoding="utf-8")
+
+        # Mirror exists (empty or older)
+        espejo.write_text(json.dumps({"schema": 2, "sessions": []}), encoding="utf-8")
+
+        res = can_overwrite_mirror(canon, espejo)
+        assert res is True
+
+        # Check that canon has restored last_used_at from sidecar
+        data = json.loads(canon.read_text(encoding="utf-8"))
+        lus = {s["id"]: s.get("last_used_at") for s in data["sessions"]}
+        assert lus["sess-1"] == 1795090000.5
+        assert lus["sess-2"] == 1795090100.0
+
+
+# --------------------------------------------------------------------------- #
 # Runner (no pytest needed)
 # --------------------------------------------------------------------------- #
 

@@ -51,15 +51,49 @@ def _on_session_end(**_kwargs: Any) -> None:
             except Exception:
                 prev_claves = {}
         data = _fresh_build(with_messages=False)
+        # Restore claves and last_used_at from previous artefacts if missing
+        lu_cache_file = data_dir() / "last_used_cache.json"
+        prev_lu: dict[str, Any] = {}
+        if lu_cache_file.exists():
+            try:
+                parsed_lu = json.loads(lu_cache_file.read_text(encoding="utf-8"))
+                if isinstance(parsed_lu, dict) and isinstance(parsed_lu.get("by_id"), dict):
+                    prev_lu = parsed_lu["by_id"]
+            except Exception:
+                prev_lu = {}
+
         for r in data.get("sessions") or []:
             sid = str(r.get("id") or "")
             if not r.get("claves") and sid in prev_claves:
                 r["claves"] = prev_claves[sid]
+            if r.get("last_used_at") is None and sid in prev_lu:
+                r["last_used_at"] = prev_lu[sid]
+
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(
             json.dumps(data, ensure_ascii=False, separators=(",", ":")),
             encoding="utf-8",
         )
+
+        # Atomically update the sidecar last_used_cache.json
+        by_id = {
+            str(r["id"]): r["last_used_at"]
+            for r in (data.get("sessions") or [])
+            if r.get("id") and r.get("last_used_at") is not None
+        }
+        if by_id:
+            try:
+                (data_dir() / "last_used_cache.json").write_text(
+                    json.dumps(
+                        {"generated": data.get("generated"), "by_id": by_id},
+                        ensure_ascii=False,
+                        separators=(",", ":"),
+                    ),
+                    encoding="utf-8",
+                )
+            except Exception:
+                pass
+
         sync_ui_mirror()
     except Exception as exc:  # pragma: no cover — observer hook must never raise
         logger.debug("hermes-make-it-smart index refresh failed: %s", exc)

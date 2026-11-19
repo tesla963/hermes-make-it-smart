@@ -188,43 +188,57 @@ def can_overwrite_mirror(canonico: Path, espejo: Path) -> bool:
     if Path(canonico).name == "index.json":
         try:
             c_data = json.loads(Path(canonico).read_text(encoding="utf-8"))
-            m_data = json.loads(Path(espejo).read_text(encoding="utf-8"))
             c_sess = (c_data.get("sessions") or []) if isinstance(c_data, dict) else []
-            m_sess = (m_data.get("sessions") or []) if isinstance(m_data, dict) else []
-            m_has_lu = any(isinstance(r, dict) and r.get("last_used_at") is not None for r in m_sess[:50])
             c_has_lu = any(isinstance(r, dict) and r.get("last_used_at") is not None for r in c_sess[:50])
-            if m_has_lu and not c_has_lu:
-                # Mirror has last_used_at and canonical dropped it (stale in-memory builder):
-                # merge last_used_at from mirror back into canonical so neither loses it.
-                lu_by_id = {
-                    str(r.get("id")): r.get("last_used_at")
-                    for r in m_sess
-                    if isinstance(r, dict) and r.get("id") and r.get("last_used_at") is not None
-                }
-                for r in c_sess:
-                    if isinstance(r, dict) and r.get("last_used_at") is None and str(r.get("id")) in lu_by_id:
-                        r["last_used_at"] = lu_by_id[str(r.get("id"))]
-                Path(canonico).write_text(
-                    json.dumps(c_data, ensure_ascii=False, separators=(",", ":")),
-                    encoding="utf-8",
-                )
+            if not c_has_lu:
+                # Canonical dropped last_used_at (e.g. stale in-memory builder in gateway).
+                # Recover from last_used_cache.json or from mirror index.
+                lu_by_id: dict[str, Any] = {}
+                canon_cache = Path(canonico).parent / "last_used_cache.json"
+                mirror_cache = Path(espejo).parent / "last_used_cache.json"
+                for cache_file in (canon_cache, mirror_cache):
+                    if cache_file.exists():
+                        try:
+                            parsed_c = json.loads(cache_file.read_text(encoding="utf-8"))
+                            if isinstance(parsed_c, dict) and isinstance(parsed_c.get("by_id"), dict):
+                                lu_by_id.update(parsed_c["by_id"])
+                                break
+                        except Exception:
+                            pass
+                if not lu_by_id and Path(espejo).exists():
+                    try:
+                        m_data = json.loads(Path(espejo).read_text(encoding="utf-8"))
+                        m_sess = (m_data.get("sessions") or []) if isinstance(m_data, dict) else []
+                        for r in m_sess:
+                            if isinstance(r, dict) and r.get("id") and r.get("last_used_at") is not None:
+                                lu_by_id[str(r["id"])] = r["last_used_at"]
+                    except Exception:
+                        pass
+                if lu_by_id:
+                    for r in c_sess:
+                        if isinstance(r, dict) and r.get("last_used_at") is None and str(r.get("id")) in lu_by_id:
+                            r["last_used_at"] = lu_by_id[str(r.get("id"))]
+                    Path(canonico).write_text(
+                        json.dumps(c_data, ensure_ascii=False, separators=(",", ":")),
+                        encoding="utf-8",
+                    )
         except Exception:  # noqa: BLE001
             pass
     return True
 
 
 def sync_ui_mirror(plugin: str = PLUGIN) -> None:
-    """Synchronize `index.json`, `facets.json` and `pending_index.json` to `ui_data_dir()`."""
+    """Synchronize `index.json`, `facets.json`, `last_used_cache.json` and `pending_index.json` to `ui_data_dir()`."""
     try:
         canon_dir = data_dir(plugin)
         mirror_dir = ui_data_dir(plugin)
         if canon_dir.resolve() == mirror_dir.resolve():
             return
         mirror_dir.mkdir(parents=True, exist_ok=True)
-        for fname in ("index.json", "facets.json"):
+        for fname in ("index.json", "facets.json", "last_used_cache.json"):
             c_file = canon_dir / fname
             m_file = mirror_dir / fname
-            if c_file.exists() and can_overwrite_mirror(c_file, m_file):
+            if c_file.exists() and (fname != "index.json" or can_overwrite_mirror(c_file, m_file)):
                 m_file.write_text(c_file.read_text(encoding="utf-8"), encoding="utf-8")
         c_pend = canon_dir / "pending_index.json"
         m_pend = mirror_dir / "pending_index.json"

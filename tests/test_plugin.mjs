@@ -354,6 +354,23 @@ if (typeof matchLastUsed === 'function') {
   ok(matchLastUsed({ last_used_at: null, fecha: '2026-11-17' }, 'yesterday', NOW),
     'sin marca: Yesterday se decide por fecha')
 
+  // Regresión: sesión vieja reusada hoy con sidecar de ayer (Math.max sobre allCandidates)
+  const tsAyer10h = Math.floor((NOW - 10 * H) / 1000)
+  const tsHoy1h = Math.floor((NOW - 1 * H) / 1000)
+  const candsReuso = [tsAyer10h, tsHoy1h].map((v) => getTimestampMs(v)).filter((ms) => ms != null)
+  const maxMsReuso = Math.max(...candsReuso)
+  ok(matchLastUsed({ last_used_ms: maxMsReuso }, 'up_to_8h', NOW),
+    'regresión: sesión vieja con cache de 10h y live_activity de 1h entra a up_to_8h')
+  ok(!matchLastUsed({ last_used_ms: maxMsReuso }, '8_16h', NOW),
+    'regresión: sesión vieja reusada no queda atrapada en 8_16h')
+
+  // Regresión: sesión nueva sin index ni cache, solo live.started_at
+  const tsNueva30m = Math.floor((NOW - 0.5 * H) / 1000)
+  const candsNueva = [null, undefined, tsNueva30m].map((v) => getTimestampMs(v)).filter((ms) => ms != null)
+  const maxMsNueva = Math.max(...candsNueva)
+  ok(matchLastUsed({ last_used_ms: maxMsNueva }, 'up_to_8h', NOW),
+    'regresión: sesión nueva sin cache entra inmediatamente a up_to_8h')
+
   // Posición: LAST USED es el primer hijo del ascroll, en las dos pestañas.
   const srcLU = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), '../desktop/plugin.js'), 'utf8')
   ok(/\{ className: 'ascroll' \},\s*bloqueLastUsed,\s*pendMap/.test(srcLU),

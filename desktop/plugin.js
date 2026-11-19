@@ -1988,12 +1988,11 @@ async function loadCatalogue(ctx) {
     await Promise.all(
       [...profNames].map(async (prof) => {
         try {
-          const rows = await listPersistedFn(null, { profile: prof, limit: 2000 })
-          if (Array.isArray(rows)) {
-            for (const row of rows) {
-              if (row && row.id && !liveById.has(row.id)) {
-                liveById.set(row.id, { ...row, _prof: row.profile || prof })
-              }
+          const res = await listPersistedFn(null, { profile: prof, limit: 2000 })
+          const rows = res && Array.isArray(res.sessions) ? res.sessions : (Array.isArray(res) ? res : [])
+          for (const row of rows) {
+            if (row && row.id && !liveById.has(row.id)) {
+              liveById.set(row.id, { ...row, _prof: row.profile || prof })
             }
           }
         } catch (e) {
@@ -2153,10 +2152,13 @@ async function loadCatalogue(ctx) {
     // message timestamp in the index/sidecar do we fall back to `last_activity_at`
     // and then `started_at` (never `ended_at`).
     const startedAt = (live && live.started_at) || idx.started_at || null
-    const msgCandidates = [idx.last_used_at, luCacheById[id]]
-      .map((v) => getTimestampMs(v))
-      .filter((ms) => ms != null)
-    const fallbackCandidates = [
+    // All candidates for last activity: index last_used_at, sidecar cache, live activity,
+    // and session start markers. Math.max ensures that fresh live activity (e.g. from a turn
+    // run moments ago) immediately upgrades a reused or newly created session to Up to 8h,
+    // rather than staying pinned to a stale sidecar snapshot.
+    const allCandidates = [
+      idx.last_used_at,
+      luCacheById[id],
       live && live.last_activity_at,
       live && live.last_active,
       live && live.started_at,
@@ -2164,8 +2166,7 @@ async function loadCatalogue(ctx) {
     ]
       .map((v) => getTimestampMs(v))
       .filter((ms) => ms != null)
-    const lastUsedCandidates = msgCandidates.length ? msgCandidates : fallbackCandidates
-    const lastUsedMs = lastUsedCandidates.length ? Math.max(...lastUsedCandidates) : null
+    const lastUsedMs = allCandidates.length ? Math.max(...allCandidates) : null
     const lastUsedAt = lastUsedMs != null ? lastUsedMs / 1000 : null
     const lastUsedDate =
       (lastUsedMs != null ? fechaLocal(lastUsedMs) : '') ||
