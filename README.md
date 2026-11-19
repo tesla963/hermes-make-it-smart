@@ -40,10 +40,28 @@ An agent that forgets the shape of your work is an agent you have to re-brief ev
    never filled with the previous schema's leftovers.
 3. **Renames** them into one canonical, sortable, telegraphic format (below), writing
    through the host's public title API.
-4. **Presents** them as a facet catalog: filters with live counts, a synonym-aware
-   search, a detail pane, and a map of where a word appears across the archive.
+4. **Presents** them as a facet catalog: filters with live counts, a **LAST USED** activity
+   filter block at the top of the panel, a synonym-aware search, a detail pane, and a map of
+   where a word appears across the archive.
 5. **Unifies** historical sessions that share a subject, so the `MMM` ordinal tells you
    at a glance that eleven sessions were one continuous piece of work.
+
+### Filter by Last Used (last post timestamp)
+
+The first filter block in the left panel is **LAST USED**, positioned above Pending and Subject
+across every filterable tab. It classifies sessions by the timestamp of their **last active post**
+(`MAX(messages.timestamp)` with `active = 1` in `state.db`, falling back to `last_activity_at` and
+`started_at` only if a session has no messages):
+
+| Option | Window / Rule |
+|---|---|
+| `Up to 8 Hours` | `0 <= age <= 8 h` |
+| `8 - 16 Hours` | `8 < age <= 16 h` |
+| `16 - 24 Hours` | `16 < age <= 24 h` |
+| `24 Hours` | Consolidated `0 <= age <= 24 h` (exact sum of the first three buckets) |
+| `24 - 48 Hours` | `24 < age <= 48 h` |
+| `Today` | Local calendar date of last post equals today |
+| `Yesterday` | Local calendar date of last post equals yesterday |
 
 ## Getting in without the mouse
 

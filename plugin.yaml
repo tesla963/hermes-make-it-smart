@@ -1,6 +1,6 @@
 name: hermes-make-it-smart
 version: 0.32.0
-description: "Hermes, Make it Smart! — Session categorization, tagging and renaming to access all your sessions — faster than it takes to press 3 clicks."
+description: "Hermes, Make it Smart! — Session categorization, tagging, renaming and LAST USED activity filtering (Up to 8h, 8-16h, 16-24h, 24h, 24-48h, Today, Yesterday by last post timestamp) to access all your sessions — faster than it takes to press 3 clicks."
 author: "the owner"
 license: MIT
 homepage: https://github.com/tesla963/hermes-make-it-smart
