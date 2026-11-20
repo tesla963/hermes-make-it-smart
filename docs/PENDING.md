@@ -116,9 +116,9 @@ writing to the database belongs to the owner or their agent. "We are not invited
 
 | Piece | Status |
 |---|---|
-| The same notice in the plugin panel, on import | not started |
+| The same notice in the plugin panel, on import | **done** — banner in ES/EN (`avisoCron` / `avisoCronEn`), verified 2026-11-20 |
 | Button to pause the job from the UI | not started — the panel only paints by design |
-| Link to issue #140222 as long as there is no upstream fix | not started |
+| Link to issue #140222 as long as there is no upstream fix | **done** — the banner links to it and the copy button (`avCopiar`) hands the text to the assistant |
 
 **Why it makes the MVP:** detecting it is one query and one JSON read; the
 generator already opens the 12 databases. Without the notice, the user blames the
@@ -157,6 +157,10 @@ identity was written at all.
 
 1. the Nous hackathon has closed, and
 2. the plugin is approved in the Nous Research catalog.
+
+**Scheduled (owner, 2026-11-20): Monday 2026-11-23.** Both conditions are met — the catalog
+accepted the entry on 2026-11-19 (PR #154009 merged) — but the rewrite waits until the hackathon
+organisers announce the winners, so no pinned tag moves while the submission is being judged.
 
 **Why not before.** A rewrite changes every hash from 2026-11-10 10:44 onward, moves the tags
 `v0.26.0` / `v0.26.1` / `v0.27.0` that `NousResearch/hermes-agent#154009` pins, and could break

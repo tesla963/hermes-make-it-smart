@@ -1,6 +1,7 @@
 # Status — what actually works
 
-Last verified: 2026-11-10, on the author's machine (12 profiles, 909 sessions).
+Last verified: 2026-11-20, on the owner's machine (947 sessions in the panel's index; the adapter
+opens one `state.db` per profile plus the root one).
 
 ## Working
 
