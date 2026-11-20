@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.32.2 — 20-nov-2026 · the info panel reports the real version
+
+The plugin's "about" panel had `v0.29` hard-coded in both languages since 0.29.0, so a 0.32.x
+install was telling the owner it was four releases old — and the catalog reviewer reads that panel.
+
+- `vSub` is now built from `VERSION` (`'v' + VERSION + ' · plugin nativo'` / `'· native plugin'`),
+  so the footer of the panel can never drift from `plugin.yaml` again.
+- The intro no longer claims a fixed count of databases ("de las 12 bases" / "from the 12
+  databases"): it says one database per profile, which is what the adapter actually opens.
+
+No functional change: no tool, hook, filter, credential or network surface is touched.
+
 ## 0.32.1 — 20-nov-2026 · refreshed sidecar, live activity beats the stale cache
 
 Fixes the LAST USED timestamp going stale in two opposite directions: a fresh turn not lifting a

@@ -13,8 +13,13 @@ for (let j = ini; j < src.length; j++) {
   else if (c === '}') { prof--; if (prof === 0) { fin = j; break } }
 }
 const bloque = src.slice(ini, fin + 1)
+// Algunos valores del bloque se construyen con VERSION ('v' + VERSION + …): sin ella, la
+// evaluación falla y el chequeo queda ciego. Se toma del propio fuente, nunca de un literal fijo.
+const mVer = src.match(/const VERSION = '([^']+)'/)
+const VERSION = mVer ? mVer[1] : ''
+if (!VERSION) console.warn('aviso: no encontré const VERSION; se evalúa sin ella')
 let obj
-try { obj = new Function('return ' + bloque)() }
+try { obj = new Function('VERSION', 'return ' + bloque)(VERSION) }
 catch (e) { console.error('no se pudo evaluar I18N:', e.message); process.exit(2) }
 
 const es = Object.keys(obj.es || {}), en = Object.keys(obj.en || {})

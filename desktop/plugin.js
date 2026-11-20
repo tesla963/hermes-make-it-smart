@@ -20,7 +20,7 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 const ID = 'make-it-smart'
 const NAME = 'Hermes, Make it Smart!'
 const APP_TITLE = 'Hermes, Make It Smart!'
-const VERSION = '0.32.1'
+const VERSION = '0.32.2'
 const ROUTE = '/smart'
 
 /** jsx-runtime helper: keeps uncompiled React code compact and readable. */
@@ -1098,8 +1098,8 @@ const I18N = {
     avTexto:
       'Tengo {n} sesiones vacías de cron (source=cron sin ningún mensaje). Bórralas y dime qué cron jobs tengo activos para pausarlos o pasarlos a modo no_agent.',
     vIntro:
-      'Catálogo navegable de tus sesiones: las indexa de las 12 bases, les pone nombre canónico y las deja filtrar por plataforma, familia y pilar. La ventana del plugin solo pinta — el clasificador es Python puro y no sabe que existe Hermes.',
-    vSub: 'v0.29 · plugin nativo',
+      'Catálogo navegable de tus sesiones: las indexa de todas tus bases (una por perfil), les pone nombre canónico y las deja filtrar por plataforma, familia y pilar. La ventana del plugin solo pinta — el clasificador es Python puro y no sabe que existe Hermes.',
+    vSub: 'v' + VERSION + ' · plugin nativo',
     vVer: 'ESTA VERSIÓN',
     vReg: 'REGLAS QUE APRENDIÓ',
     vCerrar: 'Cerrar',
@@ -1355,8 +1355,8 @@ const I18N = {
     avTexto:
       'I have {n} empty cron sessions (source=cron with no messages). Delete them and tell me which cron jobs are active so I can pause them or move them to no_agent mode.',
     vIntro:
-      'A browsable catalogue of your sessions: it indexes them from the 12 databases, gives each a canonical name and lets you filter by platform, family and pillar. The plugin window only paints — the classifier is pure Python and does not know Hermes exists.',
-    vSub: 'v0.29 · native plugin',
+      'A browsable catalogue of your sessions: it indexes them from every profile database, gives each a canonical name and lets you filter by platform, family and pillar. The plugin window only paints — the classifier is pure Python and does not know Hermes exists.',
+    vSub: 'v' + VERSION + ' · native plugin',
     vVer: 'THIS VERSION',
     vReg: 'RULES IT LEARNED',
     vCerrar: 'Close',
