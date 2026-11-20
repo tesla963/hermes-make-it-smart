@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.32.1 — 20-nov-2026 · refreshed sidecar, live activity beats the stale cache
+
+Fixes the LAST USED timestamp going stale in two opposite directions: a fresh turn not lifting a
+session into `Up to 8 Hours`, and a background hook wiping `last_used_at` from the canonical index.
+
+- **`last_used_at` = max of every source.** `desktop/plugin.js` no longer picks the first
+  non-empty list (index/sidecar *or* fallbacks): it takes `Math.max()` across `index.last_used_at`,
+  the sidecar cache, `live.last_activity_at`, `live.last_active`, `live.started_at` and the index
+  start markers. A session reused moments ago upgrades immediately instead of staying pinned to an
+  old sidecar snapshot.
+- **Sidecar survives the hook.** `core/paths.py: can_overwrite_mirror` recovers `last_used_at`
+  from `last_used_cache.json` (canonical or mirror) before falling back to the mirror's
+  `index.json`, so a stale in-memory builder in the gateway can no longer zero the timestamps.
+- **The mirror carries the sidecar.** `sync_ui_mirror` now also synchronizes
+  `last_used_cache.json` next to `index.json`, `facets.json` and `pending_index.json`.
+- **Tolerant persisted listing.** The live sweep accepts both `{sessions: [...]}` and a bare
+  array from `listPersisted`, so the per-profile fill stops dropping rows silently.
+- **Tests:** `tests/test_invariants.py` +4 invariants, `tests/test_plugin.mjs` +2 cases on the
+  timestamp precedence (16/16, 161 JS cases, 20/20 secret scope).
+
 ## 0.32.0 — 18-nov-2026 · LAST USED filter by last message timestamp, gateway-proof sidecar, and clean hot-remount
 
 Adds the **LAST USED** filter block at the top of the left filter panel (above Pending and Subject)

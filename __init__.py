@@ -19,7 +19,7 @@ except ImportError:
     from tools.build_index import build
     from tools.cellar_tools import register_tools
 
-__version__ = "0.32.0"
+__version__ = "0.32.1"
 
 logger = logging.getLogger(__name__)
 
